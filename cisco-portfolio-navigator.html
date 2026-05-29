@@ -152,6 +152,11 @@
     .add-stack-btn:hover{border-color:var(--accent);color:var(--accent)}
     .add-stack-btn.added{color:var(--accent);border-color:var(--accent)}
 
+    .explore-btn{width:100%;padding:9px;border-radius:7px;font-size:12px;font-weight:700;
+      cursor:pointer;border:1px solid var(--accent);background:rgba(0,188,235,.10);
+      color:var(--accent);transition:all .15s;margin-top:14px;font-family:inherit}
+    .explore-btn:hover{background:var(--accent);color:#000}
+
     /* PLANNER */
     #planner{position:fixed;top:58px;right:0;bottom:0;width:490px;
       background:var(--surface);border-left:1px solid var(--border);
@@ -2636,23 +2641,28 @@ function rebindGraph(opts){
           document.getElementById("tip").style.display = "block"; moveTip(ev);
         }).on("mousemove", moveTip).on("mouseout", hideTip),
       update => update,
-      exit => exit.remove()
+      exit => exit.transition().duration(220).attr("stroke-opacity", 0).remove()
     );
 
   lviz = lyr.selectAll("line.lv").data(viewLinks, linkKey)
     .join(
-      enter => enter.append("line")
-        .attr("class", d => `lv ${d.type||""}`)
-        .attr("stroke", d => d.type==="direct" ? "#4a5568"
-                          : d.type==="composition" ? "#3c4858"
-                          : d.type==="succession"  ? "#7c3aed"
-                          : "#2d3748")
-        .attr("stroke-width",   d => d.type==="direct" ? 1.8 : 1)
-        .attr("stroke-opacity", d => d.type==="direct" ? 0.75 : 0.45)
-        .attr("stroke-dasharray", d => d.type==="adjacent" || d.type==="succession" ? "5 4" : null)
-        .style("pointer-events","none"),
+      enter => {
+        const sel = enter.append("line")
+          .attr("class", d => `lv ${d.type||""}`)
+          .attr("stroke", d => d.type==="direct" ? "#4a5568"
+                            : d.type==="composition" ? "#3c4858"
+                            : d.type==="succession"  ? "#7c3aed"
+                            : "#2d3748")
+          .attr("stroke-width",   d => d.type==="direct" ? 1.8 : 1)
+          .attr("stroke-opacity", 0)
+          .attr("stroke-dasharray", d => d.type==="adjacent" || d.type==="succession" ? "5 4" : null)
+          .style("pointer-events","none");
+        sel.transition().duration(280)
+          .attr("stroke-opacity", d => d.type==="direct" ? 0.75 : 0.45);
+        return sel;
+      },
       update => update.attr("class", d => `lv ${d.type||""}`),
-      exit => exit.remove()
+      exit => exit.transition().duration(220).attr("stroke-opacity", 0).remove()
     );
 
   ndEl = ndG.selectAll("g.nd").data(viewNodes, d => d.id)
@@ -2691,10 +2701,12 @@ function rebindGraph(opts){
           .on("mouseover",(ev,d)=>{ if(d!==selected) showNodeTip(ev,d); })
           .on("mousemove", moveTip).on("mouseout", hideTip);
         buildNodeGroup(g);
+        // Fade-in for new nodes.
+        g.style("opacity", 0).transition().duration(320).style("opacity", 1);
         return g;
       },
       update => update,
-      exit => exit.remove()
+      exit => exit.transition().duration(240).style("opacity", 0).remove()
     );
 
   // Refresh dynamic attributes on update — needed when a node's role
@@ -3113,6 +3125,17 @@ function showDetailPanel(d) {
       <a class="la" href="${d.docsUrl}" target="_blank" rel="noopener">Documentation <span>docs ↗</span></a>
     </div></div>`;
 
+  // "Explore N products" button — drills the user into Composition mode
+  // so they can visualize every product in this family + successor chains.
+  if (famProds.length > 0){
+    const expBtn = document.createElement("button");
+    expBtn.className = "explore-btn";
+    expBtn.innerHTML = `Explore ${famProds.length} product${famProds.length===1?"":"s"} in this family →`;
+    expBtn.title = "Open the Composition view to see every product and its succession path";
+    expBtn.addEventListener("click", () => { applyViewLevel("composition", { focusFamily: d.id }); });
+    document.getElementById("pbody").appendChild(expBtn);
+  }
+
   const addBtn = document.createElement("button");
   addBtn.className = "add-stack-btn" + (inStk?" added":"");
   addBtn.textContent = inStk ? "✓ In Account Stack" : "+ Add Family to Account Stack";
@@ -3286,7 +3309,17 @@ searchEl.addEventListener("input",()=>{
         `${CATS[p.category].label} · ${(nodeById[p.family]||{}).name||""}`,
         catColor(p.category),
         p.status!=="current" ? p.status : null,
-        () => window.showProductDetail(p.id)
+        () => {
+          // Auto-promote to Composition for this product's family so the
+          // graph reflects what the user just searched for.
+          if (viewMode !== "composition" || viewFocus !== p.family){
+            applyViewLevel("composition", { focusFamily: p.family });
+            // Give the rebind/transition a moment, then open the panel.
+            setTimeout(() => window.showProductDetail(p.id), 380);
+          } else {
+            window.showProductDetail(p.id);
+          }
+        }
       ));
     });
   }
