@@ -4027,7 +4027,7 @@ document.addEventListener("keydown",ev=>{
         try {
           window.__cpnV2?.phases?.addToCompare?.("ise", "node");
           window.__cpnV2?.phases?.addToCompare?.("duo", "node");
-          document.getElementById("cmp-panel")?.classList.add("show");
+          document.getElementById("cmp-panel")?.classList.add("open");
         } catch(e){}
       }
     },
@@ -4099,7 +4099,7 @@ document.addEventListener("keydown",ev=>{
       before: () => {
         // Tidy up demo state from earlier steps so the user starts with a clean slate
         try {
-          document.getElementById("cmp-panel")?.classList.remove("show");
+          document.getElementById("cmp-panel")?.classList.remove("open");
           window.__cpnV2?.phases?.closeCompare?.();
           window.closePanel && window.closePanel();
         } catch(e){}
@@ -4126,7 +4126,7 @@ document.addEventListener("keydown",ev=>{
     try {
       document.getElementById("plans-menu")?.classList.remove("show");
       document.getElementById("exp-menu")?.classList.remove("show");
-      document.getElementById("cmp-panel")?.classList.remove("show");
+      document.getElementById("cmp-panel")?.classList.remove("open");
       window.__cpnV2?.phases?.closeCompare?.();
       window.closePanel && window.closePanel();
     } catch(e){}
@@ -6057,13 +6057,23 @@ function insertPinAndCompareBtns(id, kind){
   div.className = "p-extra";
   div.style.cssText = "display:flex;gap:6px;margin-top:8px";
   const pinned = lsGet(STORAGE_KEYS.pinned, []).includes(id);
+  // Use class-based selectors and scope queries to `div` itself so we always
+  // wire listeners to THIS instance of the buttons. Earlier versions used
+  // global #pe-pin / #pe-cmp lookups, which could attach to a stale element
+  // with the same id if the panel was re-rendered before our setTimeout-0
+  // enhancer fired (causing a silent compare-button no-op).
   div.innerHTML = `
-    <button class="rc-btn" id="pe-pin">${pinned?"★ Pinned":"☆ Pin"}</button>
-    <button class="rc-btn" id="pe-cmp">⇆ Add to Compare</button>
+    <button class="rc-btn pe-pin">${pinned?"★ Pinned":"☆ Pin"}</button>
+    <button class="rc-btn pe-cmp">⇆ Add to Compare</button>
   `;
   pb.appendChild(div);
-  $("#pe-pin").addEventListener("click", () => { togglePin(id); $("#pe-pin").textContent = lsGet(STORAGE_KEYS.pinned, []).includes(id) ? "★ Pinned" : "☆ Pin"; });
-  $("#pe-cmp").addEventListener("click", () => addToCompare(id, kind));
+  const pinBtn = div.querySelector(".pe-pin");
+  const cmpBtn = div.querySelector(".pe-cmp");
+  pinBtn.addEventListener("click", () => {
+    togglePin(id);
+    pinBtn.textContent = lsGet(STORAGE_KEYS.pinned, []).includes(id) ? "★ Pinned" : "☆ Pin";
+  });
+  cmpBtn.addEventListener("click", () => addToCompare(id, kind));
 }
 
 /* ════════════════════════════════════════════════════════════════════════
