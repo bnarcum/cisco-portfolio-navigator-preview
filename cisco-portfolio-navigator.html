@@ -682,6 +682,12 @@ const NODES = [
    industries:["Financial Services","Healthcare","Government","Manufacturing"],
    url:"https://www.cisco.com/site/us/en/products/security/cisco-hypershield/index.html",
    docsUrl:"https://blogs.cisco.com/security/cisco-hypershield"},
+  {id:"ai-defense",        name:"Cisco AI Defense",             category:"security",
+   desc:"Purpose-built security for AI models, applications, and agentic workflows. AI Cloud Visibility (auto-discovers models, agents, MCP servers), AI Validation (algorithmic red teaming), and AI Runtime Protection (guardrails against prompt injection, DoS, data leakage, memory poisoning, tool misuse). Network-layer enforcement — no agents or libraries required. NeMo Guardrails integration.",
+   useCases:["AI Networking","Zero Trust Security","Threat Detection & Response","Cloud Migration"],
+   industries:["Financial Services","Healthcare","Government","Manufacturing","Service Provider"],
+   url:"https://www.cisco.com/site/us/en/products/security/ai-defense/index.html",
+   docsUrl:"https://www.cisco.com/c/en/us/products/collateral/security/ai-defense/ai-defense-ds.html"},
   {id:"secure-access",     name:"Cisco Secure Access",          category:"security",
    desc:"SSE/SASE platform: ZTNA, SWG, CASB, DLP, and cloud-delivered firewall replacing traditional VPN and on-prem web proxies.",
    useCases:["SD-WAN / SASE","Zero Trust Security","Hybrid Work","Cloud Migration"],
@@ -956,6 +962,11 @@ const LINKS = [
   {source:"secure-client",    target:"ise",               type:"direct",   label:"Posture / NAC"},
   {source:"secure-client",    target:"secure-endpoint",   type:"adjacent", label:"AMP enabler"},
   {source:"secure-workload",  target:"hypershield",       type:"adjacent", label:"Workload segmentation"},
+  {source:"ai-defense",       target:"hypershield",       type:"adjacent", label:"AI runtime + distributed enforcement"},
+  {source:"ai-defense",       target:"secure-access",     type:"direct",   label:"AI-aware SASE"},
+  {source:"ai-defense",       target:"xdr",               type:"direct",   label:"AI threat telemetry"},
+  {source:"ai-defense",       target:"talos",             type:"direct",   label:"AI threat intelligence"},
+  {source:"ai-defense",       target:"ucs",               type:"adjacent", label:"Secure AI Factory"},
   {source:"secure-workload",  target:"aci",               type:"direct",   label:"DC policy plane"},
   {source:"secure-workload",  target:"xdr",               type:"direct",   label:"Telemetry to XDR"},
   {source:"secure-workload",  target:"intersight",        type:"adjacent", label:"Workload context"},
@@ -1463,6 +1474,32 @@ const PRODUCTS = [
   {id:"ftd-9300",       name:"Cisco Secure Firewall 9300",   family:"sf-enterprise",  status:"current",
    desc:"Modular data center firewall chassis supporting up to 3 security modules with 2.4Tbps total throughput and multi-instance.",
    url:"https://www.cisco.com/c/en/us/products/security/firewalls/index.html"},
+  {id:"ftd-210",        name:"Cisco Secure Firewall 210",    family:"sf-branch",      status:"current",
+   desc:"Compact AI-era branch NGFW announced at Cisco Live 2025 — Snort 3 IPS, integrated VPN, post-quantum-ready crypto, and AI-aware policy. Successor target for older 1010/1120.",
+   url:"https://www.cisco.com/c/en/us/products/security/firewalls/index.html"},
+  {id:"ftd-220",        name:"Cisco Secure Firewall 220",    family:"sf-branch",      status:"current",
+   desc:"Mid-tier branch NGFW with higher throughput and integrated SASE peering to Cisco Secure Access. Announced at Cisco Live 2025.",
+   url:"https://www.cisco.com/c/en/us/products/security/firewalls/index.html"},
+  {id:"ftd-6100",       name:"Cisco Secure Firewall 6100",   family:"sf-enterprise",  status:"current",
+   desc:"AI-data-center-class NGFW announced at Cisco Live 2025 — designed to inspect AI/ML training and inference traffic at hyperscale with hardware-accelerated decryption and post-quantum-ready key exchange.",
+   url:"https://www.cisco.com/c/en/us/products/security/firewalls/index.html"},
+
+  // ── AI DEFENSE PRODUCTS
+  {id:"aid-cloud-vis",  name:"AI Cloud Visibility",          family:"ai-defense",     status:"current",
+   desc:"Automatically discovers AI assets — models, agents, MCP servers, and third-party AI apps — across distributed cloud environments. Maps MCP-connected workflows and agent-to-tool interactions to surface unsanctioned AI.",
+   url:"https://www.cisco.com/site/us/en/products/security/ai-defense/index.html"},
+  {id:"aid-validation", name:"AI Validation (Red Teaming)",  family:"ai-defense",     status:"current",
+   desc:"Algorithmic single- and multi-turn red teaming for AI models and agents in multiple languages. Built on NIST/OWASP/MITRE AI frameworks — results in minutes, not weeks.",
+   url:"https://www.cisco.com/site/us/en/products/security/ai-defense/index.html"},
+  {id:"aid-runtime",    name:"AI Runtime Protection",        family:"ai-defense",     status:"current",
+   desc:"Real-time guardrails against prompt injection, prompt extraction, DoS, command execution, PII/data leakage, and hallucinations. Inspects MCP traffic and agent tool calls to block memory poisoning, privilege escalation, and unsafe action chains. Network-layer enforcement.",
+   url:"https://www.cisco.com/site/ca/en/products/security/ai-defense/ai-runtime/index.html"},
+  {id:"aid-bom",        name:"AI BOM + MCP Catalog",         family:"ai-defense",     status:"current",
+   desc:"Centralized AI Bill of Materials and MCP server registry — inventory, supply-chain risk scoring, and governance for AI software assets across public and private platforms. 2026 agentic-era expansion.",
+   url:"https://www.cisco.com/site/us/en/products/security/ai-defense/index.html"},
+  {id:"aid-explorer",   name:"AI Defense Explorer Edition",  family:"ai-defense",     status:"current",
+   desc:"Self-service red-team tier for AI builders — point at your model or application and get an in-depth security report in minutes, ready for security review. Entry-tier of the AI Defense subscription family.",
+   url:"https://www.cisco.com/site/us/en/products/security/ai-defense/index.html"},
 
   // ── FIREWALLS (EOL - ASA)
   {id:"asa-5505",       name:"Cisco ASA 5505",               family:"sf-branch",      status:"eol",
@@ -2573,6 +2610,7 @@ function iconKey(n) {
   // Security
   if (/^sf-/.test(id))                                           return "shield";
   if (id === "hypershield")                                      return "shield-bolt";
+  if (id === "ai-defense")                                       return "shield-bolt";
   if (/^(duo|secure-access|umbrella)$/.test(id))                 return "lock";
   if (id === "ise")                                              return "key";
   if (id === "secure-email")                                     return "email";
@@ -4501,6 +4539,7 @@ const TIERS = {
   "sf-branch":         {tier:"Threat Defense / Threat + Malware / Threat+URL", model:"Subscription",      note:"Recommend Threat+Malware+URL for full UTM."},
   "sf-enterprise":     {tier:"Threat Defense / Threat + Malware / Threat+URL", model:"Subscription",      note:"FMC or Cisco Defense Orchestrator required for centralized mgmt."},
   "hypershield":       {tier:"Hypershield Subscription",              model:"Subscription",                note:"Hardware/Smart Switch dataplane required; sized by enforced segments."},
+  "ai-defense":        {tier:"AI Defense Essentials / Premier / Explorer Edition", model:"Subscription",   note:"Explorer Edition is the self-service red-team tier for builders. Premier adds agentic guardrails, MCP catalog, AI BOM, and NeMo Guardrails integration."},
   "secure-access":     {tier:"Essentials / Advantage",                model:"Subscription",                note:"Advantage adds private app discovery, RBI, and CASB inline."},
   "duo":               {tier:"Essentials / Advantage / Premier",      model:"Per-user subscription",       note:"Advantage adds Trusted Endpoints + Risk-Based Auth; Premier adds VPN-less."},
   "umbrella":          {tier:"DNS Essentials / DNS Advantage / SIG Essentials / SIG Advantage", model:"Subscription", note:"SIG tiers include SWG, CASB, FWaaS."},
