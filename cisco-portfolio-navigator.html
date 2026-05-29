@@ -66,6 +66,31 @@
     #planner-btn:hover{opacity:.85}
     #planner-btn.active{background:var(--surface2);color:var(--accent);border:1px solid var(--accent)}
 
+    /* VIEW-MODE SEGMENTED CONTROL */
+    .vm-seg{display:inline-flex;background:var(--surface2);border:1px solid var(--border);
+      border-radius:7px;padding:2px;gap:2px;flex-shrink:0}
+    .vm-seg button{background:transparent;border:none;color:var(--muted);
+      font-size:11px;font-weight:600;padding:5px 10px;border-radius:5px;
+      cursor:pointer;transition:all .12s;font-family:inherit}
+    .vm-seg button:hover:not(:disabled):not(.active){background:rgba(255,255,255,.04);color:var(--text)}
+    .vm-seg button.active{background:var(--accent);color:#000}
+    .vm-seg button:disabled{opacity:.4;cursor:not-allowed}
+
+    /* BREADCRUMB CHIP under topbar */
+    #vm-crumb{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:90;
+      display:none;align-items:center;gap:8px;
+      background:var(--surface);border:1px solid var(--border);border-radius:18px;
+      padding:5px 6px 5px 12px;font-size:11px;color:var(--muted);
+      box-shadow:0 4px 14px rgba(0,0,0,.35)}
+    #vm-crumb.show{display:flex}
+    #vm-crumb .vm-cb-step{padding:0 6px;color:var(--text);font-weight:600;cursor:pointer}
+    #vm-crumb .vm-cb-step:hover{color:var(--accent)}
+    #vm-crumb .vm-cb-sep{color:var(--subtle)}
+    #vm-crumb .vm-cb-current{padding:0 6px;color:var(--accent);font-weight:700}
+    #vm-crumb .vm-cb-x{background:transparent;border:none;color:var(--subtle);font-size:14px;
+      cursor:pointer;padding:0 6px;line-height:1;border-radius:50%}
+    #vm-crumb .vm-cb-x:hover{color:var(--text)}
+
     /* GRAPH */
     #gw{position:fixed;top:58px;left:0;right:0;bottom:0}
     #gs{width:100%;height:100%;display:block}
@@ -435,6 +460,12 @@
     <div id="sr"></div>
   </div>
   <div class="dv"></div>
+  <div class="vm-seg" id="vm-seg" role="group" aria-label="Visualization level">
+    <button type="button" data-vm="overview"    title="Overview — 5 category bubbles">Overview</button>
+    <button type="button" data-vm="families"    class="active" title="Families — 52 product families (default)">Families</button>
+    <button type="button" data-vm="composition" disabled title="Composition — pick a family first">Composition</button>
+  </div>
+  <div class="dv"></div>
   <div class="fr" id="cpills"></div>
   <div class="dv"></div>
   <select class="tbs" id="ucs"><option value="">All Use Cases</option></select>
@@ -452,6 +483,7 @@
 </div>
 
 <div id="gw"><svg id="gs"></svg></div>
+<div id="vm-crumb" aria-live="polite"></div>
 <div id="tip"><div id="tn"></div><div id="tc"></div></div>
 
 <div id="panel">
@@ -2456,10 +2488,19 @@ const ICON_DEFS = `
   <circle cx="12" cy="15" r="1.4" fill="rgba(0,0,0,0.5)"/>
   <path d="M8 10l4 5M16 10l-4 5M8 10h8" stroke="rgba(0,0,0,0.5)" stroke-width="1.1" fill="none"/>
 </symbol>
+<symbol id="icon-product" viewBox="0 0 24 24" fill="currentColor">
+  <rect x="4" y="5" width="16" height="14" rx="1.6"/>
+  <rect x="7" y="8" width="10" height="2" rx="0.5" fill="rgba(0,0,0,0.45)"/>
+  <rect x="7" y="11.5" width="6"  height="1.5" rx="0.4" fill="rgba(0,0,0,0.45)"/>
+  <rect x="7" y="14"  width="8"  height="1.5" rx="0.4" fill="rgba(0,0,0,0.45)"/>
+</symbol>
 `;
 defs.node().insertAdjacentHTML("beforeend", ICON_DEFS);
 
 function iconKey(n) {
+  // Synthetic node overrides used in Overview / Composition view modes.
+  if (n._iconKey) return n._iconKey;
+  if (n._kind === "product") return "product";
   const id = n.id;
   // Networking
   if (/^(catalyst-access|catalyst-core|meraki-switches|nexus|nexus-one)$/.test(id)) return "switch";
@@ -2527,59 +2568,154 @@ const sim = d3.forceSimulation(NODES)
   .alphaDecay(0.018);
 
 const lyr = root.append("g");
-const lhit = lyr.selectAll("line.lh").data(LINKS).join("line")
-  .attr("class","lh").attr("stroke","transparent").attr("stroke-width",12)
-  .on("mouseover", (ev,l) => {
-    document.getElementById("tn").textContent = l.label;
-    document.getElementById("tc").textContent = `${nodeById[sid(l)]?.name||sid(l)} → ${nodeById[tid(l)]?.name||tid(l)}`;
-    document.getElementById("tip").style.display = "block"; moveTip(ev);
-  }).on("mousemove", moveTip).on("mouseout", hideTip);
-
-const lviz = lyr.selectAll("line.lv").data(LINKS).join("line")
-  .attr("class", d => `lv ${d.type}`)
-  .attr("stroke", d => d.type==="direct" ? "#4a5568" : "#2d3748")
-  .attr("stroke-width", d => d.type==="direct" ? 1.8 : 1)
-  .attr("stroke-opacity", d => d.type==="direct" ? 0.75 : 0.45)
-  .attr("stroke-dasharray", d => d.type==="adjacent" ? "5 4" : null)
-  .style("pointer-events","none");
-
 const ndG = root.append("g");
-const ndEl = ndG.selectAll("g.nd").data(NODES).join("g").attr("class","nd")
-  .call(d3.drag()
-    .on("start",(ev,d)=>{ if(!ev.active) sim.alphaTarget(0.25).restart(); d.fx=d.x; d.fy=d.y; })
-    .on("drag",(ev,d)=>{ d.fx=ev.x; d.fy=ev.y; })
-    .on("end",(ev,d)=>{ if(!ev.active) sim.alphaTarget(0); d.fx=d.fy=null; }))
-  .on("click",(ev,d)=>{ ev.stopPropagation(); selectNode(d); })
-  .on("mouseover",(ev,d)=>{ if(d!==selected) showNodeTip(ev,d); })
-  .on("mousemove", moveTip).on("mouseout", hideTip);
 
-ndEl.append("circle").attr("class","gr")
-  .attr("r",d=>d._r+9).attr("fill",d=>catColor(d.category))
-  .attr("fill-opacity",0).attr("filter","url(#glow)");
-ndEl.append("circle").attr("class","mc")
-  .attr("r",d=>d._r).attr("fill",d=>catColor(d.category))
-  .attr("fill-opacity",0.88).attr("stroke","transparent").attr("stroke-width",2.5);
-// White icon overlay — symbol library is defined in <defs>. Icon size is ~75% of
-// the node diameter so it reads clearly without crowding the circle edge.
-ndEl.append("use").attr("class","icn")
-  .attr("href",   d => "#icon-" + iconKey(d))
-  .attr("width",  d => d._r * 1.5)
-  .attr("height", d => d._r * 1.5)
-  .attr("x",      d => -d._r * 0.75)
-  .attr("y",      d => -d._r * 0.75)
-  .attr("fill",   "#ffffff")
-  .style("color", "#ffffff")
-  .style("pointer-events", "none");
-ndEl.append("text").attr("class","nl")
-  .attr("y",d=>d._r+14).text(d=>d.name)
-  .style("font-size","10px").style("fill","#6e7681")
-  .style("text-anchor","middle").style("pointer-events","none");
+// ── Selections (let — rebound on view-mode changes)
+let lhit, lviz, ndEl;
+
+// ── Stable link key so D3 join() can match identical edges across rebinds.
+//    (Inlined source/target id extraction so this works before `sid`/`tid` are defined.)
+function linkKey(l){
+  const s = typeof l.source==="object" ? l.source.id : l.source;
+  const t = typeof l.target==="object" ? l.target.id : l.target;
+  return s+"→"+t+"·"+(l.type||"");
+}
+
+// ── Build the inner elements of a node group (called for enter selection).
+function buildNodeGroup(sel){
+  sel.append("circle").attr("class","gr")
+    .attr("r", d => d._r + 9).attr("fill", d => catColor(d.category))
+    .attr("fill-opacity", 0).attr("filter","url(#glow)");
+  sel.append("circle").attr("class","mc")
+    .attr("r", d => d._r).attr("fill", d => catColor(d.category))
+    .attr("fill-opacity", 0.88).attr("stroke","transparent").attr("stroke-width", 2.5);
+  // White icon overlay — symbol library is defined in <defs>. Icon size is ~75% of
+  // the node diameter so it reads clearly without crowding the circle edge.
+  sel.append("use").attr("class","icn")
+    .attr("href",   d => "#icon-" + iconKey(d))
+    .attr("width",  d => d._r * 1.5)
+    .attr("height", d => d._r * 1.5)
+    .attr("x",      d => -d._r * 0.75)
+    .attr("y",      d => -d._r * 0.75)
+    .attr("fill",   "#ffffff")
+    .style("color", "#ffffff")
+    .style("pointer-events", "none");
+  sel.append("text").attr("class","nl")
+    .attr("y", d => d._r + 14).text(d => d.name)
+    .style("font-size","10px").style("fill","#6e7681")
+    .style("text-anchor","middle").style("pointer-events","none");
+  // Optional count badge (used by Overview + Families "+N products" overlay).
+  // We always render the group but make it transparent when _badge is absent.
+  const bg = sel.append("g").attr("class","badge")
+    .style("pointer-events","none")
+    .style("display", d => (d._badge ? null : "none"));
+  bg.append("circle")
+    .attr("cx", d => d._r * 0.78).attr("cy", d => -d._r * 0.78)
+    .attr("r", 9).attr("fill","#0d1117").attr("stroke","#fff").attr("stroke-width", 1.2);
+  bg.append("text")
+    .attr("x", d => d._r * 0.78).attr("y", d => -d._r * 0.78 + 3)
+    .attr("text-anchor","middle").style("font-size","9px")
+    .style("font-weight","700").style("fill","#fff")
+    .text(d => d._badge || "");
+}
+
+// ── Rebind selections to current viewNodes / viewLinks and restart simulation.
+//    Called by applyViewLevel() and any other code that mutates the view set.
+function rebindGraph(opts){
+  const restart = !opts || opts.restart !== false;
+
+  lhit = lyr.selectAll("line.lh").data(viewLinks, linkKey)
+    .join(
+      enter => enter.append("line").attr("class","lh")
+        .attr("stroke","transparent").attr("stroke-width", 12)
+        .on("mouseover", (ev,l) => {
+          document.getElementById("tn").textContent = l.label || "";
+          const sn = nodeById[sid(l)] || prodById[sid(l)] || {name: sid(l)};
+          const tn = nodeById[tid(l)] || prodById[tid(l)] || {name: tid(l)};
+          document.getElementById("tc").textContent = `${sn.name} → ${tn.name}`;
+          document.getElementById("tip").style.display = "block"; moveTip(ev);
+        }).on("mousemove", moveTip).on("mouseout", hideTip),
+      update => update,
+      exit => exit.remove()
+    );
+
+  lviz = lyr.selectAll("line.lv").data(viewLinks, linkKey)
+    .join(
+      enter => enter.append("line")
+        .attr("class", d => `lv ${d.type||""}`)
+        .attr("stroke", d => d.type==="direct" ? "#4a5568"
+                          : d.type==="composition" ? "#3c4858"
+                          : d.type==="succession"  ? "#7c3aed"
+                          : "#2d3748")
+        .attr("stroke-width",   d => d.type==="direct" ? 1.8 : 1)
+        .attr("stroke-opacity", d => d.type==="direct" ? 0.75 : 0.45)
+        .attr("stroke-dasharray", d => d.type==="adjacent" || d.type==="succession" ? "5 4" : null)
+        .style("pointer-events","none"),
+      update => update.attr("class", d => `lv ${d.type||""}`),
+      exit => exit.remove()
+    );
+
+  ndEl = ndG.selectAll("g.nd").data(viewNodes, d => d.id)
+    .join(
+      enter => {
+        const g = enter.append("g").attr("class","nd")
+          .call(d3.drag()
+            .on("start",(ev,d)=>{ if(!ev.active) sim.alphaTarget(0.25).restart(); d.fx=d.x; d.fy=d.y; })
+            .on("drag",(ev,d)=>{ d.fx=ev.x; d.fy=ev.y; })
+            .on("end",(ev,d)=>{
+              if(!ev.active) sim.alphaTarget(0);
+              // In Composition mode keep the central family pinned at origin.
+              if (d._pinned) { d.fx = 0; d.fy = 0; }
+              else            { d.fx = d.fy = null; }
+            }))
+          .on("click",(ev,d)=>{
+            ev.stopPropagation();
+            if (d._kind === "category"){
+              applyViewLevel("families", { focusCategory: d.category });
+            } else if (d._kind === "product"){
+              window.showProductDetail(d.id);
+            } else {
+              selectNode(d);
+            }
+          })
+          .on("dblclick",(ev,d)=>{
+            ev.stopPropagation();
+            // Double-click family or category bubble to drill into composition.
+            if (d._kind === "category") return;       // already handled by single click
+            if (d._kind === "product")  return;        // products open detail panel only
+            // Family node — drill in.
+            if (PRODUCTS.some(p => p.family === d.id)){
+              applyViewLevel("composition", { focusFamily: d.id });
+            }
+          })
+          .on("mouseover",(ev,d)=>{ if(d!==selected) showNodeTip(ev,d); })
+          .on("mousemove", moveTip).on("mouseout", hideTip);
+        buildNodeGroup(g);
+        return g;
+      },
+      update => update,
+      exit => exit.remove()
+    );
+
+  // Refresh dynamic attributes on update — needed when a node's role
+  // changes between modes (e.g. family in Families vs Composition).
+  ndEl.select("use.icn").attr("href", d => "#icon-" + iconKey(d));
+  ndEl.select("text.nl").text(d => d.name);
+  ndEl.select(".badge").style("display", d => (d._badge ? null : "none"));
+  ndEl.select(".badge text").text(d => d._badge || "");
+
+  sim.nodes(viewNodes);
+  sim.force("link").links(viewLinks);
+  if (restart) sim.alpha(0.85).restart();
+}
 
 svg.on("click",() => { selected=null; resetHL(); closePanel(); });
 sim.on("tick",() => {
-  [lviz,lhit].forEach(s=>s.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y)
-    .attr("x2",d=>d.target.x).attr("y2",d=>d.target.y));
-  ndEl.attr("transform",d=>`translate(${d.x},${d.y})`);
+  if (lviz) lviz.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y)
+    .attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+  if (lhit) lhit.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y)
+    .attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+  if (ndEl) ndEl.attr("transform",d=>`translate(${d.x},${d.y})`);
 });
 sim.on("end",() => {
   const {w,h}=getDims();
@@ -2592,10 +2728,292 @@ svg.call(zoom.transform, d3.zoomIdentity.translate(iw/2,ih/2).scale(0.78));
 const sid = l => (typeof l.source==="object" ? l.source.id : l.source);
 const tid = l => (typeof l.target==="object" ? l.target.id : l.target);
 
+// ═══════════════════════════════════════════════════════════════
+// VIEW LEVELS — Overview / Families / Composition
+// ═══════════════════════════════════════════════════════════════
+// Persistence keys for the user's preferred view mode and last focused family.
+const VIEW_MODE_KEY  = "cpn-view-mode-v2";
+const VIEW_FOCUS_KEY = "cpn-view-focus-v2";
+
+let viewMode  = "families";   // "overview" | "families" | "composition"
+let viewFocus = null;         // family id when in composition mode
+let viewNodes = NODES.slice();
+let viewLinks = LINKS.slice();
+
+// ── Synthesize Overview-mode nodes/links: one bubble per category.
+function buildOverviewView(){
+  const cats = Object.keys(CATS);
+  const nodes = cats.map(cat => {
+    const familiesInCat   = NODES.filter(n => n.category === cat);
+    const productsInCat   = PRODUCTS.filter(p => p.category === cat);
+    return {
+      id: "cat-" + cat,
+      name: CATS[cat].label,
+      category: cat,
+      _kind: "category",
+      _r: 52,
+      _badge: String(familiesInCat.length),
+      _familyCount: familiesInCat.length,
+      _productCount: productsInCat.length
+    };
+  });
+  // Aggregate inter-category link counts so we can draw connections between bubbles.
+  const pair = new Map();
+  LINKS.forEach(l => {
+    const sc = nodeById[sid(l)]?.category, tc = nodeById[tid(l)]?.category;
+    if (!sc || !tc || sc === tc) return;
+    const key = [sc,tc].sort().join("|");
+    pair.set(key, (pair.get(key)||0) + 1);
+  });
+  const links = [];
+  pair.forEach((count,key) => {
+    const [a,b] = key.split("|");
+    if (count < 2) return;   // hide noise — only show strong cross-category bonds
+    links.push({ source:"cat-"+a, target:"cat-"+b, type:"adjacent", label:`${count} connections` });
+  });
+  return { nodes, links };
+}
+
+// ── Synthesize Composition-mode nodes/links for one family.
+function buildCompositionView(familyId){
+  const fam = nodeById[familyId];
+  if (!fam) return { nodes:[], links:[] };
+  const products = PRODUCTS.filter(p => p.family === familyId);
+  const center = Object.assign({}, fam, {
+    _kind: "family",
+    _r: 38,
+    _pinned: true,
+    fx: 0, fy: 0,
+    _badge: String(products.length)
+  });
+  const productNodes = products.map(p => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    _kind: "product",
+    _r: p.status === "current" ? 14 : 12,
+    _productRef: p,
+    _family: p.family,
+    _iconKey: "product"
+  }));
+  const links = products.map(p => ({
+    source: familyId, target: p.id, type: "composition", label: "contains"
+  }));
+  // Succession edges between products of the same family.
+  products.forEach(p => {
+    if (p.successor && products.some(q => q.id === p.successor)){
+      links.push({ source: p.id, target: p.successor, type: "succession", label: "replaced by" });
+    }
+  });
+  return { nodes: [center, ...productNodes], links };
+}
+
+// ── Switch the current view level. Public-facing API.
+// mode:   "overview" | "families" | "composition"
+// opts:   { focusFamily, focusCategory, initial }
+function applyViewLevel(mode, opts){
+  opts = opts || {};
+  const prev = viewMode;
+
+  if (mode === "composition"){
+    const family = opts.focusFamily || viewFocus;
+    if (!family || !nodeById[family] || PRODUCTS.filter(p => p.family === family).length === 0){
+      // No valid focus — fall back to families.
+      mode = "families";
+    } else {
+      viewFocus = family;
+    }
+  }
+  if (mode !== "composition") viewFocus = null;
+  viewMode = mode;
+
+  // Build the data set for the new mode.
+  if (mode === "overview"){
+    const v = buildOverviewView();
+    viewNodes = v.nodes; viewLinks = v.links;
+  } else if (mode === "composition"){
+    const v = buildCompositionView(viewFocus);
+    viewNodes = v.nodes; viewLinks = v.links;
+  } else {
+    // Families mode = the full graph; optionally focus a category by activating it.
+    viewNodes = NODES.slice(); viewLinks = LINKS.slice();
+    // Annotate each family with the count of its specific products so the
+    // node renders a "+N" badge in this mode.
+    const counts = {};
+    PRODUCTS.forEach(p => { counts[p.family] = (counts[p.family]||0) + 1; });
+    viewNodes.forEach(n => { n._badge = counts[n.id] && counts[n.id] > 1 ? "+"+counts[n.id] : null; });
+    if (opts.focusCategory){
+      activeCats = new Set([opts.focusCategory]);
+      document.querySelectorAll(".cp").forEach(b => {
+        b.classList.toggle("off", b.dataset.cat !== opts.focusCategory);
+      });
+    }
+  }
+
+  // Clear any per-node force fixes that would survive across rebinds.
+  // (Pinned center in Composition is reapplied via _pinned + fx/fy on the node itself.)
+  NODES.forEach(n => { if (n._pinned !== true){ n.fx = null; n.fy = null; } });
+
+  rebindGraph();
+  configureForcesForMode(mode);
+
+  // Reset highlight / clear selection on a mode change.
+  selected = null; resetHL();
+
+  // Update UI surfaces.
+  updateViewModeUI();
+  updateBreadcrumb();
+
+  // Run the appropriate post-mode filter pass.
+  if (mode === "families") applyFilters();
+  else {
+    // Hide filter badge in other modes.
+    const badge=document.getElementById("fbadge"); if (badge) badge.style.display="none";
+    // Ensure everything is visible (no display:none leftovers).
+    if (ndEl) ndEl.style("display", null);
+    if (lviz) lviz.style("display", null);
+    if (lhit) lhit.style("display", null);
+  }
+
+  // Persist user preference (skip on the initial boot load so we don't clobber).
+  if (!opts.initial){
+    try{ localStorage.setItem(VIEW_MODE_KEY,  viewMode); }catch(e){}
+    try{ localStorage.setItem(VIEW_FOCUS_KEY, viewFocus || ""); }catch(e){}
+  }
+
+  // Recenter view after mode change so the user always sees the new content.
+  setTimeout(() => {
+    const {w,h} = getDims();
+    const scale = mode === "overview" ? 0.95 : (mode === "composition" ? 1.05 : 0.78);
+    svg.transition().duration(prev === mode ? 0 : 550)
+      .call(zoom.transform, d3.zoomIdentity.translate(w/2, h/2).scale(scale));
+  }, 50);
+}
+
+// ── Force-tuning per mode so each view feels right.
+function configureForcesForMode(mode){
+  if (mode === "overview"){
+    sim.force("charge",  d3.forceManyBody().strength(-1400));
+    sim.force("collide", d3.forceCollide(d => d._r + 60).strength(0.95));
+    sim.force("link").distance(280).strength(0.15);
+  } else if (mode === "composition"){
+    sim.force("charge",  d3.forceManyBody().strength(-420));
+    sim.force("collide", d3.forceCollide(d => d._r + 18).strength(0.95));
+    sim.force("link").distance(d => d.type === "succession" ? 100 : 130).strength(0.6);
+  } else {
+    sim.force("charge",  d3.forceManyBody().strength(-560));
+    sim.force("collide", d3.forceCollide(d => d._r + 30).strength(0.85));
+    sim.force("link")
+      .distance(d => d.type==="direct" ? 150 : 230)
+      .strength(d => d.type==="direct" ? 0.55 : 0.25);
+  }
+}
+
+// ── Update the segmented control + disable irrelevant filters.
+function updateViewModeUI(){
+  const seg = document.getElementById("vm-seg");
+  if (seg) seg.querySelectorAll("button[data-vm]").forEach(b => {
+    b.classList.toggle("active", b.dataset.vm === viewMode);
+  });
+  // Composition button enabled only when we have a valid focus to drill into.
+  const compBtn = seg && seg.querySelector('button[data-vm="composition"]');
+  if (compBtn){
+    const canComp = !!viewFocus;
+    compBtn.disabled = !canComp && viewMode !== "composition";
+    compBtn.title = canComp || viewMode === "composition"
+      ? `Composition — ${nodeById[viewFocus]?.name || "current focus"}`
+      : "Composition — pick a family first";
+  }
+  // Category pills and filter dropdowns: muted in non-Families modes.
+  const pills = document.getElementById("cpills");
+  const ucs = document.getElementById("ucs");
+  const inds = document.getElementById("inds");
+  const muted = viewMode !== "families";
+  [pills, ucs, inds].forEach(el => {
+    if (!el) return;
+    el.style.opacity = muted ? 0.45 : 1;
+    el.style.pointerEvents = muted ? "none" : "auto";
+  });
+}
+
+// ── Breadcrumb chip rendering (used by Phase-3 polish; built in now so
+//    state stays consistent across mode switches).
+function updateBreadcrumb(){
+  const cb = document.getElementById("vm-crumb"); if (!cb) return;
+  if (viewMode === "families"){
+    cb.classList.remove("show"); cb.innerHTML = ""; return;
+  }
+  if (viewMode === "overview"){
+    cb.classList.remove("show"); cb.innerHTML = ""; return;
+  }
+  // Composition mode breadcrumb: All families › <category> › <family>
+  const fam = nodeById[viewFocus]; if (!fam){ cb.classList.remove("show"); return; }
+  cb.innerHTML = `
+    <span class="vm-cb-step" data-vm-jump="overview">All</span>
+    <span class="vm-cb-sep">›</span>
+    <span class="vm-cb-step" data-vm-jump="families" data-vm-cat="${fam.category}">${CATS[fam.category].label}</span>
+    <span class="vm-cb-sep">›</span>
+    <span class="vm-cb-current">${fam.name}</span>
+    <button class="vm-cb-x" title="Back to families" aria-label="Close composition view">×</button>`;
+  cb.classList.add("show");
+}
+
+// Delegate breadcrumb clicks.
+document.addEventListener("click", ev => {
+  const t = ev.target;
+  if (!t || !t.closest) return;
+  const crumb = t.closest("#vm-crumb"); if (!crumb) return;
+  if (t.matches(".vm-cb-x")){ applyViewLevel("families"); return; }
+  const step = t.closest(".vm-cb-step"); if (!step) return;
+  const jumpTo = step.dataset.vmJump;
+  if (jumpTo === "overview") applyViewLevel("overview");
+  else if (jumpTo === "families"){
+    const cat = step.dataset.vmCat;
+    applyViewLevel("families", cat ? { focusCategory: cat } : {});
+  }
+});
+
+// Wire up the segmented control buttons.
+document.querySelectorAll("#vm-seg button[data-vm]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (btn.disabled) return;
+    const mode = btn.dataset.vm;
+    applyViewLevel(mode);
+  });
+});
+
+// Expose for external callers (search auto-promote, planner deep-links, etc.).
+window.applyViewLevel = applyViewLevel;
+window.getViewMode    = () => viewMode;
+window.getViewFocus   = () => viewFocus;
+
+// ── Initial mount: read persisted preferences and render the right view.
+(function bootViewLevel(){
+  let savedMode = null, savedFocus = null;
+  try{
+    savedMode  = localStorage.getItem(VIEW_MODE_KEY);
+    savedFocus = localStorage.getItem(VIEW_FOCUS_KEY) || null;
+  }catch(e){}
+  // Validate persisted state. If a composition focus is missing or stale,
+  // fall back to Families so the user is never stuck on an empty view.
+  if (savedMode === "composition"){
+    if (savedFocus && nodeById[savedFocus] && PRODUCTS.some(p => p.family === savedFocus)){
+      applyViewLevel("composition", { focusFamily: savedFocus, initial: true });
+      return;
+    }
+    savedMode = "families";
+  }
+  if (savedMode === "overview"){
+    applyViewLevel("overview", { initial: true });
+    return;
+  }
+  applyViewLevel("families", { initial: true });
+})();
+
 function selectNode(d) {
   selected=d; hideTip();
   const conn=new Set([d.id]); const cl=new Set();
-  LINKS.forEach((l,i)=>{ const s=sid(l),t=tid(l);
+  viewLinks.forEach((l,i)=>{ const s=sid(l),t=tid(l);
     if(s===d.id||t===d.id){ conn.add(s); conn.add(t); cl.add(i); } });
   ndEl.each(function(nd){
     const isSel=nd.id===d.id, isC=conn.has(nd.id);
@@ -2758,6 +3176,13 @@ window.jumpTo = id => {
   activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd="";
   ucEl.value=""; indEl.value="";
   document.querySelectorAll(".cp").forEach(b=>b.classList.remove("off"));
+  // Auto-promote to Families if we're sitting in Overview/Composition so the
+  // user always lands on the family graph when they pick a family from search.
+  if (viewMode !== "families"){
+    applyViewLevel("families");
+    setTimeout(() => { applyFilters(); selectNode(d); }, 360);
+    return;
+  }
   applyFilters(); setTimeout(()=>selectNode(d),60);
 };
 window.closePanel = closePanel;
@@ -2766,10 +3191,22 @@ window.filterTagInd = ind => { activeInd=ind; indEl.value=ind; applyFilters(); }
 
 // ── Filtering
 function applyFilters() {
+  // Category / use-case / industry filters only apply to the Families view.
+  // In Overview and Composition modes we always show the synthesized node set,
+  // so we short-circuit here. The pills/dropdowns are also visually muted
+  // in updateViewModeUI().
+  if (viewMode !== "families"){
+    const badge = document.getElementById("fbadge"); if (badge) badge.style.display = "none";
+    if (ndEl) ndEl.style("display", null);
+    if (lviz) lviz.style("display", null);
+    if (lhit) lhit.style("display", null);
+    return;
+  }
   const vis=new Set();
   NODES.forEach(n=>{ if(activeCats.has(n.category)&&(!activeUC||n.useCases.includes(activeUC))&&(!activeInd||n.industries.includes(activeInd))) vis.add(n.id); });
-  ndEl.style("display",d=>vis.has(d.id)?null:"none");
-  [lviz,lhit].forEach(s=>s.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none"));
+  if (ndEl) ndEl.style("display",d=>vis.has(d.id)?null:"none");
+  if (lviz) lviz.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
+  if (lhit) lhit.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
   const badge=document.getElementById("fbadge"),f=activeUC||activeInd||activeCats.size<Object.keys(CATS).length;
   if(f){badge.textContent=`Showing ${vis.size} of ${NODES.length} portfolio families`;badge.style.display="block";}
   else badge.style.display="none";
@@ -2779,7 +3216,11 @@ function resetAll() {
   activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd="";
   ucEl.value=""; indEl.value="";
   document.querySelectorAll(".cp").forEach(b=>b.classList.remove("off"));
-  selected=null; resetHL(); closePanel(); applyFilters();
+  selected=null; resetHL(); closePanel();
+  // Reset also returns the user to the Families view so the graph state matches
+  // the cleared filter state.
+  if (viewMode !== "families") applyViewLevel("families");
+  else applyFilters();
   const {w,h}=getDims();
   svg.transition().duration(600).call(zoom.transform,d3.zoomIdentity.translate(w/2,h/2).scale(0.78));
 }
