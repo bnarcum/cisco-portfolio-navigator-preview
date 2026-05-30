@@ -4506,7 +4506,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.3.0";
+const APP_VERSION   = "2.3.1";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4795,6 +4795,16 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.3.1", date:"2026-05-30", items:[
+    "Fix: PowerPoint no longer shows the 'file needed to be repaired' dialog on opening the export. Root cause was a PptxGenJS 3.12.0 bug in its [Content_Types].xml writer that emitted an <Override> entry for slideMaster1.xml … slideMasterN.xml (one per slide), even though only slideMaster1.xml is actually written to the package. The export now post-processes the generated ZIP via the JSZip global already bundled in pptxgen.bundle.min.js and strips the phantom Overrides before the file is saved — no new dependencies.",
+    "Timeline slide: full-bleed footprint (13.03×5.85 in) with a centered legend strip and a sharper html2canvas capture at scale 2. The capture renders the timeline wrapper off-screen via temporary inline styles (no '.show' class toggled, no chrome flicker) so the user's footer / hint / tools panes stay put. Multi-slide pagination kicks in past 12 years of data (2 slices) or 24 years (3 slices).",
+    "Architecture slide: switched from SVG-with-inlined-styles to a direct html2canvas raster of the live #gw container, so glow filters, gradients, and opacity layering survive into the deck.",
+    "Chart polish: doughnut + pie now show percentages alongside counts (showPercent / dataLabelFormatCode '0%'); every chart explicitly fills plotArea + chartArea with the theme background so dark slides never frame a white plot area; axis label / line colors are theme-aware; long category labels are clamped to 28 chars to avoid OOXML overflow.",
+    "Slide content hardening: every addText that pulls user / catalog data is now String(…)-coerced (no undefined writing invalid <a:t>), and card bodies (opportunities, migration, legacy, risk chips, use-case cells) opt into valign:'middle' + wrap:true so text never clips at the bottom edge.",
+    "Bundle gap slides cap the Missing list at 28 visible items (14 per column) with a '+ N more' summary, so bundles with a long tail of gaps don't render off the bottom of the slide.",
+    "Section dividers gain a vertical accent rail and a small SECTION label so they read as intentional milestones rather than empty dark panels.",
+    "Theme color tokens are now canonicalized to bare 6-char uppercase hex inside the export — any stray '#' prefix would have emitted malformed <a:srgbClr val='#XXXXXX'/> which PowerPoint treats as repair-worthy."
+  ]},
   {ver:"2.3.0", date:"2026-05-30", items:[
     "Polished PowerPoint export — replaced the bare 5-slide deck with a client-presentation-quality deliverable (20+ slides for a mid-sized plan).",
     "Slide master + section dividers + slide numbers + presenter-side speaker notes auto-generated on every content slide.",
@@ -6084,7 +6094,16 @@ async function exportPPTX(){
     ciscoBlue: { bg:"00264D", panel:"003B73", panel2:"004F94", text:"FFFFFF", muted:"B8D4EC", subtle:"7FB0DA", accent:"00BCEB", accentDim:"7FDFFF", ok:"7BD389", warn:"FFB347", bad:"FF7B7B", line:"1E5089" }
   };
   const themeName = (lsGet(STORAGE_KEYS.pptxTheme || "pptxTheme", "dark")) || "dark";
-  const T = THEMES[themeName] || THEMES.dark;
+  const Traw = THEMES[themeName] || THEMES.dark;
+  // PptxGenJS requires bare 6-char hex everywhere — any stray "#" prefix
+  // causes the OOXML writer to emit malformed <a:srgbClr val="#XXXXXX"/>
+  // which PowerPoint flags as repair-worthy. Coerce every color token to
+  // a canonical 6-char uppercase hex (fallback to white on anything weird).
+  const cleanHex = v => {
+    const s = String(v || "").replace(/^#/, "").toUpperCase();
+    return /^[0-9A-F]{6}$/.test(s) ? s : "FFFFFF";
+  };
+  const T = Object.fromEntries(Object.entries(Traw).map(([k, v]) => [k, cleanHex(v)]));
 
   // ── Deck setup + document metadata (shows up in SharePoint, Outlook,
   // and Windows Explorer file previews). ────────────────────────────────
@@ -6142,8 +6161,12 @@ async function exportPPTX(){
   const addSlide = (sectionTitle) => pp.addSlide({ masterName:"CISCO_MAIN", sectionTitle });
   const addSectionDivider = (title, subtitle, sectionTitle) => {
     const sl = pp.addSlide({ masterName:"CISCO_SECTION", sectionTitle: sectionTitle || title });
-    sl.addText(title, { x:0.5, y:2.4, w:12.33, h:1.1, fontSize:60, bold:true, color:T.text, align:"center", fontFace:"Calibri" });
-    if (subtitle) sl.addText(subtitle, { x:0.5, y:4.2, w:12.33, h:0.4, fontSize:16, color:T.muted, align:"center" });
+    // Subtle large-scale accent block + small section label tag, so dividers
+    // feel distinctive rather than empty dark panels.
+    sl.addShape(pp.ShapeType.rect, { x:0, y:0, w:0.18, h:7.5, fill:{color:T.accent}, line:{color:T.accent, width:0} });
+    sl.addText("SECTION", { x:0.5, y:1.95, w:12.33, h:0.35, fontSize:11, bold:true, color:T.accent, align:"center", charSpacing:400, wrap:true });
+    sl.addText(title, { x:0.5, y:2.4, w:12.33, h:1.3, fontSize:60, bold:true, color:T.text, align:"center", fontFace:"Calibri", valign:"middle", wrap:true });
+    if (subtitle) sl.addText(subtitle, { x:0.5, y:4.2, w:12.33, h:0.6, fontSize:16, color:T.muted, align:"center", valign:"middle", wrap:true });
     sl.addNotes(`Section: ${title}.${subtitle ? " " + subtitle : ""}`);
     return sl;
   };
@@ -6254,7 +6277,7 @@ async function exportPPTX(){
     sl.addChart(pp.ChartType.doughnut, [{
       name: "Lifecycle status",
       labels: ["Current", "EOS", "EOL"],
-      values: [currentCount, eosCount, eolCount]
+      values: [Number(currentCount)||0, Number(eosCount)||0, Number(eolCount)||0]
     }], {
       x:7.2, y:1.4, w:5.6, h:5.2,
       chartColors: [T.ok, T.warn, T.bad],
@@ -6264,16 +6287,21 @@ async function exportPPTX(){
       legendPos: "b",
       legendColor: T.text,
       legendFontSize: 12,
+      legendFontFace: "Calibri",
       showValue: true,
+      showPercent: true,
       dataLabelColor: "FFFFFF",
       dataLabelFontBold: true,
       dataLabelFontSize: 11,
       dataLabelPosition: "ctr",
+      dataLabelFormatCode: "0%",
       showTitle: true,
       title: "Lifecycle status",
       titleColor: T.muted,
       titleFontSize: 12,
-      titleFontFace: "Calibri"
+      titleFontFace: "Calibri",
+      plotArea: { fill: { color: T.bg }, border: { color: T.bg, pt: 0 } },
+      chartArea: { fill: { color: T.bg }, border: { color: T.bg, pt: 0 } }
     });
   } else {
     sl.addText("Stack is empty — add products to populate the chart.",
@@ -6375,13 +6403,17 @@ async function exportPPTX(){
       sl.addChart(pp.ChartType.pie, [{
         name: "Licensing tier",
         labels: tierLabels,
-        values: tierValues
+        values: tierValues.map(v => Number(v)||0)
       }], {
         x:0.5, y:1.4, w:5.8, h:5.4,
         chartColors:[T.accent, T.accentDim, T.subtle],
-        showLegend:true, legendPos:"b", legendColor:T.text, legendFontSize:11,
-        showValue:true, dataLabelColor:"FFFFFF", dataLabelFontBold:true, dataLabelFontSize:11,
-        showTitle:true, title:"Licensing tier", titleColor:T.muted, titleFontSize:12, titleFontFace:"Calibri"
+        showLegend:true, legendPos:"b", legendColor:T.text, legendFontSize:11, legendFontFace:"Calibri",
+        showValue:true, showPercent:true,
+        dataLabelColor:"FFFFFF", dataLabelFontBold:true, dataLabelFontSize:11,
+        dataLabelFormatCode:"0%",
+        showTitle:true, title:"Licensing tier", titleColor:T.muted, titleFontSize:12, titleFontFace:"Calibri",
+        plotArea: { fill: { color: T.bg }, border: { color: T.bg, pt: 0 } },
+        chartArea: { fill: { color: T.bg }, border: { color: T.bg, pt: 0 } }
       });
     }
 
@@ -6401,8 +6433,8 @@ async function exportPPTX(){
       const catColors = catEntries.map(([k]) => catColorMap[k] || T.accent);
       sl.addChart(pp.ChartType.bar, [{
         name: "Products",
-        labels: catEntries.map(([k]) => k),
-        values: catEntries.map(([,v]) => v)
+        labels: catEntries.map(([k]) => String(k).slice(0, 28)),
+        values: catEntries.map(([,v]) => Number(v)||0)
       }], {
         x:6.7, y:1.4, w:6.2, h:5.4,
         barDir:"bar",
@@ -6410,10 +6442,14 @@ async function exportPPTX(){
         showLegend:false,
         showValue:true, dataLabelColor:T.text, dataLabelFontSize:11, dataLabelFontBold:true,
         dataLabelPosition:"outEnd",
-        catAxisLabelColor:T.text, catAxisLabelFontSize:11,
-        valAxisLabelColor:T.muted, valAxisLabelFontSize:9,
+        catAxisLabelColor:T.text, catAxisLabelFontSize:11, catAxisLabelFontFace:"Calibri",
+        valAxisLabelColor:T.muted, valAxisLabelFontSize:9, valAxisLabelFontFace:"Calibri",
+        valAxisLineColor: T.line, catAxisLineColor: T.line,
+        valGridLine: { style: "none" },
         valAxisMinVal:0,
-        showTitle:true, title:"Products per category", titleColor:T.muted, titleFontSize:12, titleFontFace:"Calibri"
+        showTitle:true, title:"Products per category", titleColor:T.muted, titleFontSize:12, titleFontFace:"Calibri",
+        plotArea: { fill: { color: T.bg }, border: { color: T.bg, pt: 0 } },
+        chartArea: { fill: { color: T.bg }, border: { color: T.bg, pt: 0 } }
       });
     }
 
@@ -6459,8 +6495,8 @@ async function exportPPTX(){
       sl.addText(String(i+1), { x:0.7, y:y+0.12, w:0.4, h:0.4, fontSize:14, bold:true, color:"FFFFFF", align:"center" });
 
       // Product name + category.
-      sl.addText(r.name,           { x:1.3, y:y+0.05, w:6.3, h:0.3,  fontSize:13, bold:true, color:T.text });
-      sl.addText(r.category || "—",{ x:1.3, y:y+0.33, w:6.3, h:0.22, fontSize:10, color:T.muted });
+      sl.addText(String(r.name||""),     { x:1.3, y:y+0.05, w:6.3, h:0.3,  fontSize:13, bold:true, color:T.text, valign:"middle", wrap:true });
+      sl.addText(String(r.category||"—"),{ x:1.3, y:y+0.33, w:6.3, h:0.22, fontSize:10, color:T.muted, valign:"middle", wrap:true });
 
       // Score bar (visual proportional indicator).
       const barX = 7.8, barY = y + 0.18, barW = 2.8, barH = 0.24;
@@ -6498,8 +6534,8 @@ async function exportPPTX(){
 
     sl.addChart(pp.ChartType.bar, [{
       name: "Coverage %",
-      labels: sm.bundles.map(b => b.name),
-      values: sm.bundles.map(b => b.pct)
+      labels: sm.bundles.map(b => String(b.name || "").slice(0, 40)),
+      values: sm.bundles.map(b => Number(b.pct)||0)
     }], {
       x:0.5, y:1.4, w:12.33, h:5.4,
       barDir: "bar",
@@ -6509,9 +6545,14 @@ async function exportPPTX(){
       showValue: true,
       dataLabelColor: T.text, dataLabelFontBold: true, dataLabelFontSize: 11,
       dataLabelPosition: "outEnd",
-      catAxisLabelColor: T.text, catAxisLabelFontSize: 11,
-      valAxisLabelColor: T.muted, valAxisLabelFontSize: 9,
-      showLegend: false
+      dataLabelFormatCode: "0\"%\"",
+      catAxisLabelColor: T.text, catAxisLabelFontSize: 11, catAxisLabelFontFace: "Calibri",
+      valAxisLabelColor: T.muted, valAxisLabelFontSize: 9, valAxisLabelFontFace: "Calibri",
+      valAxisLineColor: T.line, catAxisLineColor: T.line,
+      valGridLine: { style: "none" },
+      showLegend: false,
+      plotArea: { fill: { color: T.bg }, border: { color: T.bg, pt: 0 } },
+      chartArea: { fill: { color: T.bg }, border: { color: T.bg, pt: 0 } }
     });
 
     const fullCov = sm.bundles.filter(b => b.pct === 100).length;
@@ -6542,23 +6583,32 @@ async function exportPPTX(){
     sl.addText(`${b.owned} of ${b.total} products`,
       { x:0.5, y:4.05, w:3.4, h:0.4, fontSize:12, color:T.subtle, align:"center" });
 
-    // Missing items (right, two columns).
+    // Missing items (right, two columns). Cap at 28 visible (14 per column)
+    // so very gap-y bundles don't run off the slide; remainder summarised.
     sl.addText(`Missing (${b.missing.length})`,
       { x:4.2, y:1.6, w:8.6, h:0.4, fontSize:16, bold:true, color:T.text });
-    const half = Math.ceil(b.missing.length / 2);
-    const col1 = b.missing.slice(0, half);
-    const col2 = b.missing.slice(half);
+    const MAX_VIS_PER_COL = 14;
+    const MAX_VIS = MAX_VIS_PER_COL * 2;
+    const visible = b.missing.slice(0, MAX_VIS);
+    const overflow = Math.max(0, b.missing.length - MAX_VIS);
+    const half = Math.ceil(visible.length / 2);
+    const col1 = visible.slice(0, half);
+    const col2 = visible.slice(half);
     if (col1.length){
       sl.addText(
-        col1.map(m => ({ text: m, options: { bullet: { type: "bullet" }, color: T.text, fontSize: 12, paraSpaceAfter: 4 } })),
-        { x:4.2, y:2.1, w:4.3, h:4.5 }
+        col1.map(m => ({ text: String(m||""), options: { bullet: { type: "bullet" }, color: T.text, fontSize: 12, paraSpaceAfter: 4 } })),
+        { x:4.2, y:2.1, w:4.3, h:4.3, valign:"top", wrap:true }
       );
     }
     if (col2.length){
       sl.addText(
-        col2.map(m => ({ text: m, options: { bullet: { type: "bullet" }, color: T.text, fontSize: 12, paraSpaceAfter: 4 } })),
-        { x:8.5, y:2.1, w:4.3, h:4.5 }
+        col2.map(m => ({ text: String(m||""), options: { bullet: { type: "bullet" }, color: T.text, fontSize: 12, paraSpaceAfter: 4 } })),
+        { x:8.5, y:2.1, w:4.3, h:4.3, valign:"top", wrap:true }
       );
+    }
+    if (overflow > 0){
+      sl.addText(`+ ${overflow} more`,
+        { x:4.2, y:6.5, w:8.6, h:0.4, fontSize:12, italic:true, color:T.muted, align:"center" });
     }
 
     sl.addNotes(
@@ -6593,9 +6643,9 @@ async function exportPPTX(){
           rectRadius: 0.08
         });
         sl.addText(owned ? "●" : "○",
-          { x: x + 0.1, y: y + 0.05, w: 0.4, h: 0.5, fontSize: 18, bold: true, color: owned ? T.ok : T.muted, valign:"middle" });
-        sl.addText(uc,
-          { x: x + 0.55, y: y + 0.05, w: ucCellW - 0.65, h: 0.5, fontSize: 11, color: owned ? T.text : T.muted, valign:"middle" });
+          { x: x + 0.1, y: y + 0.05, w: 0.4, h: 0.5, fontSize: 18, bold: true, color: owned ? T.ok : T.muted, valign:"middle", align:"center" });
+        sl.addText(String(uc||""),
+          { x: x + 0.55, y: y + 0.05, w: ucCellW - 0.65, h: 0.5, fontSize: 11, color: owned ? T.text : T.muted, valign:"middle", wrap:true });
       });
 
       const ownedHere = page.filter(uc => sm.stackUCs.has(uc)).length;
@@ -6672,7 +6722,7 @@ async function exportPPTX(){
       chipsToShow.forEach((it, j) => {
         const cy = y + 1.0 + j * 0.42;
         sl.addShape(pp.ShapeType.roundRect, { x: x + 0.1, y: cy, w: colW2 - 0.2, h: 0.36, fill:{color:T.panel}, line:{color:T.line, width:1}, rectRadius: 0.04 });
-        sl.addText(it.name, { x: x + 0.2, y: cy + 0.04, w: colW2 - 0.4, h: 0.28, fontSize: 10, color: T.text, bold: true });
+        sl.addText(String(it.name||""), { x: x + 0.2, y: cy + 0.04, w: colW2 - 0.4, h: 0.28, fontSize: 10, color: T.text, bold: true, valign:"middle", wrap:true });
       });
       if (b.items.length > 8){
         const cy = y + 1.0 + 8 * 0.42;
@@ -6710,16 +6760,16 @@ async function exportPPTX(){
         const y = 1.75 + i * 0.52;
         // Left card.
         sl.addShape(pp.ShapeType.roundRect, { x:0.5, y, w:5.8, h:0.44, fill:{color:T.panel}, line:{color:T.line, width:1}, rectRadius:0.05 });
-        sl.addText(it.name, { x:0.7, y:y+0.04, w:4.0, h:0.22, fontSize:11.5, bold:true, color:T.text });
+        sl.addText(String(it.name||""), { x:0.7, y:y+0.04, w:4.0, h:0.22, fontSize:11.5, bold:true, color:T.text, valign:"middle", wrap:true });
         sl.addText(
           it.eolDate ? `EOL ${it.eolDate}` : it.eosDate ? `EOS ${it.eosDate}` : "EOL pending",
-          { x:0.7, y:y+0.23, w:4.0, h:0.2, fontSize:9, color: it.eolDate ? T.warn : T.muted }
+          { x:0.7, y:y+0.23, w:4.0, h:0.2, fontSize:9, color: it.eolDate ? T.warn : T.muted, valign:"middle", wrap:true }
         );
         // Arrow.
-        sl.addText("→", { x:6.4, y:y+0.0, w:0.9, h:0.45, fontSize:22, bold:true, color:T.accent, align:"center" });
+        sl.addText("→", { x:6.4, y:y+0.0, w:0.9, h:0.45, fontSize:22, bold:true, color:T.accent, align:"center", valign:"middle" });
         // Right card.
         sl.addShape(pp.ShapeType.roundRect, { x:7.4, y, w:5.4, h:0.44, fill:{color:T.panel}, line:{color:T.ok, width:1.5}, rectRadius:0.05 });
-        sl.addText(it.successor, { x:7.6, y:y+0.08, w:5.0, h:0.3, fontSize:12, bold:true, color:T.ok });
+        sl.addText(String(it.successor||""), { x:7.6, y:y+0.08, w:5.0, h:0.3, fontSize:12, bold:true, color:T.ok, valign:"middle", wrap:true });
       });
 
       sl.addNotes(
@@ -6748,11 +6798,11 @@ async function exportPPTX(){
         const y = 1.75 + i * 0.52;
         const replacements = (l.replaces || []).map(r => nameOf(r)).join(", ") || "—";
         sl.addShape(pp.ShapeType.roundRect, { x:0.5, y, w:5.8, h:0.44, fill:{color:T.panel}, line:{color:T.line, width:1}, rectRadius:0.05 });
-        sl.addText(l.name, { x:0.7, y:y+0.03, w:5.4, h:0.2, fontSize:11.5, bold:true, color:T.text });
-        sl.addText(l.reason || "", { x:0.7, y:y+0.22, w:5.4, h:0.22, fontSize:8.5, color:T.muted, italic:true });
-        sl.addText("→", { x:6.4, y:y+0.0, w:0.9, h:0.45, fontSize:22, bold:true, color:T.accent, align:"center" });
+        sl.addText(String(l.name||""), { x:0.7, y:y+0.03, w:5.4, h:0.2, fontSize:11.5, bold:true, color:T.text, valign:"middle", wrap:true });
+        sl.addText(String(l.reason||""), { x:0.7, y:y+0.22, w:5.4, h:0.22, fontSize:8.5, color:T.muted, italic:true, valign:"middle", wrap:true });
+        sl.addText("→", { x:6.4, y:y+0.0, w:0.9, h:0.45, fontSize:22, bold:true, color:T.accent, align:"center", valign:"middle" });
         sl.addShape(pp.ShapeType.roundRect, { x:7.4, y, w:5.4, h:0.44, fill:{color:T.panel}, line:{color:T.ok, width:1.5}, rectRadius:0.05 });
-        sl.addText(replacements, { x:7.6, y:y+0.08, w:5.0, h:0.3, fontSize:11, bold:true, color:T.ok });
+        sl.addText(replacements, { x:7.6, y:y+0.08, w:5.0, h:0.3, fontSize:11, bold:true, color:T.ok, valign:"middle", wrap:true });
       });
 
       sl.addNotes(
@@ -6770,12 +6820,16 @@ async function exportPPTX(){
     "Embedded portfolio timeline · architecture view · next steps",
     "Reference");
 
-  // ── Embedded portfolio timeline screenshot (html2canvas). ─────────────
-  // We open the timeline view (briefly) if it isn't already shown, give
-  // the renderer a moment to paint, capture the full scrollable width,
-  // then restore the prior view state.
-  try {
-    if (typeof html2canvas === "undefined"){
+  // ── Shared off-screen capture helpers ────────────────────────────────
+  // html2canvas reads the live DOM, so to avoid the visible "flash" the
+  // earlier version had we don't toggle the user-facing `.show` class on
+  // #tl-wrap. Instead we temporarily reposition the wrapper off the
+  // viewport with high-specificity inline styles, paint into it, capture,
+  // and restore. The :has(#tl-wrap.show) chrome-hiding selector is never
+  // tripped, so the user's footer/hint/tools panes stay untouched.
+  const ensureHtml2Canvas = async () => {
+    if (typeof html2canvas !== "undefined") return true;
+    try {
       await new Promise((resolve, reject) => {
         const sct = document.createElement("script");
         sct.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
@@ -6783,117 +6837,167 @@ async function exportPPTX(){
         sct.onerror = () => reject(new Error("html2canvas load failed"));
         document.head.appendChild(sct);
       });
+      return typeof html2canvas !== "undefined";
+    } catch (_){ return false; }
+  };
+  const OFFSCREEN_CSS =
+    "position:fixed !important;left:-99999px !important;top:0 !important;" +
+    "right:auto !important;bottom:auto !important;" +
+    "display:flex !important;visibility:visible !important;opacity:1 !important;" +
+    "pointer-events:none !important;z-index:-1 !important;";
+  const captureCanvas = async (el, sourceW, sourceH, scale) => {
+    const w = Math.max(1, sourceW || el.scrollWidth || el.clientWidth);
+    const h = Math.max(1, sourceH || el.scrollHeight || el.clientHeight);
+    return html2canvas(el, {
+      backgroundColor: "#" + T.bg,
+      scale: scale || 1.5,
+      useCORS: true,
+      logging: false,
+      width: w, height: h,
+      windowWidth: w, windowHeight: h,
+      foreignObjectRendering: false
+    });
+  };
+  // Slice a wide canvas into N equal-width PNGs (for splitting a long
+  // timeline across multiple slides). Returns array of dataURLs.
+  const sliceCanvasHorizontally = (canvas, parts) => {
+    const out = [];
+    if (parts <= 1) return [canvas.toDataURL("image/png")];
+    const sliceW = Math.floor(canvas.width / parts);
+    for (let i = 0; i < parts; i++){
+      const c = document.createElement("canvas");
+      c.width = (i === parts - 1) ? (canvas.width - sliceW * i) : sliceW;
+      c.height = canvas.height;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#" + T.bg;
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(canvas, sliceW * i, 0, c.width, c.height, 0, 0, c.width, c.height);
+      out.push(c.toDataURL("image/png"));
     }
+    return out;
+  };
 
-    const wasOpen = !!document.querySelector("#tl-wrap.show");
-    if (!wasOpen && typeof openTimelineView === "function"){
-      openTimelineView();
-      await new Promise(r => setTimeout(r, 380));
-    } else {
-      try { renderTimeline?.(); } catch (_) {}
-      await new Promise(r => setTimeout(r, 180));
+  // ── Embedded portfolio timeline screenshot. ───────────────────────────
+  try {
+    if (await ensureHtml2Canvas()){
+      const tlWrap = document.querySelector("#tl-wrap");
+      const tlEl   = document.querySelector("#tl-canvas");
+      const wasOpen = !!tlWrap?.classList.contains("show");
+
+      // Stash current inline style, swap in off-screen layout so the
+      // timeline lays out at our target capture dimensions without ever
+      // appearing on screen.
+      const savedCss = tlWrap ? tlWrap.style.cssText : "";
+      if (tlWrap && !wasOpen){
+        tlWrap.style.cssText =
+          OFFSCREEN_CSS +
+          "width:2400px !important;height:1400px !important;";
+      }
+      try {
+        renderTimeline?.();
+      } catch (_) {}
+      // Two RAFs + a short tick to let lane-packing + CSS settle.
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 220));
+
+      // Prefer #tl-inner (the actual content) over #tl-canvas (the scroll
+      // viewport): inner has the tight, true content width set by
+      // renderTimeline (yearSpan × px/year + label + gutter), so the
+      // captured image isn't padded with empty viewport space.
+      const tlInner = document.querySelector("#tl-inner");
+      const captureEl = (tlInner && tlInner.scrollWidth > 0) ? tlInner : tlEl;
+      if (captureEl && captureEl.scrollWidth > 0 && captureEl.scrollHeight > 0){
+        const fullW = captureEl.scrollWidth;
+        const fullH = captureEl.scrollHeight;
+        const canvas = await captureCanvas(captureEl, fullW, fullH, 2);
+
+        // Decide pagination from year span (set by renderTimeline). 12 yr
+        // per slide caps the px/year ratio at a readable density once
+        // the image is scaled to fit the slide.
+        const years = (typeof TL !== "undefined" && Number.isFinite(TL.yearSpan)) ? TL.yearSpan : 0;
+        const parts = years > 24 ? 3 : years > 12 ? 2 : 1;
+        const slices = sliceCanvasHorizontally(canvas, parts);
+
+        // Slide dimensions — give the timeline almost the full bleed.
+        const slideW = 13.33, slideH = 7.5;
+        const imgX = 0.15, imgY = 1.05;
+        const imgW = slideW - 0.30;        // 13.03
+        const imgH = 5.85;                 // leaves room for title + legend
+        slices.forEach((dataUrl, idx) => {
+          sl = addSlide("Reference");
+          const title = parts > 1
+            ? `Portfolio Timeline (part ${idx+1} of ${parts})`
+            : "Portfolio Timeline";
+          sl.addText(title, { x:0.5, y:0.4, w:12.33, h:0.55, fontSize:24, bold:true, color:T.accent, fontFace:"Calibri" });
+          sl.addText(`EOS / EOL milestones for the ${sm.items.length}-item stack`,
+            { x:0.5, y:0.95, w:12.33, h:0.3, fontSize:11, color:T.subtle });
+          // sizing:"contain" preserves aspect; PptxGenJS letterboxes
+          // within the box rather than stretching.
+          sl.addImage({ data: dataUrl, x: imgX, y: imgY, w: imgW, h: imgH, sizing: { type:"contain", w: imgW, h: imgH } });
+          // Tiny legend strip pinned to the bottom of the slide.
+          const legendY = 7.05;
+          const swatches = [
+            { color: T.ok,  label: "Current" },
+            { color: T.warn,label: "EOS" },
+            { color: T.bad, label: "EOL" }
+          ];
+          const swW = 2.4;
+          const legStartX = (slideW - swW * swatches.length) / 2;
+          swatches.forEach((sw, i) => {
+            const x = legStartX + i * swW;
+            sl.addShape(pp.ShapeType.rect, { x, y: legendY + 0.05, w:0.18, h:0.18, fill:{color:sw.color}, line:{color:sw.color, width:0} });
+            sl.addText(sw.label, { x: x + 0.25, y: legendY, w: swW - 0.3, h: 0.3, fontSize: 10, color: T.muted, valign:"middle", wrap:true });
+          });
+          sl.addNotes(
+            (parts > 1 ? `Timeline slice ${idx+1} of ${parts}. ` : "") +
+            "Live snapshot of the portfolio timeline view. Each bar is a product, colored by lifecycle status. " +
+            "Walk the dense clusters to flag refresh windows; the long-tail bars are healthy through the planning horizon."
+          );
+        });
+      }
+      // Restore the wrapper to whatever the user had before — usually the
+      // empty cssText so the stylesheet rules win again.
+      if (tlWrap && !wasOpen){
+        tlWrap.style.cssText = savedCss;
+      }
     }
-
-    const tlEl = document.querySelector("#tl-canvas");
-    if (tlEl && tlEl.scrollWidth > 0 && tlEl.scrollHeight > 0){
-      const canvas = await html2canvas(tlEl, {
-        backgroundColor: "#" + T.bg,
-        scale: 1.5,
-        useCORS: true,
-        logging: false,
-        width: tlEl.scrollWidth,
-        height: tlEl.scrollHeight,
-        windowWidth: tlEl.scrollWidth,
-        windowHeight: tlEl.scrollHeight
-      });
-      const dataUrl = canvas.toDataURL("image/png");
-
-      sl = addSlide("Reference");
-      sl.addText("Portfolio Timeline", { x:0.5, y:0.4, w:12.33, h:0.55, fontSize:22, bold:true, color:T.accent });
-      sl.addText(`EOS / EOL milestones for the ${sm.items.length}-item stack`,
-        { x:0.5, y:0.95, w:12.33, h:0.3, fontSize:11, color:T.subtle });
-
-      // Preserve aspect ratio inside the 12.7 × 5.8 in content area.
-      const maxW = 12.7, maxH = 5.8;
-      const aspect = canvas.width / canvas.height;
-      let imgW = maxW, imgH = maxW / aspect;
-      if (imgH > maxH){ imgH = maxH; imgW = maxH * aspect; }
-      const imgX = (13.33 - imgW) / 2;
-      const imgY = 1.35 + (maxH - imgH) / 2;
-      sl.addImage({ data: dataUrl, x: imgX, y: imgY, w: imgW, h: imgH });
-
-      sl.addNotes(
-        "Live snapshot of the portfolio timeline view. Each bar is a product, colored by lifecycle status. " +
-        "Walk the dense clusters to flag refresh windows; the long-tail bars are healthy through the planning horizon."
-      );
-    }
-
-    if (!wasOpen && typeof closeTimelineView === "function") closeTimelineView();
   } catch (err){
     console.warn("[exportPPTX] Timeline screenshot skipped:", err);
   }
 
-  // ── Embedded architecture SVG (D3 graph in #gw svg). ──────────────────
-  // We clone the live SVG, inline computed styles (fill, stroke, opacity,
-  // font props) on every descendant so the standalone SVG renders
-  // correctly inside PowerPoint without our app's CSS, and prepend a
-  // background rect to match the theme.
+  // ── Embedded architecture view (D3 graph in #gw). ─────────────────────
+  // The previous build inlined the SVG and recomputed styles; that
+  // approach lost the <defs>-based glow/filter rendering and produced a
+  // flat picture. We rasterize the whole #gw container via html2canvas
+  // instead, which captures the live SVG paint (filters, gradients,
+  // opacity layering) verbatim.
   try {
-    const liveSvg = document.querySelector("#gw svg");
-    if (liveSvg && liveSvg.childNodes.length > 0){
-      const bbox = liveSvg.getBoundingClientRect();
-      if (bbox.width > 0 && bbox.height > 0){
-        const cloneSvg = liveSvg.cloneNode(true);
-        const liveNodes = liveSvg.querySelectorAll("*");
-        const clonedNodes = cloneSvg.querySelectorAll("*");
-        const styleProps = ["fill", "stroke", "stroke-width", "opacity", "fill-opacity", "stroke-opacity", "font-family", "font-size", "font-weight"];
-        for (let i = 0; i < liveNodes.length && i < clonedNodes.length; i++){
-          try {
-            const cs = window.getComputedStyle(liveNodes[i]);
-            const style = clonedNodes[i].style;
-            styleProps.forEach(prop => {
-              const v = cs.getPropertyValue(prop);
-              if (v && v !== "none" && v !== "normal") style.setProperty(prop, v);
-            });
-          } catch (_) {}
+    if (await ensureHtml2Canvas()){
+      const gwEl = document.querySelector("#gw");
+      if (gwEl){
+        const bbox = gwEl.getBoundingClientRect();
+        if (bbox.width > 16 && bbox.height > 16){
+          const canvas = await captureCanvas(gwEl, gwEl.scrollWidth, gwEl.scrollHeight, 1.75);
+          const dataUrl = canvas.toDataURL("image/png");
+
+          sl = addSlide("Reference");
+          sl.addText("Architecture View", { x:0.5, y:0.4, w:12.33, h:0.55, fontSize:24, bold:true, color:T.accent, fontFace:"Calibri" });
+          sl.addText("D3 graph of current Cisco footprint and supporting connections",
+            { x:0.5, y:0.95, w:12.33, h:0.3, fontSize:11, color:T.subtle });
+
+          const imgX = 0.15, imgY = 1.05;
+          const imgW = 13.03, imgH = 6.30;
+          sl.addImage({ data: dataUrl, x: imgX, y: imgY, w: imgW, h: imgH, sizing: { type:"contain", w: imgW, h: imgH } });
+
+          sl.addNotes(
+            "Architecture view, rasterized live from the D3 graph. Node color encodes category; edges encode integrations. " +
+            "Use as a portfolio map during whiteboarding sessions — the dense clusters point at platform plays."
+          );
         }
-        cloneSvg.setAttribute("width", bbox.width);
-        cloneSvg.setAttribute("height", bbox.height);
-        cloneSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-
-        // Background rect (so the dark graph reads against the theme).
-        const bgRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        bgRect.setAttribute("x", "0");
-        bgRect.setAttribute("y", "0");
-        bgRect.setAttribute("width",  String(bbox.width));
-        bgRect.setAttribute("height", String(bbox.height));
-        bgRect.setAttribute("fill", "#" + T.bg);
-        cloneSvg.insertBefore(bgRect, cloneSvg.firstChild);
-
-        const xml = new XMLSerializer().serializeToString(cloneSvg);
-        const dataUrl = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
-
-        sl = addSlide("Reference");
-        sl.addText("Architecture View", { x:0.5, y:0.4, w:12.33, h:0.55, fontSize:22, bold:true, color:T.accent });
-        sl.addText("D3 graph of current Cisco footprint and supporting connections",
-          { x:0.5, y:0.95, w:12.33, h:0.3, fontSize:11, color:T.subtle });
-
-        const maxW = 12.7, maxH = 5.8;
-        const aspect = bbox.width / bbox.height;
-        let imgW = maxW, imgH = maxW / aspect;
-        if (imgH > maxH){ imgH = maxH; imgW = maxH * aspect; }
-        const imgX = (13.33 - imgW) / 2;
-        const imgY = 1.35 + (maxH - imgH) / 2;
-        sl.addImage({ data: dataUrl, x: imgX, y: imgY, w: imgW, h: imgH });
-
-        sl.addNotes(
-          "Architecture view, captured live from the D3 graph. Node color encodes category; edges encode integrations. " +
-          "Use as a portfolio map during whiteboarding sessions — the dense clusters point at platform plays."
-        );
       }
     }
   } catch (err){
-    console.warn("[exportPPTX] Architecture SVG embed skipped:", err);
+    console.warn("[exportPPTX] Architecture view skipped:", err);
   }
 
   // ── Closing slide: Next Steps ─────────────────────────────────────────
@@ -6936,7 +7040,64 @@ async function exportPPTX(){
   );
 
   // ── Write file ────────────────────────────────────────────────────────
-  await pp.writeFile({ fileName: `Cisco_Plan_${sm.acct.replace(/\s+/g, "-")}.pptx` });
+  // We deliberately do NOT call `pp.writeFile(...)` directly. PptxGenJS
+  // 3.12.0 has a bug in `makeXmlContTypes` (gen-xml.ts) that emits an
+  // `<Override PartName="/ppt/slideMasters/slideMasterN.xml" ...>` entry
+  // for EVERY slide, even though only `slideMaster1.xml` is actually
+  // written to the package. PowerPoint scans `[Content_Types].xml` on
+  // open, sees Override entries pointing at parts that aren't in the
+  // ZIP, and triggers the "PowerPoint found a problem with content"
+  // repair dialog before showing the deck.
+  //
+  // The fix is a post-process: generate the deck to a buffer, open it
+  // with the JSZip instance the pptxgen.bundle.min.js already exposes on
+  // `window.JSZip`, strip Override entries for non-existent slide
+  // masters, then trigger the download. This adds no new dependencies.
+  const fileName = `Cisco_Plan_${sm.acct.replace(/\s+/g, "-")}.pptx`;
+  const Z = (typeof window !== "undefined" && window.JSZip) ? window.JSZip : null;
+  if (!Z){
+    // JSZip is bundled into pptxgen.bundle.min.js. If for some reason it
+    // didn't expose the global, fall back to PptxGenJS's writer so the
+    // user still gets a deck — even with the repair dialog — rather
+    // than nothing.
+    console.warn("[exportPPTX] JSZip global not found; falling back to writeFile (repair dialog will appear).");
+    await pp.writeFile({ fileName });
+  } else {
+    const buffer = await pp.write({ outputType: "arraybuffer" });
+    const zip = await Z.loadAsync(buffer);
+    const ctFile = zip.file("[Content_Types].xml");
+    if (ctFile){
+      const ctXml = await ctFile.async("string");
+      // Only keep Override entries whose target part actually exists.
+      // The phantom entries are for slideMaster2.xml..slideMasterN.xml.
+      let stripped = 0;
+      const fixedXml = ctXml.replace(
+        /<Override\s+PartName="\/ppt\/slideMasters\/slideMaster(\d+)\.xml"[^>]*\/>/g,
+        (full, n) => {
+          if (zip.file(`ppt/slideMasters/slideMaster${n}.xml`)) return full;
+          stripped += 1;
+          return "";
+        }
+      );
+      zip.file("[Content_Types].xml", fixedXml);
+      if (stripped > 0){
+        console.info(`[exportPPTX] Stripped ${stripped} phantom slideMaster Override entries from [Content_Types].xml`);
+      }
+    }
+    const blob = await zip.generateAsync({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 }
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch (_) {} }, 0);
+  }
   showToast(`PPTX exported (${themeName === "ciscoBlue" ? "Cisco Blue" : themeName[0].toUpperCase()+themeName.slice(1)} theme)`);
 }
 
