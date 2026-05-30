@@ -4506,7 +4506,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.3.6";
+const APP_VERSION   = "2.3.7";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4795,6 +4795,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.3.7", date:"2026-05-30", items:[
+    "Fix: PowerPoint repair dialog — root cause identified via GitHub issues #1441 and #1443. PptxGenJS addShape() without text emits <p:sp> elements missing the required <p:txBody> child (37 shapes across slides 2–4). The notesMaster ships 6 invalid placeholder shapes PowerPoint strips on repair. saveWithFix() now injects minimal txBody stubs into text-less shapes and replaces notesMaster with the minimal structure PowerPoint expects. Upgraded PptxGenJS 3.12.0 → 4.0.1."
+  ]},
   {ver:"2.3.6", date:"2026-05-30", items:[
     "Fix: PowerPoint repair dialog — replaced pp.addChart() on the Bundle Coverage slide with native shape bars. PptxGenJS 3.12.0's chart subsystem (chart XML, embedded Excel, chart rels) passes ZIP integrity checks but Mac PowerPoint still triggers repair after four separate post-process patches. Shape-based bars avoid the entire chart/embeddings subtree.",
     "Post-process also fixes empty <a:t></a:t> text runs in notes slides that PptxGenJS emits in placeholder bodies."
@@ -6097,7 +6100,7 @@ async function exportPPTX(){
     try {
       await new Promise((resolve, reject) => {
         const s = document.createElement("script");
-        s.src = "https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.min.js";
+        s.src = "https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.min.js";
         s.onload  = resolve;
         s.onerror = () => reject(new Error("pptxgenjs load failed"));
         document.head.appendChild(s);
@@ -6636,6 +6639,68 @@ async function exportPPTX(){
       }
     } catch (err){
       console.warn("[exportPPTX] Notes text fix failed:", err);
+    }
+
+    // ── Inject missing <p:txBody> on text-less shapes (PptxGenJS #1441). ─
+    // addShape() without accompanying text produces <p:sp> blocks with
+    // nvSpPr + spPr but NO txBody — an OOXML schema violation. PowerPoint
+    // triggers repair and injects txBody on open. Confirmed on the user's
+    // export: 37 shapes across slides 2–4 were missing txBody.
+    const TXBODY_STUB = '<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"/></a:p></p:txBody>';
+    function injectMissingTxBody(xml){
+      return xml.replace(/<p:sp>([\s\S]*?)<\/p:sp>/g, (full, inner) => {
+        return inner.includes("<p:txBody>") ? full : "<p:sp>" + inner + TXBODY_STUB + "</p:sp>";
+      });
+    }
+    try {
+      const slideXmlPaths = Object.keys(zip.files).filter(p => /^ppt\/slides\/slide\d+\.xml$/.test(p));
+      let txFixed = 0, txCount = 0;
+      for (const path of slideXmlPaths){
+        const f = zip.file(path);
+        if (!f) continue;
+        const xml = await f.async("string");
+        const before = (xml.match(/<p:sp>[\s\S]*?<\/p:sp>/g) || []).filter(b => !b.includes("<p:txBody>")).length;
+        const fixed = injectMissingTxBody(xml);
+        if (fixed !== xml){
+          txCount += before;
+          txFixed += 1;
+          zip.file(path, fixed);
+        }
+      }
+      if (txFixed > 0){
+        console.info(`[exportPPTX] Injected txBody into ${txCount} text-less shape(s) on ${txFixed} slide(s) (#1441).`);
+      } else {
+        console.log("[pptx] Shape txBody integrity OK.");
+      }
+    } catch (err){
+      console.warn("[exportPPTX] txBody injection failed:", err);
+    }
+
+    // ── Minimal notesMaster (PptxGenJS #1443). ─────────────────────────
+    // The default notesMaster contains 6 placeholder shapes PowerPoint
+    // considers invalid and removes during repair, triggering the dialog.
+    // Replace spTree with the empty structure PowerPoint itself produces
+    // after repair (keeps clrMap + notesStyle intact).
+    try {
+      const nmPath = "ppt/notesMasters/notesMaster1.xml";
+      const nmFile = zip.file(nmPath);
+      if (nmFile){
+        const nm = await nmFile.async("string");
+        const minimalSpTree =
+          "<p:spTree>" +
+          "<p:nvGrpSpPr><p:cNvPr id=\"1\" name=\"\"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>" +
+          "<p:grpSpPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"0\" cy=\"0\"/>" +
+          "<a:chOff x=\"0\" y=\"0\"/><a:chExt cx=\"0\" cy=\"0\"/></a:xfrm></p:grpSpPr>" +
+          "</p:spTree>";
+        const hadPlaceholders = (nm.match(/<p:ph /g) || []).length;
+        const fixed = nm.replace(/<p:spTree>[\s\S]*?<\/p:spTree>/, minimalSpTree);
+        if (fixed !== nm){
+          zip.file(nmPath, fixed);
+          console.info(`[exportPPTX] Replaced notesMaster spTree (removed ${hadPlaceholders} invalid placeholders, #1443).`);
+        }
+      }
+    } catch (err){
+      console.warn("[exportPPTX] notesMaster fix failed:", err);
     }
 
     const blob = await zip.generateAsync({
