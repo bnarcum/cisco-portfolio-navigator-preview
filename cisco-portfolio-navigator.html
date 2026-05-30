@@ -5106,6 +5106,33 @@ STYLE.textContent = `
   .tl-block.eol{background-color:rgba(239,68,68,.78)}
   .tl-block.narrow{padding:0;font-size:0;min-width:3px}
   .tl-block.narrow:hover{padding:0 6px;font-size:9.5px;min-width:auto;z-index:11}
+  /* TBD / unscheduled milestone treatment.
+     unknown-right: EOS known, EOL TBD — solid at the anchor, fades to nothing on the right.
+     unknown-left:  EOS TBD, EOL known — fades in from the left to the anchor.
+     unknown-both:  both TBD — diagonal stripes near "today" with a "?" badge,
+                    so the bar reads as "scheduled, but no firm dates yet". */
+  .tl-block.unknown-right{
+    -webkit-mask-image:linear-gradient(90deg, #000 60%, transparent 100%);
+            mask-image:linear-gradient(90deg, #000 60%, transparent 100%);
+  }
+  .tl-block.unknown-left{
+    -webkit-mask-image:linear-gradient(90deg, transparent 0%, #000 40%);
+            mask-image:linear-gradient(90deg, transparent 0%, #000 40%);
+  }
+  .tl-block.unknown-both{
+    background-image:
+      repeating-linear-gradient(45deg,
+        rgba(255,255,255,.10) 0,
+        rgba(255,255,255,.10) 4px,
+        rgba(0,0,0,.22) 4px,
+        rgba(0,0,0,.22) 8px),
+      linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 35%, rgba(0,0,0,.18) 100%);
+  }
+  .tl-block.unknown-both::after{
+    content:"?";position:absolute;right:5px;top:50%;transform:translateY(-50%);
+    font-weight:800;font-size:11px;color:#fff;line-height:1;
+    text-shadow:0 1px 2px rgba(0,0,0,.7);pointer-events:none;
+  }
   /* Today line: glows like a marker pen so the eye finds "now" instantly. */
   .tl-today{position:absolute;top:0;bottom:0;width:2px;
     background:#00bceb;
@@ -6646,7 +6673,11 @@ function closeTimelineView(){
    lanes such that no two blocks in the same lane overlap. Returns the lane
    count and assigns .lane to each block. */
 function packIntoLanes(blocks){
-  const sorted = [...blocks].sort((a,b) => a.left - b.left);
+  // Drop any non-finite blocks defensively — the timeline builder already
+  // filters these out, but if a future code path forgets the guard, NaN
+  // coordinates would silently put bars in their own lane forever.
+  const safe = blocks.filter(b => Number.isFinite(b.left) && Number.isFinite(b.right));
+  const sorted = [...safe].sort((a,b) => a.left - b.left);
   const lanes = []; // each = end of last block in that lane (%)
   sorted.forEach(b => {
     let lane = -1;
@@ -6673,10 +6704,32 @@ function renderTimeline(){
   const endY   = now.getFullYear() + 6;
   const totalMs = (endY - startY) * 365.25 * 86400e3;
   const startMs = new Date(startY, 0, 1).getTime();
+  /* Tolerant date parser used by the timeline.
+     Returns a Date or null. Handles:
+       ISO              "2026-10-31"
+       Long-form        "Oct 28, 2026", "Aug 2, 2021"
+       Month + year     "Aug 2017", "Oct 2019"
+       Bare year        "2017"
+       Approximate      "~2016"          → 2016-06-30 (mid-year)
+       Approximate range"~2018-2021"     → 2019-06-30 (midpoint, mid-year)
+       Unknown          "TBD", "TBD …"   → null
+     Anything else falls back to JS Date and returns null on NaN, so a future
+     free-form value like "Q4 2027" can't silently corrupt block geometry. */
+  const parseFuzzyDate = (s) => {
+    if (!s || typeof s !== "string") return null;
+    const t = s.trim();
+    if (!t || /^TBD\b/i.test(t)) return null;
+    let m = t.match(/^~\s*(\d{4})$/);
+    if (m) return new Date(+m[1], 5, 30);
+    m = t.match(/^~\s*(\d{4})\s*-\s*(\d{4})$/);
+    if (m) return new Date(Math.round((+m[1] + +m[2]) / 2), 5, 30);
+    const d = new Date(t);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
   const xFromDate = (s) => {
-    if (!s) return null;
-    const ms = new Date(s).getTime();
-    return Math.max(0, Math.min(100, ((ms - startMs) / totalMs) * 100));
+    const d = parseFuzzyDate(s);
+    if (!d) return null;
+    return Math.max(0, Math.min(100, ((d.getTime() - startMs) / totalMs) * 100));
   };
 
   // Group products by family
@@ -6710,20 +6763,40 @@ function renderTimeline(){
   const rowHtml = Object.entries(fams).sort((a,b) => (nodeById[a[0]]?.name||"").localeCompare(nodeById[b[0]]?.name||""))
     .map(([famId, prods]) => {
       const n = nodeById[famId]; if (!n) return "";
-      // Build block geometry
+      // Build block geometry. Each block resolves to {left, right} percentages
+      // plus optional unknownLeft/unknownRight flags that drive the dashed-fade
+      // CSS treatment for products with TBD / unscheduled milestones.
       const blocks = prods.map(p => {
-        let left = 0, right = 100;
+        let left = null, right = null, unknownLeft = false, unknownRight = false;
         if (p.status === "current"){
-          left = xFromDate(new Date(now.getFullYear() - 2, 0, 1).toISOString());
+          // Current products anchor at "two years ago" and run to the right edge.
+          left  = xFromDate(new Date(now.getFullYear() - 2, 0, 1).toISOString());
           right = 100;
         } else {
-          if (p.eosDate) left  = xFromDate(p.eosDate);
-          if (p.eolDate) right = xFromDate(p.eolDate);
-          if (!p.eolDate && p.eosDate) right = left + 12;
-          if (!p.eosDate && p.eolDate) left  = right - 12;
+          const eosX = xFromDate(p.eosDate);
+          const eolX = xFromDate(p.eolDate);
+          if (eosX != null && eolX != null){
+            // Both milestones known — draw the full lifecycle band.
+            left = eosX; right = eolX;
+          } else if (eosX != null){
+            // EOS known, EOL TBD — anchor at EOS, extend ~12% rightward and fade.
+            left = eosX; right = Math.min(100, eosX + 12); unknownRight = true;
+          } else if (eolX != null){
+            // EOL known, EOS TBD — anchor at EOL, extend ~12% leftward and fade.
+            right = eolX; left = Math.max(0, eolX - 12); unknownLeft = true;
+          } else {
+            // Both TBD — center on "today" with stripes + ? badge so the user
+            // sees "scheduled but unscheduled" instead of a ghost bar at year 0.
+            left  = Math.max(0, todayPct - 4);
+            right = Math.min(100, todayPct + 4);
+            unknownLeft = unknownRight = true;
+          }
         }
-        return { p, left, right: Math.max(right, left + 0.4) };
-      });
+        // Defensive: anything still non-finite is dropped rather than emitted
+        // with NaN coordinates (which CSS treats as "auto" and ghosts at left:0).
+        if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
+        return { p, left, right: Math.max(right, left + 0.4), unknownLeft, unknownRight };
+      }).filter(Boolean);
       const laneCount = packIntoLanes(blocks);
       const laneH = 18, laneGap = 2;
       const trackH = laneCount * laneH + (laneCount - 1) * laneGap + 4;
@@ -6736,7 +6809,13 @@ function renderTimeline(){
         const narrow = widthPx < 60;
         const top = b.lane * (laneH + laneGap);
         const label = narrow ? "" : escapeHtml(b.p.name);
-        return `<div class="tl-block ${b.p.status}${narrow?" narrow":""}"
+        // If either milestone is unknown, tag the block so CSS can fade the
+        // ambiguous edge (or stripe the whole bar if both ends are TBD).
+        const unkCls = (b.unknownLeft && b.unknownRight) ? " unknown-both"
+                     : b.unknownLeft  ? " unknown-left"
+                     : b.unknownRight ? " unknown-right"
+                     : "";
+        return `<div class="tl-block ${b.p.status}${narrow?" narrow":""}${unkCls}"
                   style="left:${b.left}%;width:${widthPct}%;top:${top}px;height:${laneH}px"
                   title="${escapeHtml(b.p.name)} — ${b.p.status.toUpperCase()}${b.p.eosDate?" · EOS "+b.p.eosDate:""}${b.p.eolDate?" · EOL "+b.p.eolDate:""}"
                   onclick="window.showProductDetail('${b.p.id}')">${label}</div>`;
