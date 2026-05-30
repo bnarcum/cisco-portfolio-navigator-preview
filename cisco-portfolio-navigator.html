@@ -4506,7 +4506,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.3.3";
+const APP_VERSION   = "2.3.4";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4795,6 +4795,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.3.4", date:"2026-05-30", items:[
+    "Fix: PowerPoint repair dialog (third PptxGenJS bug found and patched). Diff between pre-repair and post-repair files showed PowerPoint was stripping an orphan <c:axId> entry inside <c:barChart>. PptxGenJS 3.12.0 emits 3 axId children inside the chart-type element when only 2 axes (catAx + valAx) are declared, violating the OOXML schema requirement of exactly 2 axId children for 2D bar charts. saveWithFix() now rebuilds the set of declared axis IDs and strips any <c:axId> not in that set.",
+    "Diagnostics: a new '[pptx] Stripped N orphan <c:axId>' / 'Chart axId integrity OK' log line accompanies the existing diagnostics."
+  ]},
   {ver:"2.3.3", date:"2026-05-30", items:[
     "Fix: PowerPoint repair dialog (the real one this time). The v2.3.1 [Content_Types].xml strip was correct as far as it went, but PptxGenJS 3.12.0 has a SECOND numbering bug — the chart file counter increments before assigning, so a deck with one chart ends up with chart2.xml and no chart1.xml. PowerPoint flags this on open and triggers the repair flow. The post-process in saveWithFix() now also renumbers chart files, chart rels, embedded Excel worksheets, slide rels, and Content_Types references to start from 1.",
     "Diagnostics: a new '[pptx] Renumbering charts: …' / '[pptx] Chart numbering OK …' log line accompanies the existing slideMaster strip diagnostics so the renumber pass is verifiable from DevTools."
@@ -6472,6 +6476,55 @@ async function exportPPTX(){
       }
     } catch (err){
       console.warn("[exportPPTX] Chart renumber pass failed (continuing with original numbering):", err);
+    }
+
+    // ── Strip orphan <c:axId> entries from chart XML. ────────────────
+    // PptxGenJS 3.12.0 emits an extra <c:axId> inside the chart-type
+    // element (e.g. <c:barChart>) that has no corresponding axis
+    // declaration. OOXML schema for 2D bar charts requires exactly 2
+    // axId children inside the chart-type element, matching the catAx
+    // and valAx declarations. The orphan triggers PowerPoint's repair
+    // dialog on open. We rebuild the set of declared axis IDs (those
+    // that head a <c:catAx>/<c:valAx>/<c:dateAx>/<c:serAx> block) and
+    // remove any <c:axId val="..."/> not in that set.
+    try {
+      const chartXmlFiles = Object.keys(zip.files).filter(p => /^ppt\/charts\/chart\d+\.xml$/.test(p));
+      let totalOrphans = 0, filesFixed = 0;
+      for (const path of chartXmlFiles){
+        const f = zip.file(path);
+        if (!f) continue;
+        const xml = await f.async("string");
+        // Per OOXML schema, <c:axId> is the FIRST child of every axis
+        // declaration. Match the open tag immediately followed (with
+        // optional whitespace) by <c:axId>.
+        const declared = new Set();
+        for (const ax of ["catAx","valAx","dateAx","serAx"]){
+          const re = new RegExp(`<c:${ax}>\\s*<c:axId\\s+val="(\\d+)"\\s*/>`, "g");
+          let m;
+          while ((m = re.exec(xml)) !== null) declared.add(m[1]);
+        }
+        // Strip any <c:axId val="N"/> whose N isn't in the declared set.
+        // (Declared <c:axId> entries are inside <c:catAx>/<c:valAx>/...
+        // so they're skipped automatically — we only remove orphans
+        // sitting bare inside the chart-type element.)
+        const fixed = xml.replace(/<c:axId\s+val="(\d+)"\s*\/>/g, (full, n) => {
+          return declared.has(n) ? full : "";
+        });
+        if (fixed !== xml){
+          const before = (xml.match(/<c:axId\s+val="\d+"\s*\/>/g) || []).length;
+          const after  = (fixed.match(/<c:axId\s+val="\d+"\s*\/>/g) || []).length;
+          totalOrphans += (before - after);
+          filesFixed   += 1;
+          zip.file(path, fixed);
+        }
+      }
+      if (filesFixed > 0){
+        console.info(`[exportPPTX] Stripped ${totalOrphans} orphan <c:axId> from ${filesFixed} chart file(s).`);
+      } else {
+        console.log("[pptx] Chart axId integrity OK.");
+      }
+    } catch (err){
+      console.warn("[exportPPTX] Chart axId strip pass failed:", err);
     }
 
     const blob = await zip.generateAsync({
