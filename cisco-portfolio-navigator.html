@@ -5077,22 +5077,44 @@ STYLE.textContent = `
     display:flex;align-items:center;gap:7px;overflow:hidden;padding-top:6px}
   .tl-row-lbl .ld{flex-shrink:0;width:8px;height:8px;border-radius:50%}
   .tl-row-lbl .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .tl-row-track{position:relative;background:rgba(255,255,255,.02);
+  /* Recessed channel: subtle inner gradient (darker at top, faint highlight at bottom)
+     plus a 1px highlight on the bottom inner edge — gives the bars a "trough" to sit in. */
+  .tl-row-track{position:relative;
+    background:linear-gradient(180deg, rgba(0,0,0,.18), rgba(255,255,255,.015));
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 -1px 0 rgba(0,0,0,.35) inset;
     border-radius:4px;min-height:24px}
-  .tl-block{position:absolute;height:16px;border-radius:3px;font-size:9.5px;
+  .tl-block{position:absolute;height:16px;border-radius:4px;font-size:9.5px;
     color:#fff;display:flex;align-items:center;padding:0 6px;cursor:pointer;
     overflow:hidden;white-space:nowrap;font-weight:600;
+    /* Glassy pill: highlight on the top edge, fade to a soft shade near the bottom.
+       background-image is layered on top of background-color from the status classes
+       below (.cur/.eos/.eol), so the colored fill still drives the meaning. */
+    background-image:linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 35%, rgba(0,0,0,.18) 100%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.10) inset,
+      0 -1px 0 rgba(0,0,0,.22) inset,
+      0 1px 2px rgba(0,0,0,.4);
     transition:transform .12s,box-shadow .12s,filter .12s;line-height:1}
-  .tl-block:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.5);z-index:10;filter:brightness(1.18)}
-  .tl-block.cur{background:rgba(45,206,92,.65);color:#fff}
-  .tl-block.eos{background:rgba(245,158,11,.7);color:#1a1a1a}
-  .tl-block.eol{background:rgba(239,68,68,.78)}
+  .tl-block:hover{transform:translateY(-2px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.14) inset,
+      0 -1px 0 rgba(0,0,0,.25) inset,
+      0 8px 18px rgba(0,0,0,.55);
+    z-index:10;filter:brightness(1.18)}
+  .tl-block.cur{background-color:rgba(45,206,92,.65);color:#fff}
+  .tl-block.eos{background-color:rgba(245,158,11,.7);color:#1a1a1a}
+  .tl-block.eol{background-color:rgba(239,68,68,.78)}
   .tl-block.narrow{padding:0;font-size:0;min-width:3px}
   .tl-block.narrow:hover{padding:0 6px;font-size:9.5px;min-width:auto;z-index:11}
+  /* Today line: glows like a marker pen so the eye finds "now" instantly. */
   .tl-today{position:absolute;top:0;bottom:0;width:2px;
-    background:rgba(0,188,235,.85);pointer-events:none;z-index:2}
+    background:#00bceb;
+    box-shadow:0 0 0 1px rgba(0,188,235,.25), 0 0 14px rgba(0,188,235,.55);
+    pointer-events:none;z-index:2}
   .tl-axis-today{position:absolute;top:0;bottom:0;width:2px;
-    background:var(--accent);pointer-events:none;z-index:6}
+    background:var(--accent);
+    box-shadow:0 0 0 1px rgba(0,188,235,.30), 0 0 14px rgba(0,188,235,.60);
+    pointer-events:none;z-index:6}
   .tl-axis-today::after{content:"TODAY";position:absolute;top:50%;left:50%;
     transform:translate(-50%,-50%);font-size:9px;font-weight:700;color:#0d1117;
     background:var(--accent);padding:1px 6px;border-radius:3px;letter-spacing:.08em;white-space:nowrap}
