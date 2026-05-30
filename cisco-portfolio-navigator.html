@@ -825,13 +825,13 @@ const NODES = [
    industries:["Financial Services","Retail","Healthcare","Government","Education"],
    url:"https://www.webex.com/contact-center.html",
    docsUrl:"https://help.webex.com/en-US/article/n12sv3k/Webex-Contact-Center"},
-  {id:"room-systems",      name:"Webex Room Systems",          category:"collaboration",
+  {id:"room-systems",      name:"Cisco Room Systems",          category:"collaboration",
    desc:"Room Bar, Room Bar Pro, Room Kit EQ, Room Kit Pro, Board Pro G2 — purpose-built video systems for huddle to boardroom with AI-powered cameras and audio.",
    useCases:["Hybrid Work","Digital Transformation"],
    industries:["Healthcare","Financial Services","Education","Government","Manufacturing"],
    url:"https://www.cisco.com/c/en/us/products/collaboration-endpoints/index.html",
    docsUrl:"https://help.webex.com/en-US/article/n31aly3/Webex-Devices"},
-  {id:"desk-devices",      name:"Webex Desk Devices",          category:"collaboration",
+  {id:"desk-devices",      name:"Cisco Desk Devices",          category:"collaboration",
    desc:"Cisco Desk Pro, Desk, and Desk Mini — personal 4K touch collaboration devices with built-in AI codec, camera, mic, and speaker for individual workstations.",
    useCases:["Hybrid Work","Digital Transformation"],
    industries:["Healthcare","Financial Services","Education","Government","Manufacturing"],
@@ -2330,7 +2330,7 @@ const LEGACY_NODES = [
   {id:"l-stealthwatch", name:"Cisco Stealthwatch",        replaces:["splunk","xdr"],
    reason:"Splunk + XDR provide broader cross-domain threat detection with SIEM, SOAR, and automated response beyond network flow analysis."},
   {id:"l-vcs",         name:"Cisco VCS / TelePresence",   replaces:["room-systems","webex-meetings"],
-   reason:"Webex Room Systems (Room Bar, Room Kit EQ) and Webex Meetings replace legacy VCS endpoints with AI-powered collaboration on RoomOS."},
+   reason:"Cisco Room Systems (Room Bar, Room Kit EQ) and Webex Meetings replace legacy VCS endpoints with AI-powered collaboration on RoomOS."},
   {id:"l-jabber",      name:"Cisco Jabber",               replaces:["webex-app"],
    reason:"Webex App is the modern replacement combining messaging, meetings, calling, and AI assistant in a single Webex platform client."},
   {id:"l-mpls",        name:"MPLS-only WAN",              replaces:["sdwan"],
@@ -3999,7 +3999,7 @@ document.addEventListener("keydown",ev=>{
       target: "#search", place: "bottom",
       title: "Search anything in the portfolio",
       body: `Type any <strong>product, family, or use case</strong>. Searches both
-             <strong>product families</strong> (ISE, Meraki, Webex Devices …) and
+             <strong>product families</strong> (ISE, Meraki, Cisco Desk Devices …) and
              <strong>specific models</strong> (Cisco Desk Pro, Catalyst 9300, ASA 5525-X …).
              EOL/EOS items show colored badges.`,
       tip: `Press <code>/</code> or <code>⌘K</code> / <code>Ctrl+K</code> from anywhere to focus search. As you type, the matching graph nodes pulse. Picking a <strong>specific product</strong> from the results auto-drills the graph into that product's family.`
