@@ -3417,6 +3417,29 @@ window.filterTagUC  = uc  => { activeUC=uc;   ucEl.value=uc;   applyFilters(); }
 window.filterTagInd = ind => { activeInd=ind; indEl.value=ind; applyFilters(); };
 
 // ── Filtering
+/* Single source of truth for "does this product pass the current filters?".
+   Mirrors the all-products branch of applyFilters() below — product category
+   must be active, and the product's FAMILY must include the active use-case
+   and industry (products don't carry useCases/industries directly; they
+   inherit them from their family node). This predicate is reused by the
+   timeline renderer so timeline + graph never disagree on what's visible. */
+function productMatchesFilters(p){
+  if (!p) return false;
+  if (!activeCats.has(p.category)) return false;
+  const fam = nodeById[p.family];
+  if (activeUC  && !((fam?.useCases  || []).includes(activeUC )))  return false;
+  if (activeInd && !((fam?.industries|| []).includes(activeInd)))  return false;
+  return true;
+}
+/* Refresh the Timeline view if it's open. renderTimeline lives inside the
+   v2 IIFE while applyFilters() is in the outer scope, so we reach it through
+   the documented `window.__cpnV2.phases.renderTimeline` export rather than a
+   direct call (which would be a ReferenceError). Safe to call before v2 has
+   booted — the optional chaining short-circuits to no-op. */
+function refreshTimelineIfOpen(){
+  if (!document.querySelector("#tl-wrap.show")) return;
+  window.__cpnV2?.phases?.renderTimeline?.();
+}
 function applyFilters() {
   // Category / use-case / industry filters apply in Families and All-Products
   // modes. Overview and Composition short-circuit: they always show their
@@ -3426,6 +3449,7 @@ function applyFilters() {
     if (ndEl) ndEl.style("display", null);
     if (lviz) lviz.style("display", null);
     if (lhit) lhit.style("display", null);
+    refreshTimelineIfOpen();
     return;
   }
   const vis=new Set();
@@ -3453,6 +3477,7 @@ function applyFilters() {
     badge.style.display="block";
   }
   else badge.style.display="none";
+  refreshTimelineIfOpen();
 }
 
 function resetAll() {
@@ -4478,7 +4503,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.2.0";
+const APP_VERSION   = "2.2.1";
 const DATA_UPDATED  = "2026-05-29";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4766,6 +4791,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.2.1", date:"2026-05-30", items:[
+    "Fix: timeline horizontal scrollbar now visible — the bottom footer / hint / tools chrome was painting over it. Switched to a :has(#tl-wrap.show) selector with !important so the chrome hides off pure DOM state regardless of cache or class-timing.",
+    "Fix: category chips, use-case dropdown, industry dropdown, and Filters drawer now apply in Timeline view — the renderer was iterating PRODUCTS unconditionally. Refactored to reuse the same predicate as the graph view, and re-renders the timeline on every filter change while open."
+  ]},
   {ver:"2.2.0", date:"2026-05-29", items:[
     "Catalog refresh — Cisco Live 2025 + early 2026 product wave (~28 new products, 2 new families)",
     "New family: secure-routers — the 8000-series Secure Routers (8100/8200/8300/8400/8500) unified SD-WAN + SASE + NGFW + post-quantum routing line",
@@ -5044,12 +5073,20 @@ STYLE.textContent = `
     display:none;overflow:hidden;z-index:40;flex-direction:column}
   /* Lift the timeline so the horizontal scrollbar at the bottom of #tl-canvas
      isn't covered by other fixed chrome (#v2-footer, #tools, #hint), which
-     all paint above #tl-wrap (z-index 45–50 vs. tl-wrap's 40). */
+     all paint above #tl-wrap (z-index 45–50 vs. tl-wrap's 40). The
+     :has(#tl-wrap.show) selectors run purely off DOM state and don't depend
+     on the JS adding a body class. body.tl-open is kept as a fallback for
+     any edge case (older browser w/o :has, or programmatic open that skips
+     the JS path). !important defeats later same-id selectors like
+     "#tools{bottom:42px}" further down in the cascade. */
   #tl-wrap.show{display:flex;bottom:60px}
   body.planner-open #tl-wrap{right:490px}
-  body.tl-open #v2-footer{display:none}
-  body.tl-open #hint{display:none}
-  body.tl-open #tools{bottom:18px}
+  body:has(#tl-wrap.show) #v2-footer,
+  body.tl-open #v2-footer{display:none !important}
+  body:has(#tl-wrap.show) #hint,
+  body.tl-open #hint{display:none !important}
+  body:has(#tl-wrap.show) #tools,
+  body.tl-open #tools{bottom:18px !important}
   #tl-head{padding:12px 22px;border-bottom:1px solid var(--border);
     display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;flex-wrap:nowrap}
   #tl-head > div:last-child{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:nowrap}
@@ -6869,9 +6906,18 @@ function renderTimeline(){
      further-out EOS milestones. Without this, ~19 legacy products with
      pre-2021 EOS dates clamp visually to the left edge instead of landing
      at their real position. */
+  // Apply the same category / use-case / industry / stack filters the graph
+  // view uses, so toggling a chip or dropdown updates Timeline immediately.
+  // productMatchesFilters() is defined alongside applyFilters() — single
+  // source of truth so timeline + graph can never disagree.
+  const visibleProducts = PRODUCTS.filter(p => {
+    if (TL.onlyStack && !stack.has(p.id) && !stack.has(p.family)) return false;
+    return productMatchesFilters(p);
+  });
+
   let startY = now.getFullYear() - 5;
   let endY   = now.getFullYear() + 6;
-  PRODUCTS.forEach(p => {
+  visibleProducts.forEach(p => {
     for (const s of [p.eosDate, p.eolDate]) {
       const d = parseFuzzyDate(s); if (!d) continue;
       const y = d.getFullYear();
@@ -6907,10 +6953,10 @@ function renderTimeline(){
     return Math.max(0, Math.min(100, ((d.getTime() - startMs) / totalMs) * 100));
   };
 
-  // Group products by family
+  // Group products by family — uses the pre-filtered set so families with
+  // zero matching products don't render an empty row.
   const fams = {};
-  PRODUCTS.forEach(p => {
-    if (TL.onlyStack && !stack.has(p.id) && !stack.has(p.family)) return;
+  visibleProducts.forEach(p => {
     (fams[p.family] = fams[p.family] || []).push(p);
   });
 
