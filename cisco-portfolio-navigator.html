@@ -2878,6 +2878,7 @@ function rebindGraph(opts){
   sim.nodes(viewNodes);
   sim.force("link").links(viewLinks);
   if (restart) sim.alpha(0.85).restart();
+  if (typeof watchDirectNodeClicks === "function") watchDirectNodeClicks();
 }
 
 svg.on("click",() => { selected=null; resetHL(); closePanel(); });
@@ -3347,6 +3348,9 @@ function selectNodeSpatial(d, graphNode){
   selected = d;
   hideTip();
   showDetailPanel(d);
+  const pb = document.getElementById("pbody");
+  if (pb){ pb.dataset.lastId = d.id; pb.dataset.lastKind = "node"; }
+  window.__cpnV2?.phases?.enhanceDetailPanel?.();
   if (spatialState.graph){
     spatialState.graph.nodeColor(spatialNodeColor);
     refreshSpatialLabelStyles();
@@ -5040,13 +5044,14 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.7.4";
+const APP_VERSION   = "2.7.5";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
   current:  "cpn-current-v2",
   recent:   "cpn-recent-v2",
   pinned:   "cpn-pinned-v2",
+  compare:  "cpn-compare-v2",
   profile:  "cpn-profile-v2",
   aiKey:    "cpn-ai-key-v2",
   aiCfg:    "cpn-ai-cfg-v2",
@@ -5330,6 +5335,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.7.5", date:"2026-05-31", items:[
+    "Compare — separate compare queue (independent of ★ Pin): Show in Compare adds items to a visible chip list and side-by-side columns; Pin only saves to Recent/Pinned."
+  ]},
   {ver:"2.7.4", date:"2026-05-31", items:[
     "Compare — Show in Compare always adds or promotes the current item to the compare row (up to 4 columns); button labels update to reflect pin/compare state."
   ]},
@@ -5654,7 +5662,22 @@ STYLE.textContent = `
   #cmp-x{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
     color:var(--muted);width:26px;height:26px;font-size:14px;cursor:pointer;
     display:flex;align-items:center;justify-content:center}
-  #cmp-body{flex:1;overflow:auto;padding:14px 18px;display:flex;gap:12px}
+  #cmp-clear{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+    color:var(--muted);font-size:11px;font-weight:600;padding:4px 10px;cursor:pointer}
+  #cmp-clear:hover{border-color:var(--accent);color:var(--accent)}
+  #cmp-body{flex:1;overflow:auto;padding:14px 18px;display:flex;flex-direction:column;gap:12px;min-height:0}
+  .cmp-layout{display:flex;flex-direction:column;gap:12px;min-height:min-content}
+  .cmp-chips-wrap{flex-shrink:0}
+  .cmp-chips-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin-bottom:6px}
+  .cmp-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .cmp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:16px;
+    background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text);
+    cursor:pointer;transition:border-color .12s,background .12s}
+  .cmp-chip:hover{border-color:var(--accent);background:rgba(0,188,235,.08)}
+  .cmp-chip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .cmp-chip-x{color:var(--subtle);font-size:13px;line-height:1;margin-left:2px}
+  .cmp-chip-x:hover{color:var(--red)}
+  .cmp-cols{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}
   .cmp-col{flex:1;min-width:240px;background:var(--surface2);border:1px solid var(--border);
     border-radius:9px;padding:12px}
   .cmp-col h4{font-size:13px;font-weight:700;margin-bottom:8px}
@@ -6294,11 +6317,6 @@ function togglePin(id){
   p = isPinning ? [id, ...p] : p.filter(x => x !== id);
   lsSet(STORAGE_KEYS.pinned, p);
   renderRecentPinned();
-  // Compare panel is a view of the pinned list, so refresh it on every pin
-  // change and auto-open it when the user is adding a pin (so they see the
-  // side-by-side card immediately, matching the panel header's promise).
-  if (typeof renderCompare === "function") renderCompare();
-  if (isPinning && typeof openComparePanel === "function") openComparePanel();
   refreshDetailPinButtons(id);
 }
 function renderRecentPinned(){
@@ -6362,15 +6380,7 @@ function buildRecentPinned(){
    catch every render path — direct node clicks, inline-HTML jumps, and
    programmatic calls. */
 function enhancePanelAuto(){
-  const pb = $("#pbody"); if (!pb) return;
-  // Detect what was just rendered by inspecting first .p-name / known ids.
-  if (pb.querySelector(".p-photo")) return; // already enhanced this render
-  // Try to determine product id vs node id — look for first onclick reference, or use a marker we'll set
-  const marker = pb.dataset.lastId;
-  if (!marker) return;
-  const kind = pb.dataset.lastKind || "node";
-  if (kind === "product") enhanceProductPanel(marker);
-  else                     enhanceNodePanel(marker);
+  enhanceDetailPanel();
 }
 // Wrap window.* navigation functions so we know what was last opened.
 const _origShowPD = window.showProductDetail;
@@ -7782,38 +7792,66 @@ function refreshDetailPinButtons(id){
   if (cmpBtn) cmpBtn.textContent = inCompare ? "⇆ In Compare" : "⇆ Show in Compare";
 }
 
+function enhanceDetailPanel(){
+  const pb = $("#pbody"); if (!pb) return;
+  if (pb.querySelector(".p-extra")) return;
+  const marker = pb.dataset.lastId;
+  if (!marker) return;
+  const kind = pb.dataset.lastKind || "node";
+  if (kind === "product") enhanceProductPanel(marker);
+  else                     enhanceNodePanel(marker);
+}
+
 /* ════════════════════════════════════════════════════════════════════════
    [09] COMPARE MODE
 
-   Compare is a *view* of the user's pinned list — there is no separate
-   "compareSet". Pinning (★) saves an item; Show in Compare always promotes
-   it to the front of the compare row (up to 4 columns). Closing the compare
-   panel (×) just hides the panel; it does not unpin anything.
+   Compare uses its own queue (STORAGE_KEYS.compare), separate from ★ Pin.
+   Show in Compare adds/promotes items in that list (up to COMPARE_LIMIT).
+   Pin only affects Recent / Pinned — not the compare queue.
    ════════════════════════════════════════════════════════════════════════*/
-const COMPARE_LIMIT = 4; // visible compare columns; extra pins stay in rp-panel only
-function compareItems(){
-  return lsGet(STORAGE_KEYS.pinned, []).slice(0, COMPARE_LIMIT);
+const COMPARE_LIMIT = 4;
+
+function isValidCompareId(id){
+  return !!(nodeById[id] || prodById[id]);
 }
+
+function getCompareList(){
+  return lsGet(STORAGE_KEYS.compare, []).filter(isValidCompareId);
+}
+
+function setCompareList(list){
+  lsSet(STORAGE_KEYS.compare, list.filter(isValidCompareId).slice(0, COMPARE_LIMIT));
+}
+
+function compareItems(){
+  return getCompareList();
+}
+
 function addToCompare(id){
-  if (!nodeById[id] && !prodById[id]) return;
-  let p = lsGet(STORAGE_KEYS.pinned, []);
-  const wasPinned = p.includes(id);
-  const wasInCompare = wasPinned && p.indexOf(id) < COMPARE_LIMIT;
-  p = [id, ...p.filter(x => x !== id)];
-  lsSet(STORAGE_KEYS.pinned, p);
-  renderRecentPinned();
+  if (!isValidCompareId(id)) return;
+  const prev = getCompareList();
+  const had = prev.includes(id);
+  const list = [id, ...prev.filter(x => x !== id)].slice(0, COMPARE_LIMIT);
+  setCompareList(list);
   renderCompare();
   openComparePanel();
   refreshDetailPinButtons(id);
-  if (!wasPinned) showToast("Added to Compare");
-  else if (!wasInCompare) showToast("Moved to Compare (showing 4 slots)");
+  if (!had) showToast(`Added to Compare (${list.length}/${COMPARE_LIMIT})`);
+  else if (prev.indexOf(id) > 0) showToast("Moved to front of Compare list");
   else showToast("Shown in Compare");
 }
+
 function removeFromCompare(id){
-  // Column × → unpin (also removes it from the rp-panel).
-  const pinned = lsGet(STORAGE_KEYS.pinned, []);
-  if (pinned.includes(id)) togglePin(id);
+  setCompareList(getCompareList().filter(x => x !== id));
+  renderCompare();
+  refreshDetailPinButtons(id);
   if (!compareItems().length) closeCompare();
+}
+
+function clearCompareList(){
+  setCompareList([]);
+  renderCompare();
+  closeCompare();
 }
 function openComparePanel(){
   const cmp = $("#cmp-panel"); if (!cmp) return;
@@ -7832,52 +7870,79 @@ function buildComparePanel(){
     <div id="cmp-head">
       <div>
         <div class="ph-t">Compare</div>
-        <div class="ph-s" style="font-size:11px;color:var(--muted)">Pin items (★) or use <strong>Show in Compare</strong> — up to 4 appear here side-by-side. Click × on a column to unpin.</div>
+        <div class="ph-s" style="font-size:11px;color:var(--muted)"><strong>Show in Compare</strong> builds a separate list (up to ${COMPARE_LIMIT}) — independent of ★ Pin. Click × on a chip or column to remove.</div>
       </div>
-      <button id="cmp-x" title="Hide compare panel (pins remain)">×</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button id="cmp-clear" type="button" title="Clear compare list">Clear</button>
+        <button id="cmp-x" title="Hide compare panel">×</button>
+      </div>
     </div>
     <div id="cmp-body"></div>
   `;
   document.body.appendChild(p);
   $("#cmp-x").addEventListener("click", closeCompare);
+  $("#cmp-clear").addEventListener("click", clearCompareList);
   renderCompare();
+}
+function renderCompareColumn(id){
+  const isP = !!prodById[id];
+  const it  = isP ? prodById[id] : nodeById[id];
+  if (!it) return "";
+  const cat = CATS[it.category];
+  if (!cat) return "";
+  const tier = TIERS[isP ? it.family : id];
+  const rels = LINKS.filter(l => sid(l) === (isP ? it.family : id) || tid(l) === (isP ? it.family : id)).length;
+  return `<div class="cmp-col">
+    <button class="cmp-x" data-r="${id}" title="Remove from compare">×</button>
+    <div class="cmp-cat" style="background:${cat.color}22;color:${cat.color}">${cat.label}</div>
+    <h4>${escapeHtml(it.name)}</h4>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">${escapeHtml(it.desc || nodeById[it.family]?.desc || "")}</div>
+    <div class="cmp-row"><span class="cmp-rk">Kind</span><span class="cmp-rv">${isP?"Specific Product":"Family"}</span></div>
+    <div class="cmp-row"><span class="cmp-rk">Family</span><span class="cmp-rv">${escapeHtml(isP?(nodeById[it.family]?.name||""):it.name)}</span></div>
+    <div class="cmp-row"><span class="cmp-rk">Status</span><span class="cmp-rv">${(it.status||"current").toUpperCase()}</span></div>
+    ${tier?`<div class="cmp-row"><span class="cmp-rk">Tier</span><span class="cmp-rv">${escapeHtml(tier.tier)}</span></div>`:""}
+    ${tier?`<div class="cmp-row"><span class="cmp-rk">Model</span><span class="cmp-rv">${escapeHtml(tier.model)}</span></div>`:""}
+    ${!isP?`<div class="cmp-row"><span class="cmp-rk">Connections</span><span class="cmp-rv">${rels}</span></div>`:""}
+    ${!isP?`<div class="cmp-row"><span class="cmp-rk">Use cases</span><span class="cmp-rv">${(it.useCases||[]).slice(0,3).join(", ")}${(it.useCases||[]).length>3?"…":""}</span></div>`:""}
+    ${it.eosDate?`<div class="cmp-row"><span class="cmp-rk">EOS date</span><span class="cmp-rv">${it.eosDate}</span></div>`:""}
+    ${it.eolDate?`<div class="cmp-row"><span class="cmp-rk">EOL date</span><span class="cmp-rv">${it.eolDate}</span></div>`:""}
+    ${it.successor?`<div class="cmp-row"><span class="cmp-rk">Successor</span><span class="cmp-rv">${escapeHtml(nameOf(it.successor))}</span></div>`:""}
+    <div style="margin-top:10px;display:flex;gap:5px">
+      <button class="rc-btn" onclick="${isP?`window.showProductDetail('${id}')`:`window.jumpTo('${id}')`}">Open</button>
+      <button class="rc-btn" onclick="window.addToStack('${id}','${isP?"product":"node"}')">+ Stack</button>
+    </div>
+  </div>`;
 }
 function renderCompare(){
   const body = $("#cmp-body"); if (!body) return;
   const items = compareItems();
   if (!items.length){
-    body.innerHTML = `<div id="cmp-empty">Nothing to compare yet. Click <strong>⇆ Show in Compare</strong> or <strong>★ Pin</strong> on any detail panel.</div>`;
+    body.innerHTML = `<div id="cmp-empty">Compare list is empty. Click <strong>⇆ Show in Compare</strong> on any detail panel to add items here (up to ${COMPARE_LIMIT}). ★ Pin saves favorites separately.</div>`;
     return;
   }
-  body.innerHTML = items.map(id => {
-    const isP = !!prodById[id];
-    const it  = isP ? prodById[id] : nodeById[id];
+  const chips = items.map(id => {
+    const it = nodeById[id] || prodById[id];
     if (!it) return "";
-    const cat = CATS[it.category];
-    const tier = TIERS[isP ? it.family : id];
-    const rels = LINKS.filter(l => sid(l) === (isP ? it.family : id) || tid(l) === (isP ? it.family : id)).length;
-    return `<div class="cmp-col">
-      <button class="cmp-x" data-r="${id}" title="Unpin and remove from compare">×</button>
-      <div class="cmp-cat" style="background:${cat.color}22;color:${cat.color}">${cat.label}</div>
-      <h4>${escapeHtml(it.name)}</h4>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">${escapeHtml(it.desc || nodeById[it.family]?.desc || "")}</div>
-      <div class="cmp-row"><span class="cmp-rk">Kind</span><span class="cmp-rv">${isP?"Specific Product":"Family"}</span></div>
-      <div class="cmp-row"><span class="cmp-rk">Family</span><span class="cmp-rv">${escapeHtml(isP?(nodeById[it.family]?.name||""):it.name)}</span></div>
-      <div class="cmp-row"><span class="cmp-rk">Status</span><span class="cmp-rv">${(it.status||"current").toUpperCase()}</span></div>
-      ${tier?`<div class="cmp-row"><span class="cmp-rk">Tier</span><span class="cmp-rv">${escapeHtml(tier.tier)}</span></div>`:""}
-      ${tier?`<div class="cmp-row"><span class="cmp-rk">Model</span><span class="cmp-rv">${escapeHtml(tier.model)}</span></div>`:""}
-      ${!isP?`<div class="cmp-row"><span class="cmp-rk">Connections</span><span class="cmp-rv">${rels}</span></div>`:""}
-      ${!isP?`<div class="cmp-row"><span class="cmp-rk">Use cases</span><span class="cmp-rv">${(it.useCases||[]).slice(0,3).join(", ")}${(it.useCases||[]).length>3?"…":""}</span></div>`:""}
-      ${it.eosDate?`<div class="cmp-row"><span class="cmp-rk">EOS date</span><span class="cmp-rv">${it.eosDate}</span></div>`:""}
-      ${it.eolDate?`<div class="cmp-row"><span class="cmp-rk">EOL date</span><span class="cmp-rv">${it.eolDate}</span></div>`:""}
-      ${it.successor?`<div class="cmp-row"><span class="cmp-rk">Successor</span><span class="cmp-rv">${escapeHtml(nameOf(it.successor))}</span></div>`:""}
-      <div style="margin-top:10px;display:flex;gap:5px">
-        <button class="rc-btn" onclick="${isP?`window.showProductDetail('${id}')`:`window.jumpTo('${id}')`}">Open</button>
-        <button class="rc-btn" onclick="window.addToStack('${id}','${isP?"product":"node"}')">+ Stack</button>
-      </div>
-    </div>`;
+    const c = catOf(id);
+    return `<button class="cmp-chip" type="button" data-r="${id}" title="Remove from compare">
+      <span class="cmp-chip-dot" style="background:${c && CATS[c] ? CATS[c].color : "#666"}"></span>
+      <span>${escapeHtml(it.name)}</span>
+      <span class="cmp-chip-x">×</span>
+    </button>`;
   }).join("");
-  body.querySelectorAll("[data-r]").forEach(b => b.addEventListener("click", () => removeFromCompare(b.dataset.r)));
+  const cols = items.map(renderCompareColumn).filter(Boolean).join("");
+  body.innerHTML = `
+    <div class="cmp-layout">
+      <div class="cmp-chips-wrap">
+        <div class="cmp-chips-lbl">Compare list (${items.length}/${COMPARE_LIMIT})</div>
+        <div class="cmp-chips">${chips}</div>
+      </div>
+      <div class="cmp-cols">${cols || `<div id="cmp-empty">Could not render compare columns.</div>`}</div>
+    </div>`;
+  body.querySelectorAll("[data-r]").forEach(b => b.addEventListener("click", ev => {
+    ev.stopPropagation();
+    removeFromCompare(b.dataset.r);
+  }));
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -9250,7 +9315,7 @@ window.__cpnV2 = {
   helpers: { $, $$, lsGet, lsSet, lsDel, nameOf, catOf, downloadBlob, escapeHtml, relTime },
   phases: { readState, applyState, encodeShareableUrl, decodeShareableUrl,
     exportMarkdown, exportCSV, exportJSON, exportPDF, exportPPTX, exportText,
-    addToCompare, closeCompare, renderMigratePlan, renderCompatWarnings,
+    addToCompare, closeCompare, clearCompareList, renderCompare, enhanceDetailPanel, renderMigratePlan, renderCompatWarnings,
     pushBreadcrumb, navHistory, bootRestore, buildPlansMenu, buildExportMenu,
     buildProfileBox, buildTemplatesStrip, buildComparePanel, buildRecentPinned,
     addPlannerTabs, refreshPlansBtn, applyRefArch, clearRefArch, renderTimeline,
