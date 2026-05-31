@@ -2940,8 +2940,16 @@ function buildOverviewView(){
   const links = [];
   pair.forEach((count,key) => {
     const [a,b] = key.split("|");
-    if (count < 2) return;   // hide noise — only show strong cross-category bonds
-    links.push({ source:"cat-"+a, target:"cat-"+b, type:"adjacent", label:`${count} connections` });
+    if (count < 1) return;
+    links.push({ source:"cat-"+a, target:"cat-"+b, type:"adjacent", label:`${count} connection${count === 1 ? "" : "s"}` });
+  });
+  // Seed a compact ring so all category bubbles start grouped (Collaboration
+  // had no links at the old ≥2 threshold and was repelled to the edge).
+  const ringR = 140;
+  nodes.forEach((n, i) => {
+    const a = (i / nodes.length) * 2 * Math.PI - Math.PI / 2;
+    n.x = Math.cos(a) * ringR;
+    n.y = Math.sin(a) * ringR;
   });
   return { nodes, links };
 }
@@ -5044,7 +5052,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.7.5";
+const APP_VERSION   = "2.7.6";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5335,6 +5343,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.7.6", date:"2026-05-31", items:[
+    "Overview — category bubbles now seed in a tight ring on load and show all cross-category links (including Collaboration), so no family drifts away on a fresh session."
+  ]},
   {ver:"2.7.5", date:"2026-05-31", items:[
     "Spatial view — optional 3D map of product families with always-visible labels, orbit/zoom navigation, filters, and stack highlights. Double-click a family (or Explore N products) to drill into a 3D composition; Esc or the breadcrumb steps back. Bundled offline (no CDN); 2D hint bar hidden while Spatial is active.",
     "Guided tour updated (v2.5) — new Spatial step, Guided Plan AI deliverables, and export/AI context coverage.",
