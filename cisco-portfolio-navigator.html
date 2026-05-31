@@ -84,7 +84,11 @@
       color:var(--muted);font-size:12px;padding:5px 9px;cursor:pointer;
       transition:all .15s;white-space:nowrap;flex-shrink:0}
     #rst:hover{border-color:var(--accent);color:var(--accent)}
-    #planner-btn{margin-left:auto;flex-shrink:0;display:flex;align-items:center;gap:6px;
+    #guided-btn{margin-left:auto;flex-shrink:0;display:flex;align-items:center;gap:6px;
+      background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:7px;
+      font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:all .15s;white-space:nowrap}
+    #guided-btn:hover{background:rgba(0,188,235,.12)}
+    #planner-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
       background:var(--accent);color:#000;border:none;border-radius:7px;
       font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:opacity .15s;white-space:nowrap}
     #planner-btn:hover{opacity:.85}
@@ -506,6 +510,13 @@
   <select class="tbs" id="ucs"><option value="">All Use Cases</option></select>
   <select class="tbs" id="inds"><option value="">All Industries</option></select>
   <button id="rst">Reset</button>
+  <button id="guided-btn" type="button" title="Step-by-step guided account plan">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Guided Plan
+  </button>
   <button id="planner-btn">
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor"/>
@@ -4504,7 +4515,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.3.9";
+const APP_VERSION   = "2.4.0";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4793,6 +4804,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.4.0", date:"2026-05-30", items:[
+    "Guided Plan wizard — 5-step flow (industry, size, capabilities, legacy refresh) that builds your stack and runs analysis automatically.",
+    "New Guided Plan button in the top bar; reveal screen summarizes stack size, bundle coverage, and top recommendations with one-click jump to planner or graph."
+  ]},
   {ver:"2.3.9", date:"2026-05-30", items:[
     "PowerPoint export: simple client-ready deck — title, current stack table, top recommendations, bundle coverage, and footer."
   ]},
@@ -4990,6 +5005,68 @@ STYLE.textContent = `
     padding:4px 10px;font-size:10.5px;font-weight:600;color:var(--muted);
     cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
   .tpl-chip:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* Guided Plan wizard */
+  #gw-overlay{position:fixed;inset:0;z-index:500;display:none;
+    background:rgba(13,17,23,.88);backdrop-filter:blur(6px);
+    align-items:center;justify-content:center;padding:20px}
+  #gw-overlay.show{display:flex}
+  #gw-panel{width:min(640px,100%);max-height:min(90vh,820px);
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    box-shadow:0 24px 64px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
+  #gw-head{padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+  #gw-head .gw-title{font-size:17px;font-weight:700;margin-bottom:4px}
+  #gw-head .gw-sub{font-size:12px;color:var(--muted);line-height:1.45}
+  #gw-progress{display:flex;gap:5px;margin-top:14px}
+  #gw-progress .gw-dot{flex:1;height:4px;border-radius:2px;background:var(--surface3);transition:background .25s}
+  #gw-progress .gw-dot.done{background:var(--accent)}
+  #gw-progress .gw-dot.cur{background:var(--accent);opacity:.55}
+  #gw-body{flex:1;overflow-y:auto;padding:20px 22px 8px}
+  #gw-body .gw-q{font-size:15px;font-weight:700;margin-bottom:6px}
+  #gw-body .gw-hint{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.45}
+  .gw-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+  .gw-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+    padding:12px 10px;cursor:pointer;text-align:center;transition:all .15s;font-family:inherit}
+  .gw-card:hover{border-color:var(--accent);background:rgba(0,188,235,.06)}
+  .gw-card.sel{border-color:var(--accent);background:rgba(0,188,235,.12);box-shadow:0 0 0 1px var(--accent)}
+  .gw-card .gw-ico{font-size:22px;line-height:1;margin-bottom:6px}
+  .gw-card .gw-lbl{font-size:11.5px;font-weight:700;color:var(--text);line-height:1.25}
+  .gw-card .gw-desc{font-size:10px;color:var(--subtle);margin-top:4px;line-height:1.3}
+  .gw-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px}
+  .gw-tile{background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+    padding:10px 12px;cursor:pointer;transition:all .15s;text-align:left;font-family:inherit}
+  .gw-tile:hover{border-color:var(--accent)}
+  .gw-tile.sel{border-color:var(--accent);background:rgba(0,188,235,.1)}
+  .gw-tile .gw-tl{font-size:12px;font-weight:700;color:var(--text)}
+  .gw-tile .gw-td{font-size:10px;color:var(--subtle);margin-top:3px;line-height:1.35}
+  .gw-preview{margin-top:14px;padding:10px 12px;border-radius:8px;
+    background:rgba(0,188,235,.06);border:1px solid rgba(0,188,235,.25);
+    font-size:11.5px;color:var(--muted);line-height:1.45}
+  .gw-preview strong{color:var(--accent)}
+  #gw-reveal{text-align:center;padding:8px 0 12px}
+  #gw-reveal .gw-spin{font-size:13px;color:var(--muted);padding:24px 0}
+  .gw-summary{background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+    padding:18px;text-align:left;margin-bottom:16px}
+  .gw-summary .gw-sn{font-size:16px;font-weight:700;margin-bottom:6px}
+  .gw-summary .gw-snarr{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+  .gw-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .gw-stat{background:var(--surface3);border-radius:8px;padding:10px 8px;text-align:center}
+  .gw-stat .gw-sv{font-size:20px;font-weight:800;color:var(--accent)}
+  .gw-stat .gw-sl{font-size:9px;color:var(--subtle);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .gw-toprecs{font-size:11px;color:var(--muted);line-height:1.55}
+  .gw-toprecs li{margin:4px 0 4px 16px}
+  #gw-foot{padding:12px 22px 18px;border-top:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
+  #gw-foot .gw-step-lbl{font-size:11px;color:var(--subtle);font-weight:600}
+  #gw-foot .gw-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .gw-btn{border-radius:7px;font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer;
+    font-family:inherit;transition:all .15s;border:1px solid var(--border);
+    background:var(--surface2);color:var(--text)}
+  .gw-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .gw-btn.primary{background:var(--accent);color:#000;border-color:var(--accent)}
+  .gw-btn.primary:hover{opacity:.88;color:#000}
+  .gw-btn.ghost{background:transparent;border-color:transparent;color:var(--subtle)}
+  .gw-btn.ghost:hover{color:var(--text)}
 
   /* Detail panel tiers + photos + breadcrumbs */
   .p-tier{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;
@@ -6263,6 +6340,380 @@ function buildTemplatesStrip(){
     scheduleAutoSave();
     showToast(`Loaded ${t.name} starter`);
   }));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Guided Plan wizard
+   ════════════════════════════════════════════════════════════════════════*/
+const WIZARD_INDUSTRY_VERTICAL = {
+  hospital: "Healthcare", k12: "Education", university: "Education",
+  "bank-branch": "Financial Services", "retail-chain": "Retail",
+  manufacturing: "Manufacturing", federal: "Government"
+};
+const WIZARD_INDUSTRY_ICONS = {
+  hospital: "🏥", k12: "🎓", university: "🏛️", "bank-branch": "🏦",
+  "retail-chain": "🛍️", manufacturing: "🏭", smb: "🏢",
+  "saas-startup": "☁️", federal: "🏛️"
+};
+const WIZARD_DOMAINS = [
+  {id:"campus-switch", label:"Campus switching", desc:"Access & core switching",
+   families:["catalyst-access","catalyst-core","meraki-switches"],
+   hideFor:["saas-startup"]},
+  {id:"wireless", label:"Wireless / Wi‑Fi", desc:"Campus & branch APs",
+   families:["catalyst-wireless","meraki-wireless"], hideFor:[]},
+  {id:"wan", label:"WAN / SD-WAN", desc:"Edge routing & optimization",
+   families:["sdwan","meraki-mx","wan-routers"], hideFor:[]},
+  {id:"branch-fw", label:"Branch firewall", desc:"NGFW at the edge",
+   families:["sf-branch"], hideFor:["saas-startup"]},
+  {id:"dc-fw", label:"Data center firewall", desc:"Enterprise NGFW",
+   families:["sf-enterprise"], hideFor:["k12","smb","saas-startup","retail-chain"]},
+  {id:"identity", label:"Identity / NAC", desc:"ISE, MFA, posture",
+   families:["ise","duo"], hideFor:[]},
+  {id:"dns-sec", label:"DNS & web security", desc:"Umbrella, SWG",
+   families:["umbrella"], hideFor:[]},
+  {id:"ztna", label:"Zero trust / SSE", desc:"Secure Access, ZTNA",
+   families:["secure-access"], hideFor:[]},
+  {id:"collab", label:"Meetings & messaging", desc:"Webex suite",
+   families:["webex-meetings","webex-app"], hideFor:[]},
+  {id:"calling", label:"Calling / UCaaS", desc:"Cloud phone system",
+   families:["webex-calling"], hideFor:[]},
+  {id:"contact-center", label:"Contact center", desc:"Omnichannel CC",
+   families:["webex-cc"], hideFor:["saas-startup","manufacturing"]},
+  {id:"rooms", label:"Room & desk devices", desc:"RoomOS endpoints",
+   families:["room-systems","desk-devices"], hideFor:["saas-startup"]},
+  {id:"compute", label:"Servers & compute", desc:"UCS, HyperFlex, Intersight",
+   families:["ucs","hyperflex","intersight"], hideFor:["k12","smb","retail-chain"]},
+  {id:"dc-net", label:"DC networking", desc:"Nexus, ACI fabric",
+   families:["nexus","aci"], hideFor:["k12","smb","saas-startup","retail-chain"]},
+  {id:"obs", label:"Observability", desc:"ThousandEyes, Splunk, APM",
+   families:["thousandeyes","splunk","appdynamics","fso"], hideFor:[]},
+  {id:"ot", label:"OT / plant floor", desc:"Industrial Ethernet, Cyber Vision",
+   families:["industrial-eth","cyber-vision"], hideFor:["k12","smb","saas-startup","retail-chain","bank-branch"]}
+];
+const WIZARD_LEGACY_TILES = [
+  {id:"l-anyconnect", label:"VPN-only remote access", sub:"AnyConnect → Secure Access"},
+  {id:"l-prime", label:"Prime Infrastructure", sub:"→ Catalyst Center"},
+  {id:"l-cucm", label:"On-prem phone (CUCM)", sub:"→ Webex Calling"},
+  {id:"l-uccx", label:"On-prem contact center", sub:"→ Webex CC"},
+  {id:"l-asa-legacy", label:"Classic ASA firewalls", sub:"→ Secure Firewall"},
+  {id:"l-vcs", label:"VCS / TelePresence", sub:"→ Room Systems"},
+  {id:"l-jabber", label:"Jabber client", sub:"→ Webex App"},
+  {id:"l-mpls", label:"MPLS-only WAN", sub:"→ SD-WAN"},
+  {id:"l-wlc", label:"Standalone WLC", sub:"→ Catalyst Center / Meraki"},
+  {id:"l-imc", label:"Standalone UCS IMC", sub:"→ Intersight"},
+  {id:"l-stealthwatch", label:"Stealthwatch", sub:"→ Splunk + XDR"}
+];
+const WIZARD_SIZES = [
+  {id:"SMB (<500)", label:"Small", desc:"Under 500 people"},
+  {id:"Mid-Market (500-5K)", label:"Mid-size", desc:"500 – 5,000"},
+  {id:"Enterprise (5K-50K)", label:"Large", desc:"5,000 – 50,000"},
+  {id:"Global Enterprise (50K+)", label:"Global", desc:"50,000+"}
+];
+
+let wizardOpen = false;
+const wizardState = { step: 1, industry: null, size: null, domains: new Set(), legacy: new Set() };
+
+function wizardDomainsForIndustry(industryId) {
+  return WIZARD_DOMAINS.filter(d => !industryId || !(d.hideFor || []).includes(industryId));
+}
+
+function wizardBuildStackIds() {
+  const ids = new Set();
+  if (wizardState.industry) {
+    const t = INDUSTRY_TEMPLATES.find(x => x.id === wizardState.industry);
+    if (t) t.products.forEach(p => { if (nodeById[p]) ids.add(p); });
+  }
+  wizardState.domains.forEach(domId => {
+    const dom = WIZARD_DOMAINS.find(d => d.id === domId);
+    if (!dom) return;
+    dom.families.forEach(f => { if (nodeById[f]) ids.add(f); });
+  });
+  if (!ids.size) {
+    INDUSTRY_TEMPLATES.find(x => x.id === "smb")?.products.forEach(p => {
+      if (nodeById[p]) ids.add(p);
+    });
+  }
+  return ids;
+}
+
+function wizardApplyPlan() {
+  stack.clear(); stackItems.clear(); legacySel.clear();
+  wizardBuildStackIds().forEach(id => { stack.add(id); stackItems.set(id, "node"); });
+  wizardState.legacy.forEach(id => legacySel.add(id));
+  const vert = WIZARD_INDUSTRY_VERTICAL[wizardState.industry] || "";
+  const size = wizardState.size || "";
+  if ($("#prof-vert")) $("#prof-vert").value = vert;
+  if ($("#prof-size")) $("#prof-size").value = size;
+  lsSet(STORAGE_KEYS.profile, { vertical: vert, size, mode: "" });
+  if (vert) { activeInd = vert; if ($("#inds")) $("#inds").value = vert; applyFilters(); }
+  renderChips(); updateAB();
+  $$(".lc").forEach(c => c.classList.toggle("sel", legacySel.has(c.dataset.id)));
+  highlightStack();
+  analyzed = true;
+  scheduleAutoSave();
+  window.runAnalysis();
+}
+
+function wizardNarrative() {
+  const t = INDUSTRY_TEMPLATES.find(x => x.id === wizardState.industry);
+  const indName = t ? t.name : "General business";
+  const sizeLbl = WIZARD_SIZES.find(s => s.id === wizardState.size)?.label || "unspecified size";
+  const n = stack.size;
+  const bundles = BUNDLES.map(b => {
+    const eff = new Set([...stack].map(id => getEffectiveNodeId(id)));
+    const owned = b.products.filter(p => eff.has(p)).length;
+    return { name: b.name, pct: Math.round(owned / b.products.length * 100) };
+  }).sort((a, b) => b.pct - a.pct);
+  const best = bundles[0];
+  const weak = bundles[bundles.length - 1];
+  let line = `${sizeLbl} **${indName.split(" / ")[0]}** account with ${n} ${n !== 1 ? "capabilities" : "capability"} mapped.`;
+  if (best) line += ` Strongest bundle: ${best.name} (${best.pct}%).`;
+  if (weak && weak.pct < 60) line += ` Biggest gap: ${weak.name} (${weak.pct}%).`;
+  if (wizardState.legacy.size) line += ` ${wizardState.legacy.size} legacy refresh trigger${wizardState.legacy.size !== 1 ? "s" : ""} selected.`;
+  return line.replace(/\*\*/g, "");
+}
+
+function wizardTopRecs(limit) {
+  const cards = $$("#tab-recs .rec-card");
+  const names = [];
+  cards.forEach(c => {
+    const nm = c.querySelector(".rc-name");
+    if (nm) names.push(nm.textContent.trim());
+  });
+  return names.slice(0, limit);
+}
+
+function wizardRenderStep() {
+  const body = $("#gw-body");
+  const footLbl = $("#gw-step-lbl");
+  const btnBack = $("#gw-back");
+  const btnNext = $("#gw-next");
+  const dots = $$("#gw-progress .gw-dot");
+  dots.forEach((d, i) => {
+    d.classList.toggle("done", i + 1 < wizardState.step);
+    d.classList.toggle("cur", i + 1 === wizardState.step);
+  });
+  footLbl.textContent = `Step ${wizardState.step} of 5`;
+  btnBack.style.visibility = wizardState.step > 1 && wizardState.step < 5 ? "visible" : "hidden";
+  btnNext.textContent = wizardState.step === 4 ? "Build my plan →" : wizardState.step === 5 ? "Open full analysis" : "Continue";
+  btnNext.classList.toggle("primary", true);
+
+  if (wizardState.step === 1) {
+    body.innerHTML = `
+      <div class="gw-q">Which world does this customer live in?</div>
+      <div class="gw-hint">Pick the closest match — we'll load a starter stack you can refine.</div>
+      <div class="gw-cards" id="gw-ind-cards">
+        ${INDUSTRY_TEMPLATES.map(t => `
+          <button type="button" class="gw-card${wizardState.industry === t.id ? " sel" : ""}" data-id="${t.id}">
+            <div class="gw-ico">${WIZARD_INDUSTRY_ICONS[t.id] || "📋"}</div>
+            <div class="gw-lbl">${escapeHtml(t.name.split(" / ")[0])}</div>
+            <div class="gw-desc">${escapeHtml(t.desc.split(",")[0])}</div>
+          </button>`).join("")}
+      </div>
+      <div class="gw-preview" id="gw-ind-preview">${wizardState.industry
+        ? `<strong>${escapeHtml(INDUSTRY_TEMPLATES.find(x => x.id === wizardState.industry)?.name || "")}</strong> — ${escapeHtml(INDUSTRY_TEMPLATES.find(x => x.id === wizardState.industry)?.desc || "")}`
+        : "Select an industry to see a preview."}</div>`;
+    body.querySelectorAll(".gw-card").forEach(card => {
+      card.addEventListener("click", () => {
+        wizardState.industry = card.dataset.id;
+        wizardState.domains.clear();
+        body.querySelectorAll(".gw-card").forEach(c => c.classList.toggle("sel", c.dataset.id === wizardState.industry));
+        const t = INDUSTRY_TEMPLATES.find(x => x.id === wizardState.industry);
+        const prev = $("#gw-ind-preview");
+        if (prev && t) prev.innerHTML = `<strong>${escapeHtml(t.name)}</strong> — ${escapeHtml(t.desc)}`;
+      });
+    });
+    btnNext.disabled = !wizardState.industry;
+  } else if (wizardState.step === 2) {
+    body.innerHTML = `
+      <div class="gw-q">Roughly how big are they?</div>
+      <div class="gw-hint">Size helps tune recommendations — a guess is fine.</div>
+      <div class="gw-cards" id="gw-size-cards">
+        ${WIZARD_SIZES.map(s => `
+          <button type="button" class="gw-card${wizardState.size === s.id ? " sel" : ""}" data-id="${escapeHtml(s.id)}">
+            <div class="gw-lbl">${escapeHtml(s.label)}</div>
+            <div class="gw-desc">${escapeHtml(s.desc)}</div>
+          </button>`).join("")}
+      </div>`;
+    body.querySelectorAll(".gw-card").forEach(card => {
+      card.addEventListener("click", () => {
+        wizardState.size = card.dataset.id;
+        body.querySelectorAll(".gw-card").forEach(c => c.classList.toggle("sel", c.dataset.id === wizardState.size));
+        btnNext.disabled = false;
+      });
+    });
+    btnNext.disabled = !wizardState.size;
+  } else if (wizardState.step === 3) {
+    const domains = wizardDomainsForIndustry(wizardState.industry);
+    const previewCount = wizardBuildStackIds().size;
+    body.innerHTML = `
+      <div class="gw-q">What's already in their environment?</div>
+      <div class="gw-hint">Tap everything that's in place today (best guess is fine). We'll merge with the industry baseline.</div>
+      <div class="gw-tiles" id="gw-dom-tiles">
+        ${domains.map(d => `
+          <button type="button" class="gw-tile${wizardState.domains.has(d.id) ? " sel" : ""}" data-id="${d.id}">
+            <div class="gw-tl">${escapeHtml(d.label)}</div>
+            <div class="gw-td">${escapeHtml(d.desc)}</div>
+          </button>`).join("")}
+      </div>
+      <div class="gw-preview"><strong>${previewCount}</strong> capabilities in your stack so far${wizardState.domains.size ? ` (${wizardState.domains.size} domain${wizardState.domains.size !== 1 ? "s" : ""} selected)` : " — industry baseline only"}.</div>`;
+    body.querySelectorAll(".gw-tile").forEach(tile => {
+      tile.addEventListener("click", () => {
+        const id = tile.dataset.id;
+        if (wizardState.domains.has(id)) wizardState.domains.delete(id);
+        else wizardState.domains.add(id);
+        tile.classList.toggle("sel", wizardState.domains.has(id));
+        const cnt = wizardBuildStackIds().size;
+        const prev = body.querySelector(".gw-preview");
+        if (prev) prev.innerHTML = `<strong>${cnt}</strong> capabilities in your stack so far (${wizardState.domains.size} domain${wizardState.domains.size !== 1 ? "s" : ""} selected).`;
+      });
+    });
+    btnNext.disabled = false;
+  } else if (wizardState.step === 4) {
+    body.innerHTML = `
+      <div class="gw-q">Anything they're moving away from?</div>
+      <div class="gw-hint">Select legacy or refresh triggers — we'll surface migration paths in Replace recommendations.</div>
+      <div class="gw-tiles" id="gw-leg-tiles">
+        ${WIZARD_LEGACY_TILES.map(l => `
+          <button type="button" class="gw-tile${wizardState.legacy.has(l.id) ? " sel" : ""}" data-id="${l.id}">
+            <div class="gw-tl">${escapeHtml(l.label)}</div>
+            <div class="gw-td">${escapeHtml(l.sub)}</div>
+          </button>`).join("")}
+      </div>
+      <div class="gw-preview">${wizardState.legacy.size
+        ? `<strong>${wizardState.legacy.size}</strong> migration stor${wizardState.legacy.size !== 1 ? "ies" : "y"} selected.`
+        : "No legacy selected — skip is fine."}</div>`;
+    body.querySelectorAll(".gw-tile").forEach(tile => {
+      tile.addEventListener("click", () => {
+        const id = tile.dataset.id;
+        if (wizardState.legacy.has(id)) wizardState.legacy.delete(id);
+        else wizardState.legacy.add(id);
+        tile.classList.toggle("sel", wizardState.legacy.has(id));
+        const prev = body.querySelector(".gw-preview");
+        if (prev) prev.innerHTML = wizardState.legacy.size
+          ? `<strong>${wizardState.legacy.size}</strong> migration stor${wizardState.legacy.size !== 1 ? "ies" : "y"} selected.`
+          : "No legacy selected — skip is fine.";
+      });
+    });
+    btnNext.disabled = false;
+  } else if (wizardState.step === 5) {
+    body.innerHTML = `<div id="gw-reveal"><div class="gw-spin">Building your account map…</div></div>`;
+    btnBack.style.visibility = "hidden";
+    btnNext.disabled = true;
+    footLbl.textContent = "Your plan";
+    setTimeout(() => wizardShowReveal(), 600);
+  }
+}
+
+function wizardShowReveal() {
+  wizardApplyPlan();
+  const t = INDUSTRY_TEMPLATES.find(x => x.id === wizardState.industry);
+  const eff = new Set([...stack].map(id => getEffectiveNodeId(id)));
+  const bundles = BUNDLES.map(b => {
+    const owned = b.products.filter(p => eff.has(p)).length;
+    return { name: b.name, pct: Math.round(owned / b.products.length * 100) };
+  }).sort((a, b) => b.pct - a.pct);
+  const best = bundles[0] || { name: "—", pct: 0 };
+  const weak = bundles[bundles.length - 1] || best;
+  const recs = wizardTopRecs(3);
+  const repCnt = $("#rep-cnt")?.textContent || "0";
+  const acct = $("#acct-name")?.value.trim() || "Your account";
+
+  $("#gw-body").innerHTML = `
+    <div id="gw-reveal">
+      <div class="gw-summary">
+        <div class="gw-sn">${escapeHtml(acct)}</div>
+        <div class="gw-snarr">${escapeHtml(wizardNarrative())}</div>
+        <div class="gw-stats">
+          <div class="gw-stat"><div class="gw-sv">${stack.size}</div><div class="gw-sl">Stack items</div></div>
+          <div class="gw-stat"><div class="gw-sv">${best.pct}%</div><div class="gw-sl">${escapeHtml(best.name.split(" ")[0])} bundle</div></div>
+          <div class="gw-stat"><div class="gw-sv">${repCnt}</div><div class="gw-sl">Replacements</div></div>
+        </div>
+        ${recs.length ? `<div class="gw-toprecs"><strong style="color:var(--text);font-size:11px">Top augmentations</strong><ul>${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul></div>` : ""}
+        ${weak.pct < 50 ? `<div style="margin-top:10px;font-size:11px;color:var(--orange)">Gap alert: ${escapeHtml(weak.name)} at ${weak.pct}% coverage</div>` : ""}
+      </div>
+    </div>`;
+  $("#gw-next").disabled = false;
+  $("#gw-next").textContent = "Open full analysis";
+  const gBtn = $("#gw-graph");
+  if (gBtn) gBtn.style.display = "inline-block";
+  highlightStack();
+}
+
+function openGuidedWizard() {
+  wizardState.step = 1;
+  wizardState.industry = null;
+  wizardState.size = null;
+  wizardState.domains.clear();
+  wizardState.legacy.clear();
+  wizardOpen = true;
+  const gBtn = $("#gw-graph");
+  if (gBtn) gBtn.style.display = "none";
+  $("#gw-overlay").classList.add("show");
+  document.body.style.overflow = "hidden";
+  wizardRenderStep();
+}
+
+function closeGuidedWizard(openPlannerAfter) {
+  wizardOpen = false;
+  $("#gw-overlay").classList.remove("show");
+  document.body.style.overflow = "";
+  if (openPlannerAfter) {
+    if (!plannerOpen) openPlanner();
+    $("#analysis-results")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function wizardNext() {
+  if (wizardState.step === 1 && !wizardState.industry) return;
+  if (wizardState.step === 2 && !wizardState.size) return;
+  if (wizardState.step === 5) { closeGuidedWizard(true); return; }
+  if (wizardState.step === 4) { wizardState.step = 5; wizardRenderStep(); return; }
+  wizardState.step++;
+  wizardRenderStep();
+}
+
+function wizardBack() {
+  if (wizardState.step <= 1 || wizardState.step >= 5) return;
+  wizardState.step--;
+  wizardRenderStep();
+}
+
+function buildGuidedWizard() {
+  const ov = document.createElement("div");
+  ov.id = "gw-overlay";
+  ov.setAttribute("role", "dialog");
+  ov.setAttribute("aria-modal", "true");
+  ov.setAttribute("aria-labelledby", "gw-title");
+  ov.innerHTML = `
+    <div id="gw-panel">
+      <div id="gw-head">
+        <div class="gw-title" id="gw-title">Guided Account Plan</div>
+        <div class="gw-sub">Let's map this customer in a few taps — then we'll build recommendations automatically.</div>
+        <div id="gw-progress">${[1,2,3,4,5].map(i => `<div class="gw-dot${i===1?" cur":""}"></div>`).join("")}</div>
+      </div>
+      <div id="gw-body"></div>
+      <div id="gw-foot">
+        <span class="gw-step-lbl" id="gw-step-lbl">Step 1 of 5</span>
+        <div class="gw-actions">
+          <button type="button" class="gw-btn ghost" id="gw-skip">Skip wizard</button>
+          <button type="button" class="gw-btn" id="gw-graph" style="display:none">Explore graph</button>
+          <button type="button" class="gw-btn" id="gw-back">Back</button>
+          <button type="button" class="gw-btn primary" id="gw-next" disabled>Continue</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  $("#guided-btn")?.addEventListener("click", openGuidedWizard);
+  $("#gw-skip").addEventListener("click", () => closeGuidedWizard(false));
+  $("#gw-back").addEventListener("click", wizardBack);
+  $("#gw-next").addEventListener("click", wizardNext);
+  $("#gw-graph").addEventListener("click", () => { closeGuidedWizard(false); highlightStack(); });
+  ov.addEventListener("click", e => { if (e.target === ov) closeGuidedWizard(false); });
+  document.addEventListener("keydown", e => {
+    if (!wizardOpen) return;
+    if (e.key === "Escape") closeGuidedWizard(false);
+  });
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -7653,6 +8104,7 @@ function wireKeyboardA11y(){
 
     if (ev.key === "/"){ ev.preventDefault(); $("#search").focus(); $("#search").select(); }
     else if (ev.key.toLowerCase() === "p"){ $("#planner-btn").click(); }
+    else if (ev.key.toLowerCase() === "g"){ openGuidedWizard(); }
     else if (ev.key.toLowerCase() === "t"){ $("#tl-wrap")?.classList.contains("show") ? closeTimelineView() : openTimelineView(); }
     else if (ev.key.toLowerCase() === "a"){ document.getElementById("ai-fab")?.click(); }
     else if (ev.key === "?"){ window.startTour && window.startTour(); }
@@ -7726,6 +8178,7 @@ function openShortcuts(){
     ["⌘K / Ctrl+K", "Focus search"],
     ["/", "Focus search"],
     ["P", "Toggle account planner"],
+    ["G", "Open Guided Plan wizard"],
     ["T", "Toggle timeline view"],
     ["A", "Toggle AI assistant"],
     ["?", "Re-launch guided tour"],
@@ -7745,6 +8198,7 @@ function boot(){
   buildExportMenu();
   buildProfileBox();
   buildTemplatesStrip();
+  buildGuidedWizard();
   addPlannerTabs();
   buildComparePanel();
   buildRecentPinned();
