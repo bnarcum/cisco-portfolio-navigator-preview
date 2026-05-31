@@ -4515,7 +4515,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.4.0";
+const APP_VERSION   = "2.4.1";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4804,6 +4804,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.4.1", date:"2026-05-31", items:[
+    "Fix: Guided Plan Continue button stayed disabled after selecting an industry on step 1."
+  ]},
   {ver:"2.4.0", date:"2026-05-30", items:[
     "Guided Plan wizard — 5-step flow (industry, size, capabilities, legacy refresh) that builds your stack and runs analysis automatically.",
     "New Guided Plan button in the top bar; reveal screen summarizes stack size, bundle coverage, and top recommendations with one-click jump to planner or graph."
@@ -5065,6 +5068,7 @@ STYLE.textContent = `
   .gw-btn:hover{border-color:var(--accent);color:var(--accent)}
   .gw-btn.primary{background:var(--accent);color:#000;border-color:var(--accent)}
   .gw-btn.primary:hover{opacity:.88;color:#000}
+  .gw-btn.primary:disabled{opacity:.35;cursor:not-allowed}
   .gw-btn.ghost{background:transparent;border-color:transparent;color:var(--subtle)}
   .gw-btn.ghost:hover{color:var(--text)}
 
@@ -6521,6 +6525,7 @@ function wizardRenderStep() {
         const t = INDUSTRY_TEMPLATES.find(x => x.id === wizardState.industry);
         const prev = $("#gw-ind-preview");
         if (prev && t) prev.innerHTML = `<strong>${escapeHtml(t.name)}</strong> — ${escapeHtml(t.desc)}`;
+        btnNext.disabled = false;
       });
     });
     btnNext.disabled = !wizardState.industry;
