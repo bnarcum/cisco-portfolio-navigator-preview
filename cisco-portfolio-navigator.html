@@ -4536,7 +4536,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.5.0";
+const APP_VERSION   = "2.6.0";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4547,7 +4547,8 @@ const STORAGE_KEYS  = {
   aiKey:    "cpn-ai-key-v2",
   aiCfg:    "cpn-ai-cfg-v2",
   changelogSeen: "cpn-changelog-v2",
-  pptxTheme: "cpn-pptx-theme-v2"
+  pptxTheme: "cpn-pptx-theme-v2",
+  wizard: "cpn-wizard-v2"
 };
 
 /* ────────────────────────────────────────────────────────────────
@@ -4825,6 +4826,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.6.0", date:"2026-05-31", items:[
+    "Guided Plan reveal — select any or all AI deliverables (exec summary, roadmap, customer email, gap analysis) and generate inline slides without leaving the wizard.",
+    "AI deliverables persist with your guided session and export to PowerPoint when generated."
+  ]},
   {ver:"2.5.0", date:"2026-05-31", items:[
     "Guided Plan — 5-step wizard (industry → size → capabilities → legacy refresh) that builds your stack, runs analysis, and persists your session so you can reopen, edit answers, or start over.",
     "Guided Plan reveal — summary with quick jumps to planner/graph; Ask AI chips for exec summary, 90-day roadmap, customer email, and gap explanation.",
@@ -5069,6 +5074,22 @@ STYLE.textContent = `
     color:#c4b5fd;font-size:10.5px;font-weight:600;padding:5px 10px;cursor:pointer;font-family:inherit;
     transition:all .15s}
   .gw-ai-chip:hover{background:rgba(168,85,247,.25);border-color:#a855f7;color:#fff}
+  .gw-ai-chip.sel{background:rgba(168,85,247,.28);border-color:#a855f7;color:#fff;box-shadow:0 0 0 1px rgba(168,85,247,.5)}
+  .gw-ai-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .gw-ai-actions .gw-btn{font-size:11px;padding:6px 12px}
+  #gw-ai-slides{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+  .gw-ai-slide{background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:left}
+  .gw-ai-slide.stale{border-color:rgba(245,158,11,.45)}
+  .gw-ai-slide-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .gw-ai-slide-head h4{font-size:12px;font-weight:700;color:#c4b5fd;margin:0}
+  .gw-ai-slide-actions{display:flex;gap:6px;flex-shrink:0}
+  .gw-ai-slide-actions button{background:var(--surface2);border:1px solid var(--border);border-radius:5px;
+    color:var(--muted);font-size:10px;font-weight:600;padding:3px 8px;cursor:pointer;font-family:inherit}
+  .gw-ai-slide-actions button:hover{border-color:var(--accent);color:var(--accent)}
+  .gw-ai-slide-body{font-size:11.5px;color:var(--text);line-height:1.55;white-space:pre-wrap}
+  .gw-ai-slide-body.loading{color:var(--muted);font-style:italic}
+  .gw-ai-slide-body.err{color:#ef4444;font-size:11px}
+  .gw-ai-stale{font-size:10px;color:var(--orange);margin-bottom:6px}
   .gw-btn.ai-accent{border-color:#a855f7;color:#c4b5fd}
   .gw-btn.ai-accent:hover{background:rgba(168,85,247,.15);border-color:#a855f7;color:#fff}
   #gw-foot{padding:12px 22px 18px;border-top:1px solid var(--border);
@@ -6084,6 +6105,41 @@ function exportPDF(){
   }, 100);
 }
 
+function pptxSplitText(text, maxLen = 1400) {
+  if (!text || text.length <= maxLen) return [text];
+  const chunks = [];
+  let rest = text;
+  while (rest.length > maxLen) {
+    let cut = rest.lastIndexOf("\n\n", maxLen);
+    if (cut < maxLen * 0.5) cut = rest.lastIndexOf("\n", maxLen);
+    if (cut < maxLen * 0.5) cut = rest.lastIndexOf(" ", maxLen);
+    if (cut < 0) cut = maxLen;
+    chunks.push(rest.slice(0, cut).trim());
+    rest = rest.slice(cut).trim();
+  }
+  if (rest) chunks.push(rest);
+  return chunks;
+}
+
+function exportPptxAiDeliverables(pp) {
+  if (typeof WIZARD_AI_PROMPTS === "undefined" || !wizardState.aiResponses) return;
+  const fp = wizardFingerprint();
+  WIZARD_AI_PROMPTS.forEach(p => {
+    const resp = wizardState.aiResponses[p.id];
+    if (!resp?.text || resp.fp !== fp) return;
+    pptxSplitText(resp.text).forEach((chunk, i) => {
+      const sl = pp.addSlide();
+      sl.background = { color: "0D1117" };
+      sl.addText(i === 0 ? p.label : `${p.label} (cont.)`, {
+        x: 0.5, y: 0.35, w: 12, h: 0.5, fontSize: 24, bold: true, color: "00BCEB"
+      });
+      sl.addText(chunk, {
+        x: 0.6, y: 1.0, w: 12.2, h: 5.8, fontSize: 12, color: "E6EDF3", valign: "top"
+      });
+    });
+  });
+}
+
 function exportPPTX(){
   if (typeof PptxGenJS === "undefined"){
     showToast("Loading PPTX library…");
@@ -6149,6 +6205,7 @@ function exportPPTX(){
         sl.addText(`Gap alert: ${weak.name} at ${weak.pct}% coverage`, { x:0.6, y: Math.min(y, 6.8), w:12, h:0.3, fontSize:11, color:"F59E0B" });
       }
     }
+    exportPptxAiDeliverables(pp);
   }
 
   // Slide: Current Stack
@@ -6478,8 +6535,42 @@ let wizardOpen = false;
 const wizardState = {
   step: 1, industry: null, size: null,
   domains: new Set(), legacy: new Set(),
-  completed: false, needsReapply: false, appliedFp: null
+  completed: false, needsReapply: false, appliedFp: null,
+  aiSelected: new Set(),
+  aiResponses: {},
+  aiLoading: new Set()
 };
+
+function wizardSaveSession() {
+  lsSet(STORAGE_KEYS.wizard, {
+    step: wizardState.step,
+    industry: wizardState.industry,
+    size: wizardState.size,
+    domains: [...wizardState.domains],
+    legacy: [...wizardState.legacy],
+    completed: wizardState.completed,
+    needsReapply: wizardState.needsReapply,
+    appliedFp: wizardState.appliedFp,
+    aiSelected: [...wizardState.aiSelected],
+    aiResponses: wizardState.aiResponses
+  });
+}
+
+function wizardLoadSession() {
+  const w = lsGet(STORAGE_KEYS.wizard, null);
+  if (!w) return;
+  wizardState.step = w.step || 1;
+  wizardState.industry = w.industry || null;
+  wizardState.size = w.size || null;
+  wizardState.domains = new Set(w.domains || []);
+  wizardState.legacy = new Set(w.legacy || []);
+  wizardState.completed = !!w.completed;
+  wizardState.needsReapply = !!w.needsReapply;
+  wizardState.appliedFp = w.appliedFp || null;
+  wizardState.aiSelected = new Set(w.aiSelected || []);
+  wizardState.aiResponses = w.aiResponses || {};
+  if (wizardState.completed) refreshGuidedBtnLabel();
+}
 
 function wizardFingerprint() {
   return JSON.stringify({
@@ -6494,6 +6585,15 @@ function wizardIsComplete() {
 
 function markWizardDirty() {
   if (wizardState.completed) wizardState.needsReapply = true;
+  wizardInvalidateAiResponses();
+  wizardSaveSession();
+}
+
+function wizardInvalidateAiResponses() {
+  const fp = wizardFingerprint();
+  Object.keys(wizardState.aiResponses).forEach(id => {
+    if (wizardState.aiResponses[id]?.fp !== fp) delete wizardState.aiResponses[id];
+  });
 }
 
 function refreshGuidedBtnLabel() {
@@ -6516,7 +6616,11 @@ function wizardResetAll() {
   wizardState.completed = false;
   wizardState.needsReapply = false;
   wizardState.appliedFp = null;
+  wizardState.aiSelected.clear();
+  wizardState.aiResponses = {};
+  wizardState.aiLoading.clear();
   refreshGuidedBtnLabel();
+  wizardSaveSession();
 }
 
 function aiIsConfigured() {
@@ -6540,14 +6644,137 @@ function wizardUpdateFooterForStep() {
 }
 
 const WIZARD_AI_PROMPTS = [
-  { label: "Exec summary", q: "Write a concise executive summary of this account plan for my sales leader — current situation, stack strengths, gaps, and recommended next steps." },
-  { label: "90-day roadmap", q: "Based on this guided plan, propose a prioritized 90-day roadmap with quick wins, migration items, and longer-term augmentations." },
-  { label: "Customer email", q: "Draft a professional follow-up email to the customer summarizing what we learned, what's in place today, and 3 recommended next steps." },
-  { label: "Explain biggest gap", q: "Explain the biggest bundle or capability gap in this plan — why it matters for this industry and what Cisco products would close it." }
+  { id: "exec", label: "Exec summary", q: "Write a concise executive summary of this account plan for my sales leader — current situation, stack strengths, gaps, and recommended next steps." },
+  { id: "roadmap", label: "90-day roadmap", q: "Based on this guided plan, propose a prioritized 90-day roadmap with quick wins, migration items, and longer-term augmentations." },
+  { id: "email", label: "Customer email", q: "Draft a professional follow-up email to the customer summarizing what we learned, what's in place today, and 3 recommended next steps." },
+  { id: "gap", label: "Explain biggest gap", q: "Explain the biggest bundle or capability gap in this plan — why it matters for this industry and what Cisco products would close it." }
 ];
+
+function wizardPromptById(id) {
+  return WIZARD_AI_PROMPTS.find(p => p.id === id);
+}
 
 function wizardAskAi(prompt) {
   if (typeof openAiWithPrompt === "function") openAiWithPrompt(prompt, { closeWizard: true, send: true });
+}
+
+function wizardAiSlideHtml(id) {
+  const p = wizardPromptById(id);
+  if (!p) return "";
+  const resp = wizardState.aiResponses[id];
+  const loading = wizardState.aiLoading.has(id);
+  const fp = wizardFingerprint();
+  const stale = resp && resp.fp !== fp;
+  const body = loading
+    ? `<div class="gw-ai-slide-body loading">Generating…</div>`
+    : resp?.err
+      ? `<div class="gw-ai-slide-body err">${escapeHtml(resp.err)}</div>`
+    : resp && !stale
+      ? `<div class="gw-ai-slide-body">${escapeHtml(resp.text)}</div>`
+      : resp && stale
+        ? `<div class="gw-ai-stale">Plan changed — regenerate for an updated answer.</div><div class="gw-ai-slide-body" style="opacity:.55">${escapeHtml(resp.text)}</div>`
+        : `<div class="gw-ai-slide-body loading" style="opacity:.65">Selected — click Generate selected above.</div>`;
+  const copyBtn = resp?.text && !stale && !loading
+    ? `<button type="button" class="gw-ai-copy" data-id="${id}">Copy</button>` : "";
+  const regenBtn = !loading
+    ? `<button type="button" class="gw-ai-regen" data-id="${id}">${resp && !stale ? "Regenerate" : "Generate"}</button>` : "";
+  return `<div class="gw-ai-slide${stale ? " stale" : ""}" data-id="${id}">
+    <div class="gw-ai-slide-head">
+      <h4>${escapeHtml(p.label)}</h4>
+      <div class="gw-ai-slide-actions">${copyBtn}${regenBtn}</div>
+    </div>
+    ${body}
+  </div>`;
+}
+
+function wizardRenderAiSlidesHtml() {
+  if (!wizardState.aiSelected.size) return "";
+  return [...wizardState.aiSelected].map(id => wizardAiSlideHtml(id)).join("");
+}
+
+function wizardUpdateAiSlidesOnly() {
+  const el = $("#gw-ai-slides");
+  if (!el) return;
+  el.innerHTML = wizardRenderAiSlidesHtml();
+  wireWizardAiSlideHandlers();
+  const genBtn = $("#gw-ai-gen");
+  if (genBtn) {
+    genBtn.disabled = !wizardState.aiSelected.size || wizardState.aiLoading.size > 0;
+    genBtn.textContent = wizardState.aiLoading.size
+      ? "Generating…"
+      : wizardState.aiSelected.size
+        ? `Generate ${wizardState.aiSelected.size} selected`
+        : "Generate selected";
+  }
+}
+
+async function wizardGenerateAiTopics(ids) {
+  if (!ids.length) return;
+  if (!aiIsConfigured()) {
+    showToast("Configure AI first — your plan stays here");
+    $("#gw-ai-cfg")?.click();
+    return;
+  }
+  ids.forEach(id => wizardState.aiLoading.add(id));
+  wizardUpdateAiSlidesOnly();
+  const fp = wizardFingerprint();
+  await Promise.all(ids.map(async id => {
+    const p = wizardPromptById(id);
+    if (!p) return;
+    const result = await fetchAiResponse(p.q);
+    wizardState.aiLoading.delete(id);
+    if (result.text) {
+      wizardState.aiResponses[id] = { text: result.text, fp, at: Date.now() };
+    } else if (result.error === "no_config") {
+      wizardState.aiResponses[id] = { err: "Configure AI to generate this deliverable.", fp, at: Date.now() };
+    } else {
+      wizardState.aiResponses[id] = { err: result.message || "Generation failed — try again.", fp, at: Date.now() };
+    }
+  }));
+  wizardSaveSession();
+  wizardUpdateAiSlidesOnly();
+}
+
+async function wizardGenerateSelectedAi() {
+  const ids = [...wizardState.aiSelected].filter(id => {
+    const resp = wizardState.aiResponses[id];
+    return !resp || resp.fp !== wizardFingerprint() || resp.err;
+  });
+  if (!ids.length && wizardState.aiSelected.size) {
+    showToast("All selected deliverables are up to date");
+    return;
+  }
+  await wizardGenerateAiTopics(ids.length ? ids : [...wizardState.aiSelected]);
+}
+
+function wireWizardAiSlideHandlers() {
+  $("#gw-body")?.querySelectorAll(".gw-ai-chip").forEach(chip => {
+    chip.onclick = () => {
+      const id = chip.dataset.id;
+      if (wizardState.aiSelected.has(id)) wizardState.aiSelected.delete(id);
+      else wizardState.aiSelected.add(id);
+      chip.classList.toggle("sel", wizardState.aiSelected.has(id));
+      const slides = $("#gw-ai-slides");
+      if (slides) slides.innerHTML = wizardRenderAiSlidesHtml();
+      wireWizardAiSlideHandlers();
+      const genBtn = $("#gw-ai-gen");
+      if (genBtn) {
+        genBtn.disabled = !wizardState.aiSelected.size || wizardState.aiLoading.size > 0;
+        genBtn.textContent = wizardState.aiSelected.size
+          ? `Generate ${wizardState.aiSelected.size} selected` : "Generate selected";
+      }
+      wizardSaveSession();
+    };
+  });
+  $("#gw-body")?.querySelectorAll(".gw-ai-regen").forEach(btn => {
+    btn.onclick = () => wizardGenerateAiTopics([btn.dataset.id]);
+  });
+  $("#gw-body")?.querySelectorAll(".gw-ai-copy").forEach(btn => {
+    btn.onclick = () => {
+      const t = wizardState.aiResponses[btn.dataset.id]?.text;
+      if (t) navigator.clipboard.writeText(t).then(() => showToast("Copied")).catch(() => showToast("Copy failed"));
+    };
+  });
 }
 
 function wizardDomainsForIndustry(industryId) {
@@ -6593,6 +6820,7 @@ function wizardApplyPlan() {
   wizardState.completed = true;
   wizardState.needsReapply = false;
   refreshGuidedBtnLabel();
+  wizardSaveSession();
 }
 
 function wizardNarrative() {
@@ -6789,17 +7017,21 @@ function wizardShowReveal(opts = {}) {
         ${recs.length ? `<div class="gw-toprecs"><strong style="color:var(--text);font-size:11px">Top augmentations</strong><ul>${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul></div>` : ""}
         ${weak.pct < 50 ? `<div style="margin-top:10px;font-size:11px;color:var(--orange)">Gap alert: ${escapeHtml(weak.name)} at ${weak.pct}% coverage</div>` : ""}
         <div class="gw-ai-section">
-          <div class="gw-ai-lbl">Ask AI — exec summary, email, roadmap &amp; more</div>
+          <div class="gw-ai-lbl">Ask AI — select deliverables to generate</div>
           <div class="gw-ai-chips" id="gw-ai-chips">
-            ${WIZARD_AI_PROMPTS.map(p => `<button type="button" class="gw-ai-chip" data-q="${escapeHtml(p.q)}">${escapeHtml(p.label)}</button>`).join("")}
+            ${WIZARD_AI_PROMPTS.map(p => `<button type="button" class="gw-ai-chip${wizardState.aiSelected.has(p.id) ? " sel" : ""}" data-id="${p.id}">${escapeHtml(p.label)}</button>`).join("")}
           </div>
+          <div class="gw-ai-actions">
+            <button type="button" class="gw-btn ai-accent" id="gw-ai-gen"${wizardState.aiSelected.size ? "" : " disabled"}>${wizardState.aiSelected.size ? `Generate ${wizardState.aiSelected.size} selected` : "Generate selected"}</button>
+          </div>
+          <div id="gw-ai-slides">${wizardRenderAiSlidesHtml()}</div>
           ${aiHint}
         </div>
       </div>
     </div>`;
-  $("#gw-body").querySelectorAll(".gw-ai-chip").forEach(chip => {
-    chip.addEventListener("click", () => wizardAskAi(chip.dataset.q));
-  });
+  wizardInvalidateAiResponses();
+  $("#gw-ai-gen").onclick = () => wizardGenerateSelectedAi();
+  wireWizardAiSlideHandlers();
   $("#gw-ai-cfg")?.addEventListener("click", () => {
     closeGuidedWizard(false);
     $("#ai-panel")?.classList.add("show");
@@ -6902,6 +7134,7 @@ function buildGuidedWizard() {
     if (!wizardOpen) return;
     if (e.key === "Escape") closeGuidedWizard(false);
   });
+  wizardLoadSession();
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -8203,14 +8436,74 @@ function aiErrorMessage(err, cfg){
     <div style="margin-top:6px;color:var(--muted);font-weight:400;font-size:11.5px">${advice}</div>`;
 }
 
+async function fetchAiResponse(userPrompt) {
+  const key = lsGet(STORAGE_KEYS.aiKey, "");
+  const cfg = lsGet(STORAGE_KEYS.aiCfg, {});
+  if (!key || !cfg.url) return { error: "no_config" };
+  const ctx = buildAiContext();
+  const planCtx = buildPlanContext();
+  let sys = `You are a Cisco solution architect. Recommend specific Cisco products from the catalog below.
+When suggesting products, use exact names from the catalog so they can be linked.
+Respond concisely (max 5 short paragraphs or a bulleted stack).`;
+  if (planCtx) {
+    sys += `\n\nCURRENT ACCOUNT PLAN (from Account Planner / Guided Plan — treat as ground truth for this conversation):\n${planCtx}`;
+  }
+  sys += `\n\nCATALOG:\n${ctx}`;
+  const maxTok = planCtx ? 1200 : 700;
+  try {
+    const url = cfg.proxy ? cfg.proxy + encodeURIComponent(cfg.url) : cfg.url;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({
+        model: cfg.model || "gpt-4o-mini",
+        messages: [{ role: "system", content: sys }, { role: "user", content: userPrompt }],
+        temperature: 0.3, max_tokens: maxTok
+      })
+    });
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      return { error: "api", message: `HTTP ${r.status} — ${body.slice(0, 240)}`, cfg };
+    }
+    const data = await r.json();
+    return { text: data.choices?.[0]?.message?.content || "(no response)" };
+  } catch (e) {
+    const looksCors = e instanceof TypeError ||
+      /NetworkError|Failed to fetch|CORS|Load failed/i.test(String(e && e.message));
+    return { error: looksCors ? "cors" : "network", message: String(e && e.message || e), cfg };
+  }
+}
+
+function appendAiBotMessage(wrap, txt, cfg) {
+  const m = document.createElement("div"); m.className = "ai-m bot";
+  m.innerHTML = escapeHtml(txt).replace(/\n/g, "<br>");
+  const mentions = [...new Set([...NODES, ...PRODUCTS].map(n => n.name).filter(name => txt.toLowerCase().includes(name.toLowerCase())))];
+  if (mentions.length) {
+    const acts = document.createElement("div"); acts.className = "ai-actions";
+    mentions.slice(0, 8).forEach(name => {
+      const obj = NODES.find(n => n.name === name) || PRODUCTS.find(p => p.name === name);
+      const b = document.createElement("button"); b.className = "ai-action-btn";
+      b.textContent = "+ " + name;
+      b.addEventListener("click", () => {
+        if (PRODUCTS.find(p => p.id === obj.id)) window.addToStack(obj.id, "product");
+        else window.addToStack(obj.id, "node");
+        showToast("Added " + name);
+      });
+      acts.appendChild(b);
+    });
+    m.appendChild(acts);
+  }
+  wrap.appendChild(m);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
 async function sendAi(){
   const inp = $("#ai-input"); const q = inp.value.trim(); if (!q) return;
   const wrap = $("#ai-msgs");
   const um = document.createElement("div"); um.className = "ai-m user"; um.textContent = q;
   wrap.appendChild(um); inp.value = "";
-  const key = lsGet(STORAGE_KEYS.aiKey, "");
   const cfg = lsGet(STORAGE_KEYS.aiCfg, {});
-  if (!key || !cfg.url){
+  if (!lsGet(STORAGE_KEYS.aiKey, "") || !cfg.url) {
     const e = document.createElement("div"); e.className = "ai-m err";
     e.innerHTML = `No API key configured. Set up Ask AI once — your guided plan stays saved when you return.`;
     const fixWrap = document.createElement("div");
@@ -8225,58 +8518,15 @@ async function sendAi(){
   const loading = document.createElement("div"); loading.className = "ai-m bot ai-loading";
   loading.textContent = "Thinking";
   wrap.appendChild(loading); wrap.scrollTop = wrap.scrollHeight;
-  const ctx = buildAiContext();
-  const planCtx = buildPlanContext();
-  let sys = `You are a Cisco solution architect. Recommend specific Cisco products from the catalog below.
-When suggesting products, use exact names from the catalog so they can be linked.
-Respond concisely (max 5 short paragraphs or a bulleted stack).`;
-  if (planCtx) {
-    sys += `\n\nCURRENT ACCOUNT PLAN (from Account Planner / Guided Plan — treat as ground truth for this conversation):\n${planCtx}`;
-  }
-  sys += `\n\nCATALOG:\n${ctx}`;
-  const maxTok = planCtx ? 900 : 700;
-  try {
-    const url = cfg.proxy ? cfg.proxy + encodeURIComponent(cfg.url) : cfg.url;
-    const r = await fetch(url, {
-      method: "POST",
-      headers: {"Content-Type":"application/json","Authorization":"Bearer "+key},
-      body: JSON.stringify({ model: cfg.model || "gpt-4o-mini",
-        messages: [{role:"system",content:sys},{role:"user",content:q}],
-        temperature: 0.3, max_tokens: maxTok })
-    });
-    if (!r.ok){
-      const body = await r.text().catch(() => "");
-      throw new Error(`HTTP ${r.status} — ${body.slice(0,240)}`);
-    }
-    const data = await r.json();
-    const txt = data.choices?.[0]?.message?.content || "(no response)";
-    loading.remove();
-    const m = document.createElement("div"); m.className = "ai-m bot";
-    m.innerHTML = escapeHtml(txt).replace(/\n/g,"<br>");
-    const mentions = [...new Set([...NODES, ...PRODUCTS].map(n => n.name).filter(name => txt.toLowerCase().includes(name.toLowerCase())))];
-    if (mentions.length){
-      const acts = document.createElement("div"); acts.className = "ai-actions";
-      mentions.slice(0,8).forEach(name => {
-        const obj = NODES.find(n => n.name === name) || PRODUCTS.find(p => p.name === name);
-        const b = document.createElement("button"); b.className = "ai-action-btn";
-        b.textContent = "+ " + name;
-        b.addEventListener("click", () => {
-          if (PRODUCTS.find(p => p.id === obj.id)) window.addToStack(obj.id, "product");
-          else window.addToStack(obj.id, "node");
-          showToast("Added " + name);
-        });
-        acts.appendChild(b);
-      });
-      m.appendChild(acts);
-    }
-    wrap.appendChild(m); wrap.scrollTop = wrap.scrollHeight;
-  } catch (e) {
-    loading.remove();
+  const result = await fetchAiResponse(q);
+  loading.remove();
+  if (result.text) {
+    appendAiBotMessage(wrap, result.text, cfg);
+  } else {
     const er = document.createElement("div"); er.className = "ai-m err";
-    er.innerHTML = aiErrorMessage(e, cfg);
-    const looksCors = e instanceof TypeError ||
-      /NetworkError|Failed to fetch|CORS|Load failed/i.test(String(e && e.message));
-    if (looksCors){
+    er.innerHTML = result.error === "cors" ? aiErrorMessage(new TypeError("Failed to fetch"), cfg) :
+      `<span style="color:#ef4444">Error:</span> ${escapeHtml(result.message || "Request failed")}`;
+    if (result.error === "cors") {
       const fixWrap = document.createElement("div");
       fixWrap.style.cssText = "margin-top:10px;display:flex;gap:6px;flex-wrap:wrap";
       const b1 = document.createElement("button"); b1.className = "ai-cfg-fix";
