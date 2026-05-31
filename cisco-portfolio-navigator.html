@@ -5040,7 +5040,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.7.3";
+const APP_VERSION   = "2.7.4";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5330,6 +5330,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.7.4", date:"2026-05-31", items:[
+    "Compare — Show in Compare always adds or promotes the current item to the compare row (up to 4 columns); button labels update to reflect pin/compare state."
+  ]},
   {ver:"2.7.3", date:"2026-05-31", items:[
     "Spatial view — optional 3D map of product families: orbit and zoom the graph, always-visible name labels, click any node for the detail panel. Respects category / use-case / industry filters, highlights stack items, and persists in localStorage like other view modes (Esc or breadcrumb × to return to Families).",
     "Double-click a family — or use Explore N products on its detail panel — to drill into a 3D composition where products orbit the family node with purple succession links; Esc or the breadcrumb steps back one level at a time.",
@@ -6296,6 +6299,7 @@ function togglePin(id){
   // side-by-side card immediately, matching the panel header's promise).
   if (typeof renderCompare === "function") renderCompare();
   if (isPinning && typeof openComparePanel === "function") openComparePanel();
+  refreshDetailPinButtons(id);
 }
 function renderRecentPinned(){
   const panel = $("#rp-panel"); if (!panel) return;
@@ -7752,13 +7756,8 @@ function insertPinAndCompareBtns(id, kind){
   const div = document.createElement("div");
   div.className = "p-extra";
   div.style.cssText = "display:flex;gap:6px;margin-top:8px";
-  const pinned = lsGet(STORAGE_KEYS.pinned, []).includes(id);
-  // Class-based selectors scoped to `div` (not global #pe-pin / #pe-cmp ids)
-  // so re-renders can't accidentally attach the listener to a stale element.
-  // Pin and Compare are now unified — pinning auto-opens the compare panel.
-  // The ⇆ button is a convenience shortcut: pin (if needed) + open compare.
   div.innerHTML = `
-    <button class="rc-btn pe-pin">${pinned?"★ Pinned":"☆ Pin"}</button>
+    <button class="rc-btn pe-pin">☆ Pin</button>
     <button class="rc-btn pe-cmp">⇆ Show in Compare</button>
   `;
   pb.appendChild(div);
@@ -7766,38 +7765,49 @@ function insertPinAndCompareBtns(id, kind){
   const cmpBtn = div.querySelector(".pe-cmp");
   pinBtn.addEventListener("click", () => {
     togglePin(id);
-    pinBtn.textContent = lsGet(STORAGE_KEYS.pinned, []).includes(id) ? "★ Pinned" : "☆ Pin";
+    refreshDetailPinButtons(id);
   });
   cmpBtn.addEventListener("click", () => addToCompare(id, kind));
+  refreshDetailPinButtons(id);
+}
+
+function refreshDetailPinButtons(id){
+  const pb = $("#pbody"); if (!pb || pb.dataset.lastId !== id) return;
+  const extra = pb.querySelector(".p-extra"); if (!extra) return;
+  const pinned = lsGet(STORAGE_KEYS.pinned, []).includes(id);
+  const inCompare = compareItems().includes(id);
+  const pinBtn = extra.querySelector(".pe-pin");
+  const cmpBtn = extra.querySelector(".pe-cmp");
+  if (pinBtn) pinBtn.textContent = pinned ? "★ Pinned" : "☆ Pin";
+  if (cmpBtn) cmpBtn.textContent = inCompare ? "⇆ In Compare" : "⇆ Show in Compare";
 }
 
 /* ════════════════════════════════════════════════════════════════════════
    [09] COMPARE MODE
 
    Compare is a *view* of the user's pinned list — there is no separate
-   "compareSet". Pinning a product (★) automatically opens the compare
-   panel and adds it as a column. Closing the compare panel (×) just hides
-   the panel; it does not unpin anything. Removing a column (cmp-col ×)
-   unpins that item, which removes it from both compare and the rp-panel.
-
-   Why: the previous design had two independent stores (pinned list +
-   in-memory compareSet) which made the rp-panel and the compare panel
-   show different things. The header text ("Pin up to N products to
-   compare side-by-side") promises the unified behavior implemented here.
+   "compareSet". Pinning (★) saves an item; Show in Compare always promotes
+   it to the front of the compare row (up to 4 columns). Closing the compare
+   panel (×) just hides the panel; it does not unpin anything.
    ════════════════════════════════════════════════════════════════════════*/
 const COMPARE_LIMIT = 4; // visible compare columns; extra pins stay in rp-panel only
 function compareItems(){
   return lsGet(STORAGE_KEYS.pinned, []).slice(0, COMPARE_LIMIT);
 }
-function addToCompare(id, kind){
-  // ⇆ button → ensure it's pinned (which also opens compare).
-  const pinned = lsGet(STORAGE_KEYS.pinned, []);
-  if (pinned.includes(id)){
-    openComparePanel();
-    showToast("Already pinned — shown in Compare");
-    return;
-  }
-  togglePin(id); // pins it; refreshes both panels; opens compare
+function addToCompare(id){
+  if (!nodeById[id] && !prodById[id]) return;
+  let p = lsGet(STORAGE_KEYS.pinned, []);
+  const wasPinned = p.includes(id);
+  const wasInCompare = wasPinned && p.indexOf(id) < COMPARE_LIMIT;
+  p = [id, ...p.filter(x => x !== id)];
+  lsSet(STORAGE_KEYS.pinned, p);
+  renderRecentPinned();
+  renderCompare();
+  openComparePanel();
+  refreshDetailPinButtons(id);
+  if (!wasPinned) showToast("Added to Compare");
+  else if (!wasInCompare) showToast("Moved to Compare (showing 4 slots)");
+  else showToast("Shown in Compare");
 }
 function removeFromCompare(id){
   // Column × → unpin (also removes it from the rp-panel).
@@ -7822,7 +7832,7 @@ function buildComparePanel(){
     <div id="cmp-head">
       <div>
         <div class="ph-t">Compare</div>
-        <div class="ph-s" style="font-size:11px;color:var(--muted)">Pin items (★) and they appear here side-by-side. Unpin or click × on a column to remove.</div>
+        <div class="ph-s" style="font-size:11px;color:var(--muted)">Pin items (★) or use <strong>Show in Compare</strong> — up to 4 appear here side-by-side. Click × on a column to unpin.</div>
       </div>
       <button id="cmp-x" title="Hide compare panel (pins remain)">×</button>
     </div>
@@ -7836,7 +7846,7 @@ function renderCompare(){
   const body = $("#cmp-body"); if (!body) return;
   const items = compareItems();
   if (!items.length){
-    body.innerHTML = `<div id="cmp-empty">Nothing pinned yet. Click <strong>★ Pin</strong> on any product or family detail panel and it'll appear here for side-by-side comparison.</div>`;
+    body.innerHTML = `<div id="cmp-empty">Nothing to compare yet. Click <strong>⇆ Show in Compare</strong> or <strong>★ Pin</strong> on any detail panel.</div>`;
     return;
   }
   body.innerHTML = items.map(id => {
