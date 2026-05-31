@@ -4,6 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cisco Portfolio Navigator</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000/svg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'6'%20fill%3D'%230d1117'%2F%3E%3Ccircle%20cx%3D'16'%20cy%3D'4'%20r%3D'3'%20fill%3D'%2300bceb'%2F%3E%3Ccircle%20cx%3D'16'%20cy%3D'28'%20r%3D'3'%20fill%3D'%2300bceb'%2F%3E%3Ccircle%20cx%3D'4'%20cy%3D'16'%20r%3D'3'%20fill%3D'%2300bceb'%2F%3E%3Ccircle%20cx%3D'28'%20cy%3D'16'%20r%3D'3'%20fill%3D'%2300bceb'%2F%3E%3Ccircle%20cx%3D'7'%20cy%3D'7'%20r%3D'2.2'%20fill%3D'%2300bceb'%20opacity%3D'.65'%2F%3E%3Ccircle%20cx%3D'25'%20cy%3D'7'%20r%3D'2.2'%20fill%3D'%2300bceb'%20opacity%3D'.65'%2F%3E%3Ccircle%20cx%3D'7'%20cy%3D'25'%20r%3D'2.2'%20fill%3D'%2300bceb'%20opacity%3D'.65'%2F%3E%3Ccircle%20cx%3D'25'%20cy%3D'25'%20r%3D'2.2'%20fill%3D'%2300bceb'%20opacity%3D'.65'%2F%3E%3Cline%20x1%3D'16'%20y1%3D'7'%20x2%3D'16'%20y2%3D'25'%20stroke%3D'%2300bceb'%20stroke-width%3D'1'%20opacity%3D'.25'%2F%3E%3Cline%20x1%3D'7'%20y1%3D'16'%20x2%3D'25'%20y2%3D'16'%20stroke%3D'%2300bceb'%20stroke-width%3D'1'%20opacity%3D'.25'%2F%3E%3C%2Fsvg%3E"/>
+  <meta name="theme-color" content="#0d1117"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -4007,7 +4009,7 @@ document.addEventListener("keydown",ev=>{
   // The old "cisco-portfolio-tour-completed-v1" key still suppresses the *first-time* tour
   // for users who already completed v1; they can re-launch the latest via the ? button.
   const STORAGE_KEY = "cisco-portfolio-tour-completed-v1";
-  const TOUR_VERSION = "v2.2";
+  const TOUR_VERSION = "v2.3";
   const STORAGE_KEY_LATEST = "cisco-portfolio-tour-latest-seen";
 
   // Inject DOM
@@ -4042,8 +4044,8 @@ document.addEventListener("keydown",ev=>{
              generate stacks with a built-in <strong>AI assistant</strong>.<br><br>
              We'll cover the highlights in ~90 seconds. Skip any time with
              <code>Esc</code> or the Skip button.`,
-      tip: `<b>New in v2:</b> saved plans, multi-format export, industry templates, 
-            compare mode, AI assistant, timeline view, reference architectures.`
+      tip: `<b>New in v2.4:</b> <strong>Guided Plan</strong> wizard — build a customer stack in 5 taps
+            (industry → size → capabilities → legacy refresh → instant recommendations).`
     },
 
     // ── Top bar fundamentals ─────────────────────────────────────────────────
@@ -4120,13 +4122,32 @@ document.addEventListener("keydown",ev=>{
       }
     },
 
+    // ── Guided Plan wizard ───────────────────────────────────────────────────
+    {
+      target: "#guided-btn", place: "bottom",
+      title: "Guided Plan — start here for new accounts",
+      body: `The fastest way to build a plan: a <strong>5-step wizard</strong> that walks
+             you through industry, customer size, what's already deployed, and any
+             legacy refresh triggers — then auto-builds the stack and runs analysis.<br><br>
+             Great for first conversations when you don't know the full stack yet.`,
+      tip: `Press <code>G</code> from anywhere to launch it. You can refine everything
+            afterward in the Account Planner.`,
+      before: () => {
+        document.getElementById("plans-menu")?.classList.remove("show");
+        document.getElementById("gw-overlay")?.classList.remove("show");
+        const pn = document.getElementById("planner");
+        if (pn?.classList.contains("open")) document.getElementById("planner-btn")?.click();
+      }
+    },
+
     // ── Planner: open + profile + templates ──────────────────────────────────
     {
       target: "#planner-btn", place: "bottom",
-      title: "Open the Account Planner",
-      body: `This is where you build the customer's existing stack and get
-             tailored recommendations for augmenting, replacing EOL gear, and
-             identifying solution bundles.<br><br>Let's open it now.`,
+      title: "Account Planner — expert mode",
+      body: `For hands-on control, open the planner to search and add products manually,
+             tweak industry templates, and fine-tune recommendations.<br><br>
+             If you used <strong>Guided Plan</strong>, your stack lands here automatically —
+             edit anything and re-run analysis.`,
       ctaText: "Open Planner →",
       before: () => {
         const pn = document.getElementById("planner");
@@ -4158,10 +4179,11 @@ document.addEventListener("keydown",ev=>{
     },
     {
       target: "#ls", place: "left",
-      title: "Mark outgoing / competitor tech",
-      body: `Click any tile to flag <strong>legacy or competitor technology</strong>
-             the customer is replacing (Polycom Video, Zoom Rooms, Palo Alto NGFW,
-             VMware NSX …). The tool maps each to the Cisco products that displace it.`,
+      title: "Mark outgoing legacy tech",
+      body: `Click any tile to flag <strong>Cisco legacy technology</strong> the customer
+             is moving away from — AnyConnect VPN, Prime, CUCM, classic ASA, MPLS WAN,
+             standalone WLC, and more. The Replace tab maps each to the modern Cisco
+             successor with a migration rationale.`,
     },
     {
       target: "#aw", place: "left",
@@ -4270,9 +4292,9 @@ document.addEventListener("keydown",ev=>{
       title: "Footer — version & shortcuts",
       body: `The footer shows the data-freshness date, a <em>What's new</em> link
              (changelog) and the keyboard shortcuts cheat-sheet.<br><br>
-             Try <code>?</code> any time to relaunch this tour, <code>/</code> to
-             focus search, <code>a</code> to open the AI assistant, <code>t</code>
-             to toggle the timeline.`,
+             Try <code>?</code> any time to relaunch this tour, <code>G</code> for Guided Plan,
+             <code>/</code> to focus search, <code>a</code> to open the AI assistant,
+             <code>t</code> to toggle the timeline.`,
     },
 
     // ── Wrap-up ──────────────────────────────────────────────────────────────
@@ -4313,6 +4335,7 @@ document.addEventListener("keydown",ev=>{
     try {
       document.getElementById("plans-menu")?.classList.remove("show");
       document.getElementById("exp-menu")?.classList.remove("show");
+      document.getElementById("gw-overlay")?.classList.remove("show");
       document.getElementById("cmp-panel")?.classList.remove("open");
       window.__cpnV2?.phases?.closeCompare?.();
       window.closePanel && window.closePanel();
@@ -4515,7 +4538,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.4.1";
+const APP_VERSION   = "2.4.2";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4804,6 +4827,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.4.2", date:"2026-05-31", items:[
+    "Favicon — portfolio graph icon shows in browser tabs and bookmarks (inline SVG).",
+    "Guided tour updated with a new Guided Plan step; tour version bumped to v2.3."
+  ]},
   {ver:"2.4.1", date:"2026-05-31", items:[
     "Fix: Guided Plan Continue button stayed disabled after selecting an industry on step 1."
   ]},
