@@ -13,13 +13,14 @@ An interactive, single-file HTML tool for exploring the Cisco product portfolio 
 ## What it does
 
 - **Guided Plan** — 5-step wizard (industry → size → capabilities → legacy refresh) that builds your stack, runs analysis, and generates inline AI deliverables (exec summary, 90-day roadmap, customer email, gap analysis)
-- **Four-level drill-down visualization**:
+- **Five view modes** — same portfolio data, multiple lenses:
   - **Overview** — 5 category bubbles (Networking / Security / Collaboration / Computing / Observability) for first-look conversations
   - **Families** — 54 product families *(default)*, the classic D3 force-directed map of how things connect
   - **Composition** — one family pinned in the middle with every specific SKU around it; dashed purple *"replaced by"* arrows show succession chains
   - **All** — every family + every product (~370 nodes) in one dense graph for power users
-- **Drill down anywhere**: switch with the topbar segmented control, **double-click** a family bubble, click the bright **"Explore N products →"** button on any family panel, or just **search for a product** — the graph auto-promotes into that product's family. A breadcrumb chip under the topbar always shows where you are.
-- **Visualize the portfolio** as an interactive D3 force-directed graph (zoom, drag, click for details, right-click for quick actions)
+  - **Spatial** — optional immersive **3D** map of product families with always-visible name labels; orbit (drag), zoom (scroll), and click any node for the detail panel. Respects the same category / use-case / industry filters and stack highlights as 2D. **Double-click** a family — or **Explore N products →** on its panel — to drill into a 3D composition where SKUs orbit the family center with purple succession links. Bundled locally (no CDN); requires WebGL.
+- **Drill down anywhere**: switch with the topbar segmented control, **double-click** a family bubble (2D Composition or Spatial composition), click **"Explore N products →"** on any family panel, or **search for a product** — the graph auto-promotes into that product's family. A breadcrumb chip under the topbar tracks your level; in Spatial, `Esc` steps back one level at a time.
+- **Visualize the portfolio** as an interactive D3 force-directed graph in 2D (zoom, drag, click for details, right-click for quick actions) or in optional 3D Spatial view
 - **Search any product** — both families (ISE, Meraki, Webex Devices, AI Defense, Cisco 8000 Secure Routers) and **325+ specific models** spanning every major Cisco wave from Cisco Live 2025 through early-2026: Catalyst 9350/9610 Smart Switches (Silicon One G300), Secure Routers 8100–8500, Wireless 9179F (Wi-Fi 7 + URWB), Desk Pro G2, Wireless Phone 9821, AI Defense (Cloud Visibility / Validation / Runtime / BOM), Nexus 9800 AI spine, UCS C845A M8, plus the full legacy lineage with EOL bulletins.
 - **Filter** by category, use case, industry, EOL/EOS status, or licensing tier
 - **Build account plans** — add a customer's existing Cisco stack and get scored recommendations for:
@@ -69,14 +70,14 @@ python3 -m http.server 8765
 | `?` | (Re-)launch the guided tour |
 | `←` / `→` / `↑` / `↓` | Walk between connected nodes (when one is selected) |
 | `Enter` / `Space` | Open the focused node |
-| `Esc` | Close any open panel / dialog / tour |
+| `Esc` | Close panel / dialog / tour; in **Spatial**, step back one level (composition → map → Families) |
 
 **Drill-down shortcuts (graph):**
-- **Double-click** any family bubble → Composition view for that family
-- **Click "Explore N products →"** on a family's detail panel → same drill
-- **Search for a product** → graph auto-promotes to that product's family
+- **Double-click** any family bubble → Composition view (2D) or Spatial composition (3D)
+- **Click "Explore N products →"** on a family's detail panel → same drill in the current view mode
+- **Search for a product** → graph auto-promotes to that product's family (2D modes)
 
-The view-mode segmented control in the topbar is keyboard-focusable; the breadcrumb chip's `×` returns to Families view.
+The view-mode segmented control in the topbar is keyboard-focusable; the breadcrumb chip's `×` returns to the previous level (or Families from the top-level Spatial map).
 
 ## AI Assistant setup notes
 
@@ -98,9 +99,9 @@ The assistant works fully client-side via your own API key. It supports any Open
 
 ## Tech
 
-Single, self-contained HTML file. No build step, no dependencies to install — D3.js is loaded from a CDN. ~460 KB total.
+Single HTML entry point (`cisco-portfolio-navigator.html`) with no build step. D3.js loads from a CDN for 2D views; **Spatial** lazy-loads vendored 3D libraries from `vendor/` (`3d-force-graph`, Three.js, `three-spritetext`) so the 3D map works offline and on networks that block external CDNs.
 
-Internally, the four view modes are layered on top of a single D3 force simulation: the global `NODES` (54 families) and `LINKS` (family-to-family adjacencies) are the source of truth, and each mode synthesizes its own `viewNodes` / `viewLinks` arrays (category bubbles for Overview, family + products + successor edges for Composition, the full union for All). A stable link-key function keeps D3 `.join()` happy across rebinds, and per-mode force tuning (charge, collide, link distance) keeps layouts feeling right whether there are 5 nodes or 370.
+Internally, five view modes share one data model: the global `NODES` (54 families) and `LINKS` (family-to-family adjacencies) are the source of truth. 2D modes synthesize `viewNodes` / `viewLinks` for D3 (category bubbles for Overview, family + products + successor edges for Composition, the full union for All). **Spatial** builds parallel graph payloads for `3d-force-graph`, including a composition sub-level where the family node is pinned at the origin and products orbit it. Per-mode force tuning (charge, link distance) keeps layouts readable from 5 nodes to ~370. Spatial requires WebGL.
 
 ## License
 
