@@ -1,11 +1,18 @@
 # Cisco Portfolio Navigator
 
+<p align="center">
+  <a href="https://bnarcum.github.io/cisco-portfolio-navigator/">
+    <img src="docs/hero.png" alt="Cisco Portfolio Navigator — interactive portfolio graph and Account Planner" width="100%">
+  </a>
+</p>
+
 An interactive, single-file HTML tool for exploring the Cisco product portfolio and building customer account plans with augmentation, replacement, and bundle recommendations.
 
 **Live demo:** https://bnarcum.github.io/cisco-portfolio-navigator/
 
 ## What it does
 
+- **Guided Plan** — 5-step wizard (industry → size → capabilities → legacy refresh) that builds your stack, runs analysis, and generates inline AI deliverables (exec summary, 90-day roadmap, customer email, gap analysis)
 - **Four-level drill-down visualization**:
   - **Overview** — 5 category bubbles (Networking / Security / Collaboration / Computing / Observability) for first-look conversations
   - **Families** — 54 product families *(default)*, the classic D3 force-directed map of how things connect
@@ -28,8 +35,8 @@ An interactive, single-file HTML tool for exploring the Cisco product portfolio 
 - **Compare mode** — pin 2–4 products or families side-by-side; inline ⇆ button on every Recent / Pinned item
 - **Reference architectures** — overlay the canonical product stack for any use case
 - **Saved plans + shareable URL** — auto-save, name plans, share encoded state via link
-- **Multi-format export** — Markdown, CSV, JSON, PDF (print), PPTX, plain text
-- **AI Assistant** — bring your own key (OpenRouter, Groq, OpenAI, Anthropic, LM Studio, Ollama) to generate stacks from a scenario, justify recommendations, or explore migrations
+- **Multi-format export** — Markdown, CSV, JSON, PDF (print), PPTX (discovery summary + AI deliverable slides), plain text
+- **AI Assistant (BYOK)** — OpenRouter, Groq, Gemini (AI Studio), OpenAI, Anthropic, LM Studio, or Ollama to generate stacks, justify recommendations, or explore migrations
 - **Last view + focus** persists across reloads in `localStorage`
 
 ## Usage
@@ -56,6 +63,7 @@ python3 -m http.server 8765
 |---|---|
 | `/` or `⌘K` / `Ctrl+K` | Focus search |
 | `p` | Toggle account planner |
+| `g` | Open Guided Plan wizard |
 | `t` | Toggle EOS/EOL timeline view |
 | `a` | Open AI assistant |
 | `?` | (Re-)launch the guided tour |
@@ -76,8 +84,9 @@ The assistant works fully client-side via your own API key. It supports any Open
 
 | Provider | Works from web (HTTPS hosted) | Works from `file://` | Notes |
 |---|:-:|:-:|---|
-| OpenRouter | ✅ | ✅ | Recommended — single key for OpenAI/Anthropic/Llama/etc. |
+| OpenRouter | ✅ | ✅ | Recommended — single key for OpenAI/Anthropic/Gemini/etc. |
 | Groq | ✅ | ✅ | Fast, free tier |
+| Google AI Studio (Gemini) | ✅ | ✅ | Free tier — OpenAI-compatible endpoint |
 | OpenAI | ✅ | ❌ (CORS) | Use OpenRouter for browser access |
 | Anthropic | ✅ | ❌ (CORS) | Use OpenRouter for browser access |
 | LM Studio | ⚠️ * | ✅ | Local server — see notes below |
@@ -86,6 +95,22 @@ The assistant works fully client-side via your own API key. It supports any Open
 \* When using the hosted version with a **local** model server (Ollama / LM Studio), browsers block the mixed `https://` → `http://localhost` request. Workarounds:
 - Use the offline / local instructions above (serve the file via `python3 -m http.server`)
 - Or download the HTML file and open it directly (`file://` works once you set `OLLAMA_ORIGINS="*"` and restart Ollama)
+
+## Screenshots
+
+| README hero | GitHub social preview (1280×640) |
+|---|---|
+| `docs/hero.png` | `docs/social-preview.png` |
+
+To update the repo card image on GitHub: **Settings → General → Social preview → Upload** `docs/social-preview.png`.
+
+To refresh screenshots after UI changes:
+
+```bash
+npm install playwright@1.49.0 --no-save
+npx playwright install chromium
+node scripts/capture-readme-screenshots.mjs
+```
 
 ## Tech
 
