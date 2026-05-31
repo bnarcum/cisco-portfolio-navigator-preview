@@ -516,8 +516,7 @@
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
       <path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-    Guided Plan
+    </svg><span id="guided-btn-label">Guided Plan</span>
   </button>
   <button id="planner-btn">
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
@@ -4129,8 +4128,8 @@ document.addEventListener("keydown",ev=>{
       body: `The fastest way to build a plan: a <strong>5-step wizard</strong> that walks
              you through industry, customer size, what's already deployed, and any
              legacy refresh triggers — then auto-builds the stack and runs analysis.<br><br>
-             When you're done, the button becomes <strong>Review plan</strong> so you can
-             return to your results, edit answers, or Ask AI without starting over.`,
+             When you're done, the button stays <strong>Guided Plan</strong> with a green
+             outline so you can return to your results, edit answers, or Ask AI without starting over.`,
       tip: `Press <code>G</code> from anywhere to launch it. You can refine everything
             afterward in the Account Planner.`,
       before: () => {
@@ -4248,7 +4247,7 @@ document.addEventListener("keydown",ev=>{
       body: `Generate a shareable plan in <strong>Markdown, CSV, JSON, PDF (via
              print), PowerPoint (.pptx),</strong> or plain text. Each export
              includes the stack, EOS/EOL migration paths, top recommendations,
-             and bundle coverage. PowerPoint produces a simple 4–5 slide deck
+             and bundle coverage. PowerPoint produces a 4–6 slide deck
              ready to drop into a customer conversation.`,
       before: () => {
         // Close the planner so the export button (lower in planner) is visible
@@ -4539,7 +4538,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.4.4";
+const APP_VERSION   = "2.4.5";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4828,6 +4827,11 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.4.5", date:"2026-05-31", items:[
+    "Fix: Guided Plan top-bar label no longer duplicates; button always reads Guided Plan (green outline when a session exists).",
+    "Floating AI button now labeled Ask AI.",
+    "PowerPoint export adds an Account Discovery Summary slide when the plan was built via Guided Plan."
+  ]},
   {ver:"2.4.4", date:"2026-05-31", items:[
     "Guided Plan session persistence — reopen lands on your reveal screen; Edit answers, Start over, and Back from results.",
     "Top bar shows Review plan when a guided session exists; Ask AI labeling unified; Configure AI hint when no API key."
@@ -5490,12 +5494,12 @@ STYLE.textContent = `
     transition:border-color .12s,background .12s}
   .ai-cfg-fix:hover{border-color:var(--accent);background:var(--surface3)}
   .ai-cfg-box details summary::marker{color:var(--subtle)}
-  #ai-fab{position:fixed;right:74px;bottom:20px;width:42px;height:42px;border-radius:50%;
-    background:linear-gradient(135deg,#a855f7,#00bceb);color:#fff;border:none;font-size:18px;
+  #ai-fab{position:fixed;right:74px;bottom:20px;min-width:42px;height:36px;padding:0 11px;border-radius:18px;
+    background:linear-gradient(135deg,#a855f7,#00bceb);color:#fff;border:none;
     cursor:pointer;z-index:60;box-shadow:0 4px 14px rgba(168,85,247,.4);
     display:flex;align-items:center;justify-content:center;transition:transform .15s;font-weight:700}
   #ai-fab:hover{transform:scale(1.08)}
-  #ai-fab::after{content:"AI";font-size:12px;letter-spacing:.5px}
+  #ai-fab::after{content:"Ask AI";font-size:10px;letter-spacing:.02em;white-space:nowrap}
 
   /* Bottom footer */
   #v2-footer{position:fixed;bottom:0;left:0;right:0;
@@ -6138,7 +6142,52 @@ function exportPPTX(){
   sl.addText(`${sm.date}${sm.profile.vertical?" · "+sm.profile.vertical:""}${sm.profile.size?" · "+sm.profile.size:""}`,
     { x:0.6, y:2.1, w:12, h:0.4, fontSize:14, color:"8B949E" });
 
-  // Slide 2: Stack
+  // Slide 2: Guided Plan summary (when completed via wizard)
+  if (typeof wizardIsComplete === "function" && wizardIsComplete()) {
+    sl = pp.addSlide();
+    sl.background = { color: "0D1117" };
+    sl.addText("Account Discovery Summary", { x:0.5, y:0.35, w:12, h:0.5, fontSize:24, bold:true, color:"00BCEB" });
+    const indT = INDUSTRY_TEMPLATES.find(x => x.id === wizardState.industry);
+    const indLine = indT ? `${indT.name}${wizardState.size ? " · " + wizardState.size : ""}` : (sm.profile.vertical || "General");
+    sl.addText(indLine, { x:0.6, y:0.95, w:12, h:0.35, fontSize:16, bold:true, color:"FFFFFF" });
+    let y = 1.45;
+    const narr = typeof wizardNarrative === "function" ? wizardNarrative() : "";
+    if (narr) {
+      sl.addText(narr, { x:0.6, y, w:12, h:0.55, fontSize:12, color:"8B949E", valign:"top" });
+      y += 0.65;
+    }
+    sl.addText("In place today", { x:0.6, y, w:12, h:0.3, fontSize:11, bold:true, color:"00BCEB" });
+    y += 0.35;
+    const stackNames = sm.items.slice(0, 8).map(i => i.name).join(", ");
+    sl.addText(`${sm.items.length} capabilities: ${stackNames}${sm.items.length > 8 ? "…" : ""}`,
+      { x:0.6, y, w:12, h:0.45, fontSize:11, color:"E6EDF3", valign:"top" });
+    y += 0.55;
+    if (sm.recs.length) {
+      sl.addText("Recommended next steps (augment)", { x:0.6, y, w:12, h:0.3, fontSize:11, bold:true, color:"00BCEB" });
+      y += 0.32;
+      sm.recs.slice(0, 4).forEach((r, i) => {
+        sl.addText(`• ${r.name}`, { x:0.75, y: y + i * 0.28, w:11.5, h:0.26, fontSize:11, color:"E6EDF3" });
+      });
+      y += Math.min(sm.recs.length, 4) * 0.28 + 0.15;
+    }
+    if (sm.legacy.length) {
+      sl.addText("Migration / refresh", { x:0.6, y, w:12, h:0.3, fontSize:11, bold:true, color:"00BCEB" });
+      y += 0.32;
+      sm.legacy.slice(0, 3).forEach((l, i) => {
+        const tos = (l.replaces || []).map(r => nameOf(r)).filter(Boolean).slice(0, 2).join(", ");
+        sl.addText(`• ${l.name}${tos ? " → " + tos : ""}`, { x:0.75, y: y + i * 0.28, w:11.5, h:0.26, fontSize:10.5, color:"E6EDF3" });
+      });
+      y += Math.min(sm.legacy.length, 3) * 0.28 + 0.1;
+    }
+    if (sm.bundles.length) {
+      const weak = sm.bundles[sm.bundles.length - 1];
+      if (weak && weak.pct < 60) {
+        sl.addText(`Gap alert: ${weak.name} at ${weak.pct}% coverage`, { x:0.6, y: Math.min(y, 6.8), w:12, h:0.3, fontSize:11, color:"F59E0B" });
+      }
+    }
+  }
+
+  // Slide: Current Stack
   sl = pp.addSlide();
   sl.background = { color: "0D1117" };
   sl.addText("Current Stack", { x:0.5, y:0.4, w:12, h:0.5, fontSize:24, bold:true, color:"00BCEB" });
@@ -6485,10 +6534,9 @@ function markWizardDirty() {
 
 function refreshGuidedBtnLabel() {
   const btn = $("#guided-btn");
+  const lbl = $("#guided-btn-label");
+  if (lbl) lbl.textContent = "Guided Plan";
   if (!btn) return;
-  const label = wizardIsComplete() ? "Review plan" : "Guided Plan";
-  const textNode = [...btn.childNodes].find(n => n.nodeType === 3);
-  if (textNode) textNode.textContent = " " + label;
   btn.classList.toggle("has-plan", wizardIsComplete());
   btn.title = wizardIsComplete()
     ? "Review your guided plan — edit answers or Ask AI"
