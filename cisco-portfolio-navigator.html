@@ -124,6 +124,15 @@
     /* GRAPH */
     #gw{position:fixed;top:var(--topbar-h);left:0;right:0;bottom:0}
     #gs{width:100%;height:100%;display:block}
+    #spatial-wrap{position:absolute;inset:0;display:none;z-index:2}
+    #spatial-graph{width:100%;height:100%}
+    #spatial-hud{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);
+      background:rgba(22,27,34,.92);border:1px solid var(--border);border-radius:20px;
+      padding:6px 14px;font-size:11px;color:var(--muted);z-index:3;pointer-events:none;
+      white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+    #spatial-hud kbd{background:var(--surface3);border:1px solid var(--border);border-radius:3px;
+      padding:1px 5px;font-size:10px;color:var(--subtle)}
+    body.planner-open #spatial-hud{bottom:52px}
 
     /* TOOLTIP */
     #tip{position:fixed;pointer-events:none;background:var(--surface);
@@ -505,6 +514,7 @@
     <button type="button" data-vm="families"     class="active" title="Families — 52 product families (default)">Families</button>
     <button type="button" data-vm="composition"  disabled title="Composition — pick a family first">Composition</button>
     <button type="button" data-vm="all-products" title="All Products — every family + product (dense; power-user view)">All</button>
+    <button type="button" data-vm="spatial" title="Spatial — immersive 3D map of product families">Spatial</button>
   </div>
   <div class="dv"></div>
   <div class="fr" id="cpills"></div>
@@ -2895,7 +2905,7 @@ const tid = l => (typeof l.target==="object" ? l.target.id : l.target);
 const VIEW_MODE_KEY  = "cpn-view-mode-v2";
 const VIEW_FOCUS_KEY = "cpn-view-focus-v2";
 
-let viewMode  = "families";   // "overview" | "families" | "composition"
+let viewMode  = "families";   // "overview" | "families" | "composition" | "spatial"
 let viewFocus = null;         // family id when in composition mode
 let viewNodes = NODES.slice();
 let viewLinks = LINKS.slice();
@@ -3014,12 +3024,193 @@ function buildCompositionView(familyId){
   return { nodes: [center, ...productNodes], links };
 }
 
+// ══════════════════════════════════════
+// SPATIAL — optional 3D portfolio map
+// ══════════════════════════════════════
+const SPATIAL_LIB = "https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.5/dist/3d-force-graph.min.js";
+const spatialState = { graph: null, active: false, libPromise: null, resizeObs: null };
+
+function getSpatialDims(){
+  const gw = document.getElementById("gw");
+  return { w: gw ? gw.clientWidth : window.innerWidth, h: gw ? gw.clientHeight : window.innerHeight - 52 };
+}
+
+function getFilteredFamilyIds(){
+  const vis = new Set();
+  NODES.forEach(n => {
+    if (activeCats.has(n.category)
+      && (!activeUC || n.useCases.includes(activeUC))
+      && (!activeInd || n.industries.includes(activeInd))) vis.add(n.id);
+  });
+  return vis;
+}
+
+function buildSpatialGraphData(){
+  const vis = getFilteredFamilyIds();
+  const nodes = NODES.filter(n => vis.has(n.id)).map(n => ({
+    id: n.id,
+    name: n.name,
+    category: n.category,
+    color: CATS[n.category].color,
+    val: stack.has(n.id) ? 3 : Math.max(0.6, rscale(degree[n.id] || 0) / 10)
+  }));
+  const nodeSet = new Set(nodes.map(n => n.id));
+  const links = LINKS.filter(l => nodeSet.has(sid(l)) && nodeSet.has(tid(l))).map(l => ({
+    source: sid(l), target: tid(l), type: l.type
+  }));
+  return { nodes, links };
+}
+
+function loadSpatialLib(){
+  if (window.ForceGraph3D) return Promise.resolve();
+  if (spatialState.libPromise) return spatialState.libPromise;
+  spatialState.libPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = SPATIAL_LIB;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => { spatialState.libPromise = null; reject(new Error("spatial-lib")); };
+    document.head.appendChild(s);
+  });
+  return spatialState.libPromise;
+}
+
+function ensureSpatialDOM(){
+  let wrap = document.getElementById("spatial-wrap");
+  if (wrap) return wrap;
+  wrap = document.createElement("div");
+  wrap.id = "spatial-wrap";
+  wrap.innerHTML = `<div id="spatial-hud">Drag to orbit · Scroll to zoom · Click a node for details · <kbd>Esc</kbd> back to Families</div>
+    <div id="spatial-graph"></div>`;
+  document.getElementById("gw").appendChild(wrap);
+  return wrap;
+}
+
+function spatialNodeColor(n){
+  if (selected && selected.id === n.id) return "#ffffff";
+  if (stack.has(n.id)) return "#e6edf3";
+  return n.color;
+}
+
+function initSpatialGraph(){
+  const el = document.getElementById("spatial-graph");
+  if (!el || spatialState.graph) return;
+  const { w, h } = getSpatialDims();
+  spatialState.graph = ForceGraph3D()(el)
+    .width(w).height(h)
+    .backgroundColor("#0d1117")
+    .showNavInfo(false)
+    .nodeLabel("name")
+    .nodeColor(spatialNodeColor)
+    .nodeVal("val")
+    .nodeOpacity(0.92)
+    .linkColor(l => l.type === "direct" ? "rgba(0,188,235,0.45)" : "rgba(110,118,129,0.28)")
+    .linkWidth(l => l.type === "direct" ? 1.4 : 0.6)
+    .linkOpacity(0.55)
+    .linkDirectionalParticles(l => l.type === "direct" ? 2 : 0)
+    .linkDirectionalParticleWidth(1.2)
+    .linkDirectionalParticleSpeed(0.004)
+    .onNodeClick(node => {
+      const d = nodeById[node.id];
+      if (d) selectNodeSpatial(d, node);
+    })
+    .onNodeHover(node => { document.body.style.cursor = node ? "pointer" : null; })
+    .d3Force("charge").strength(-120)
+    .d3Force("link").distance(l => l.type === "direct" ? 55 : 90);
+
+  if (!spatialState.resizeObs){
+    spatialState.resizeObs = new ResizeObserver(() => {
+      if (!spatialState.active || !spatialState.graph) return;
+      const dims = getSpatialDims();
+      spatialState.graph.width(dims.w).height(dims.h);
+    });
+    spatialState.resizeObs.observe(document.getElementById("gw"));
+  }
+}
+
+function refreshSpatialGraph(){
+  if (!spatialState.active) return;
+  const data = buildSpatialGraphData();
+  if (!spatialState.graph) initSpatialGraph();
+  if (!spatialState.graph) return;
+  spatialState.graph.graphData(data);
+  spatialState.graph.nodeColor(spatialNodeColor);
+}
+
+function focusSpatialNode(id, ms){
+  if (!spatialState.graph) return;
+  const gData = spatialState.graph.graphData();
+  const node = gData.nodes.find(n => n.id === id);
+  if (!node || node.x == null) return;
+  const dist = 140;
+  spatialState.graph.cameraPosition(
+    { x: node.x, y: node.y + 40, z: node.z + dist },
+    node,
+    ms == null ? 800 : ms
+  );
+}
+
+function selectNodeSpatial(d, graphNode){
+  selected = d;
+  hideTip();
+  showDetailPanel(d);
+  if (spatialState.graph){
+    spatialState.graph.nodeColor(spatialNodeColor);
+    const focus = () => focusSpatialNode(d.id, 700);
+    if (graphNode) focus();
+    else setTimeout(focus, 500);
+  }
+}
+
+function enterSpatialView(){
+  spatialState.active = true;
+  svgEl.style.display = "none";
+  const wrap = ensureSpatialDOM();
+  wrap.style.display = "block";
+  return loadSpatialLib()
+    .then(() => {
+      if (!spatialState.active) return;
+      initSpatialGraph();
+      refreshSpatialGraph();
+      const dims = getSpatialDims();
+      if (spatialState.graph) spatialState.graph.width(dims.w).height(dims.h);
+    })
+    .catch(() => {
+      if (typeof showToast === "function") showToast("Spatial view needs network access to load the 3D library.");
+      applyViewLevel("families");
+    });
+}
+
+function exitSpatialView(){
+  spatialState.active = false;
+  svgEl.style.display = "block";
+  const wrap = document.getElementById("spatial-wrap");
+  if (wrap) wrap.style.display = "none";
+  document.body.style.cursor = null;
+}
+
 // ── Switch the current view level. Public-facing API.
-// mode:   "overview" | "families" | "composition"
+// mode:   "overview" | "families" | "composition" | "all-products" | "spatial"
 // opts:   { focusFamily, focusCategory, initial }
 function applyViewLevel(mode, opts){
   opts = opts || {};
   const prev = viewMode;
+
+  if (prev === "spatial" && mode !== "spatial") exitSpatialView();
+
+  if (mode === "spatial"){
+    viewMode = "spatial";
+    viewFocus = null;
+    selected = null;
+    updateViewModeUI();
+    updateBreadcrumb();
+    if (!opts.initial){
+      try{ localStorage.setItem(VIEW_MODE_KEY, viewMode); }catch(e){}
+      try{ localStorage.setItem(VIEW_FOCUS_KEY, ""); }catch(e){}
+    }
+    enterSpatialView().then(() => applyFilters());
+    return;
+  }
 
   if (mode === "composition"){
     const family = opts.focusFamily || viewFocus;
@@ -3075,7 +3266,7 @@ function applyViewLevel(mode, opts){
 
   // Run the appropriate post-mode filter pass.
   if (mode === "families" || mode === "all-products") applyFilters();
-  else {
+  else if (mode !== "spatial") {
     // Hide filter badge in other modes.
     const badge=document.getElementById("fbadge"); if (badge) badge.style.display="none";
     // Ensure everything is visible (no display:none leftovers).
@@ -3152,7 +3343,7 @@ function updateViewModeUI(){
   const pills = document.getElementById("cpills");
   const ucs = document.getElementById("ucs");
   const inds = document.getElementById("inds");
-  const muted = !(viewMode === "families" || viewMode === "all-products");
+  const muted = !(viewMode === "families" || viewMode === "all-products" || viewMode === "spatial");
   [pills, ucs, inds].forEach(el => {
     if (!el) return;
     el.style.opacity = muted ? 0.45 : 1;
@@ -3166,6 +3357,12 @@ function updateBreadcrumb(){
   const cb = document.getElementById("vm-crumb"); if (!cb) return;
   if (viewMode === "families"){
     cb.classList.remove("show"); cb.innerHTML = ""; return;
+  }
+  if (viewMode === "spatial"){
+    cb.innerHTML = `<span class="vm-cb-current">Spatial view</span>
+      <button class="vm-cb-x" title="Back to families" aria-label="Close spatial view">×</button>`;
+    cb.classList.add("show");
+    return;
   }
   if (viewMode === "overview"){
     cb.classList.remove("show"); cb.innerHTML = ""; return;
@@ -3235,6 +3432,10 @@ window.getViewFocus   = () => viewFocus;
     applyViewLevel("all-products", { initial: true });
     return;
   }
+  if (savedMode === "spatial"){
+    applyViewLevel("spatial", { initial: true });
+    return;
+  }
   applyViewLevel("families", { initial: true });
 })();
 
@@ -3257,6 +3458,11 @@ function selectNode(d) {
       .attr("stroke-width",mine?(l.type==="direct"?2.5:1.5):(l.type==="direct"?1.8:1));
   });
   showDetailPanel(d);
+  if (viewMode === "spatial"){
+    focusSpatialNode(d.id, 700);
+    if (spatialState.graph) spatialState.graph.nodeColor(spatialNodeColor);
+    return;
+  }
   const {w,h}=getDims(), t=d3.zoomTransform(svgEl);
   const pw=plannerOpen?490:390;
   svg.transition().duration(500).call(zoom.transform,
@@ -3264,6 +3470,10 @@ function selectNode(d) {
 }
 
 function resetHL() {
+  if (viewMode === "spatial"){
+    if (spatialState.graph) spatialState.graph.nodeColor(spatialNodeColor);
+    return;
+  }
   ndEl.each(function(nd){
     const inStk=stack.has(nd.id);
     d3.select(this).select(".gr").attr("fill-opacity",inStk?.25:0);
@@ -3277,6 +3487,10 @@ function resetHL() {
 }
 
 function highlightStack() {
+  if (viewMode === "spatial"){
+    if (spatialState.graph) spatialState.graph.nodeColor(spatialNodeColor);
+    return;
+  }
   if(selected) return; if(!stack.size){ resetHL(); return; }
   ndEl.each(function(nd){
     const inStk=stack.has(nd.id);
@@ -3415,6 +3629,11 @@ window.jumpTo = id => {
   activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd="";
   ucEl.value=""; indEl.value="";
   document.querySelectorAll(".cp").forEach(b=>b.classList.remove("off"));
+  if (viewMode === "spatial"){
+    applyFilters();
+    selectNodeSpatial(d);
+    return;
+  }
   // Auto-promote to Families if we're sitting in Overview/Composition so the
   // user always lands on the family graph when they pick a family from search.
   if (viewMode !== "families"){
@@ -3464,6 +3683,18 @@ function applyFilters() {
     refreshTimelineIfOpen();
     return;
   }
+  if (viewMode === "spatial"){
+    const vis = getFilteredFamilyIds();
+    const badge = document.getElementById("fbadge");
+    const f = activeUC || activeInd || activeCats.size < Object.keys(CATS).length;
+    if (f && badge){
+      badge.textContent = `Showing ${vis.size} of ${NODES.length} portfolio families`;
+      badge.style.display = "block";
+    } else if (badge) badge.style.display = "none";
+    refreshSpatialGraph();
+    refreshTimelineIfOpen();
+    return;
+  }
   const vis=new Set();
   if (viewMode === "all-products"){
     // Both family + product nodes need to satisfy the filter set.
@@ -3499,7 +3730,8 @@ function resetAll() {
   selected=null; resetHL(); closePanel();
   // Reset also returns the user to the Families view so the graph state matches
   // the cleared filter state.
-  if (viewMode !== "families") applyViewLevel("families");
+  if (viewMode !== "families" && viewMode !== "spatial") applyViewLevel("families");
+  else if (viewMode === "spatial") applyFilters();
   else applyFilters();
   const {w,h}=getDims();
   svg.transition().duration(600).call(zoom.transform,d3.zoomIdentity.translate(w/2,h/2).scale(0.78));
@@ -3996,7 +4228,13 @@ document.getElementById("exp-btn").addEventListener("click",()=>{
 function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800);}
 
 document.addEventListener("keydown",ev=>{
-  if(ev.key==="Escape"){selected=null;resetHL();closePanel();}
+  if(ev.key==="Escape"){
+    if (viewMode === "spatial" && !document.getElementById("panel").classList.contains("open")){
+      applyViewLevel("families");
+      return;
+    }
+    selected=null;resetHL();closePanel();
+  }
   if((ev.ctrlKey||ev.metaKey)&&ev.key==="k"){ev.preventDefault();searchEl.focus();searchEl.select();}
 });
 
@@ -4060,13 +4298,13 @@ document.addEventListener("keydown",ev=>{
     {
       target: "#vm-seg", place: "bottom",
       title: "Drill down through four levels of detail",
-      body: `<span style="opacity:.6">(new in v2.1)</span> Same data, four lenses
-             — pick whichever zoom level fits the question you're asking:
+      body: `Same data, multiple lenses — pick whichever zoom level fits the question you're asking:
              <ul style="margin:8px 0 0 16px;padding:0">
                <li><b>Overview</b> — 5 category bubbles. Best for first-look conversations.</li>
                <li><b>Families</b> — 52 product families <em>(default)</em>. The classic map of how things connect.</li>
                <li><b>Composition</b> — one family pinned in the middle, every specific SKU around it, with dashed purple <em>"replaced by"</em> arrows to successor products.</li>
                <li><b>All</b> — every family + every product (~350 nodes) in one dense graph. Power-user view.</li>
+               <li><b>Spatial</b> — optional 3D map of families. Orbit, zoom, and click nodes for details.</li>
              </ul>`,
       tip: `<b>Two fast ways into Composition:</b> double-click any family bubble in Families mode, or click the bright <em>"Explore N products"</em> button on any family's detail panel. A breadcrumb chip appears under the topbar so you always know where you are.`,
       before: () => {
@@ -4536,7 +4774,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.6.1";
+const APP_VERSION   = "2.7.0";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -4826,6 +5064,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.7.0", date:"2026-05-31", items:[
+    "Spatial view — optional 3D map of product families: orbit, zoom, and click any node to open the detail panel. Respects category / use-case / industry filters and highlights stack items.",
+    "Spatial view persists in localStorage like other view modes; press Esc (with panel closed) or the breadcrumb × to return to Families."
+  ]},
   {ver:"2.6.1", date:"2026-05-31", items:[
     "Guided Plan — 5-step wizard (industry → size → capabilities → legacy refresh) that builds your stack, runs analysis, and persists your session so you can reopen, edit answers, or start over.",
     "Guided Plan reveal — inline AI deliverables: select exec summary, 90-day roadmap, customer email, or gap analysis and generate responses without leaving the wizard; results persist with your session.",
