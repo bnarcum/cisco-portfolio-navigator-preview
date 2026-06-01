@@ -13,13 +13,12 @@ An interactive, single-file HTML tool for exploring the Cisco product portfolio 
 ## What it does
 
 - **Guided Plan** — 5-step wizard (industry → size → capabilities → legacy refresh) that builds your stack, runs analysis, and generates inline AI deliverables (exec summary, 90-day roadmap, customer email, gap analysis)
-- **Six view modes** — same portfolio data, multiple lenses:
+- **Five view modes** — same portfolio data, multiple lenses:
   - **Overview** — 5 category bubbles (Networking / Security / Collaboration / Computing / Observability) for first-look conversations
   - **Families** — 54 product families *(default)*, the classic D3 force-directed map of how things connect
   - **Composition** — one family pinned in the middle with every specific SKU around it; dashed purple *"replaced by"* arrows show succession chains
   - **All** — every family + every product (~370 nodes) in one dense graph for power users
   - **Spatial** — optional immersive **3D** map of product families with always-visible name labels; orbit (drag), zoom (scroll), and click any node for the detail panel. Respects the same category / use-case / industry filters and stack highlights as 2D. **Double-click** a family — or **Explore N products →** on its panel — to drill into a 3D composition where SKUs orbit the family center with purple succession links. Bundled locally (no CDN); requires WebGL.
-  - **Scenarios** — **I need to…** outcome picker (8 curated solution paths aligned to reference architectures), **Stack flow** diagram (layers top → bottom with traffic arrows), and **Where it runs** deployment matrix (cloud vs on-prem × inline vs out-of-band + endpoint). Highlights account-stack coverage; **Open in graph** overlays the reference arch; **Add gaps to plan** fills the planner. Press **Y** to toggle.
 - **Drill down anywhere**: switch with the topbar segmented control, **double-click** a family bubble (2D Composition or Spatial composition), click **"Explore N products →"** on any family panel, or **search for a product** — the graph auto-promotes into that product's family. A breadcrumb chip under the topbar tracks your level; in Spatial, `Esc` steps back one level at a time.
 - **Visualize the portfolio** as an interactive D3 force-directed graph in 2D (zoom, drag, click for details, right-click for quick actions) or in optional 3D Spatial view
 - **Search any product** — both families (ISE, Meraki, Webex Devices, AI Defense, Cisco 8000 Secure Routers) and **325+ specific models** spanning every major Cisco wave from Cisco Live 2025 through early-2026: Catalyst 9350/9610 Smart Switches (Silicon One G300), Secure Routers 8100–8500, Wireless 9179F (Wi-Fi 7 + URWB), Desk Pro G2, Wireless Phone 9821, AI Defense (Cloud Visibility / Validation / Runtime / BOM), Nexus 9800 AI spine, UCS C845A M8, plus the full legacy lineage with EOL bulletins.
@@ -67,7 +66,6 @@ python3 -m http.server 8765
 | `p` | Toggle account planner |
 | `g` | Open Guided Plan wizard |
 | `t` | Toggle EOS/EOL timeline view |
-| `y` | Toggle Scenarios view (I need to… / stack / matrix) |
 | `a` | Open AI assistant |
 | `?` | (Re-)launch the guided tour |
 | `←` / `→` / `↑` / `↓` | Walk between connected nodes (when one is selected) |

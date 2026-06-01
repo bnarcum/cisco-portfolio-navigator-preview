@@ -480,87 +480,6 @@
     .tp-btn.prim:hover{background:var(--cisco-blue-light);color:#fff}
     .tp-btn.skip{padding:7px 10px;color:var(--subtle);border:none}
     .tp-btn.skip:hover{color:var(--text);background:transparent}
-
-    /* Scenario explorer — I need to… picker + stack + deployment matrix */
-    #sc-wrap{position:fixed;top:var(--topbar-h);left:0;right:0;bottom:0;background:var(--bg);
-      display:none;z-index:42;flex-direction:column}
-    #sc-wrap.show{display:flex}
-    body.planner-open #sc-wrap{right:490px}
-    body:has(#sc-wrap.show) #gw,
-    body:has(#sc-wrap.show) #hint{display:none !important}
-    body:has(#sc-wrap.show) #vm-crumb{display:none !important}
-    #sc-head{padding:12px 18px;border-bottom:1px solid var(--border);flex-shrink:0;
-      display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    #sc-head .sc-title{font-size:15px;font-weight:700}
-    #sc-head .sc-sub{font-size:11px;color:var(--muted);margin-top:2px}
-    #sc-head .sc-head-actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .sc-tab-seg{display:inline-flex;background:var(--surface2);border:1px solid var(--border);
-      border-radius:7px;padding:2px;gap:2px}
-    .sc-tab-seg button{background:transparent;border:none;color:var(--muted);
-      font-size:11px;font-weight:600;padding:5px 12px;border-radius:5px;cursor:pointer;font-family:inherit}
-    .sc-tab-seg button.active{background:var(--accent);color:#000}
-    .sc-btn{padding:6px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;
-      border:1px solid var(--border);background:var(--surface2);color:var(--text);transition:all .12s}
-    .sc-btn:hover{border-color:var(--accent);color:var(--accent)}
-    .sc-btn.prim{background:var(--accent);color:#000;border-color:var(--accent)}
-    .sc-btn.prim:hover{opacity:.9}
-    #sc-body{flex:1;display:flex;min-height:0;overflow:hidden}
-    #sc-sidebar{width:min(300px,34vw);flex-shrink:0;border-right:1px solid var(--border);
-      overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
-    .sc-pick-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-      color:var(--subtle);padding:0 4px 4px}
-    .sc-pick-card{width:100%;text-align:left;padding:12px 14px;border-radius:9px;
-      border:1px solid var(--border);background:var(--surface2);cursor:pointer;
-      transition:all .15s;font-family:inherit;color:var(--text)}
-    .sc-pick-card:hover{border-color:var(--accent)}
-    .sc-pick-card.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);
-      background:rgba(0,188,235,.08)}
-    .sc-pick-need{font-size:12px;font-weight:700;line-height:1.35;margin-bottom:4px}
-    .sc-pick-arch{font-size:10px;color:var(--muted);line-height:1.4}
-    #sc-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
-    #sc-main-empty{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;
-      color:var(--muted);font-size:13px;text-align:center}
-    #sc-detail{flex:1;display:none;flex-direction:column;min-height:0}
-    #sc-detail.show{display:flex}
-    #sc-desc{padding:12px 20px 0;font-size:12px;color:var(--muted);line-height:1.55;flex-shrink:0}
-    #sc-legend{padding:8px 20px 0;font-size:10px;color:var(--subtle);display:flex;flex-wrap:wrap;gap:12px;flex-shrink:0}
-    #sc-legend span{display:inline-flex;align-items:center;gap:5px}
-    .sc-leg-dot{width:8px;height:8px;border-radius:50%;border:2px solid var(--accent)}
-    .sc-leg-dot.in-stack{background:var(--accent);border-color:var(--accent)}
-    .sc-leg-dot.ref-only{border-style:dashed;opacity:.55}
-    #sc-panel-scroll{flex:1;overflow-y:auto;padding:12px 20px 24px}
-    .sc-stack{display:flex;flex-direction:column;gap:0;max-width:720px}
-    .sc-layer{border:1px solid var(--border);border-radius:10px;margin-bottom:0;
-      background:var(--surface);overflow:hidden}
-    .sc-layer + .sc-layer{margin-top:0;border-top:none;border-radius:0}
-    .sc-layer:first-child{border-radius:10px 10px 0 0}
-    .sc-layer:last-child{border-radius:0 0 10px 10px;margin-bottom:0}
-    .sc-layer:only-child{border-radius:10px}
-    .sc-layer-hd{padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
-    .sc-layer-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text)}
-    .sc-layer-hint{font-size:10px;color:var(--subtle);margin-top:2px}
-    .sc-layer-chips{padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    .sc-arrow{display:flex;justify-content:center;padding:4px 0;color:var(--subtle);font-size:14px;line-height:1}
-    .sc-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:8px;
-      font-size:11px;font-weight:600;cursor:pointer;border:2px solid var(--border);
-      background:var(--surface2);color:var(--text);transition:all .12s;font-family:inherit}
-    .sc-chip:hover{border-color:var(--accent);color:var(--accent)}
-    .sc-chip.in-stack{border-color:var(--accent);background:rgba(0,188,235,.12);color:var(--accent)}
-    .sc-chip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-    .sc-chip-note{font-size:9px;font-weight:500;color:var(--subtle);margin-left:2px}
-    .sc-matrix{max-width:900px}
-    .sc-mx-table{width:100%;border-collapse:separate;border-spacing:0;
-      border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:11px}
-    .sc-mx-table th,.sc-mx-table td{border:1px solid var(--border);padding:10px 12px;vertical-align:top}
-    .sc-mx-table th{background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;
-      letter-spacing:.05em;color:var(--subtle);text-align:center}
-    .sc-mx-table th.corner{background:var(--surface);text-align:left}
-    .sc-mx-table td{background:var(--surface);min-height:64px}
-    .sc-mx-endpoint td{background:var(--surface2)}
-    .sc-mx-endpoint .sc-mx-lbl{font-weight:700;color:var(--muted);width:120px}
-    .sc-mx-items{display:flex;flex-wrap:wrap;gap:6px}
-    .sc-mx-foot{margin-top:12px;font-size:10px;color:var(--subtle);line-height:1.5;max-width:720px}
-    #sc-foot-actions{padding:0 20px 16px;display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}
   </style>
 </head>
 <body>
@@ -597,7 +516,6 @@
     <button type="button" data-vm="composition"  disabled title="Composition — pick a family first">Composition</button>
     <button type="button" data-vm="all-products" title="All Products — every family + product (dense; power-user view)">All</button>
     <button type="button" data-vm="spatial" title="Spatial — immersive 3D map of product families">Spatial</button>
-    <button type="button" data-vm="scenarios" title="Scenarios — I need to… picker, solution stack, deployment map">Scenarios</button>
   </div>
   <div class="dv"></div>
   <div class="fr" id="cpills"></div>
@@ -623,44 +541,6 @@
 </div>
 
 <div id="gw"><svg id="gs"></svg></div>
-<div id="sc-wrap" aria-label="Solution scenarios" hidden>
-  <div id="sc-head">
-    <div>
-      <div class="sc-title">Solution scenarios</div>
-      <div class="sc-sub">Pick an outcome · see how Cisco products layer together</div>
-    </div>
-    <div class="sc-tab-seg" id="sc-tab-seg" role="tablist" style="display:none">
-      <button type="button" data-sc-tab="stack" class="active" role="tab">Stack flow</button>
-      <button type="button" data-sc-tab="matrix" role="tab">Where it runs</button>
-    </div>
-    <div class="sc-head-actions">
-      <button type="button" class="sc-btn" id="sc-open-graph" title="Show this scenario on the portfolio graph" style="display:none">Open in graph</button>
-      <button type="button" class="sc-btn prim" id="sc-add-gaps" title="Add reference products not yet in your account stack" style="display:none">Add gaps to plan</button>
-    </div>
-  </div>
-  <div id="sc-body">
-    <div id="sc-sidebar">
-      <div class="sc-pick-label">I need to…</div>
-      <div id="sc-picker"></div>
-    </div>
-    <div id="sc-main">
-      <div id="sc-main-empty">Choose a scenario on the left to see the solution stack and deployment map.</div>
-      <div id="sc-detail">
-        <div id="sc-desc"></div>
-        <div id="sc-legend">
-          <span><i class="sc-leg-dot in-stack"></i> In your account stack</span>
-          <span><i class="sc-leg-dot ref-only"></i> In reference architecture</span>
-          <span>↓ Traffic / policy flow (top → bottom)</span>
-        </div>
-        <div id="sc-panel-scroll">
-          <div id="sc-stack-panel" class="sc-stack"></div>
-          <div id="sc-matrix-panel" class="sc-matrix" style="display:none"></div>
-        </div>
-        <div id="sc-foot-actions"></div>
-      </div>
-    </div>
-  </div>
-</div>
 <div id="vm-crumb" aria-live="polite"></div>
 <div id="tip"><div id="tn"></div><div id="tc"></div></div>
 
@@ -3027,9 +2907,8 @@ const tid = l => (typeof l.target==="object" ? l.target.id : l.target);
 const VIEW_MODE_KEY  = "cpn-view-mode-v2";
 const VIEW_FOCUS_KEY = "cpn-view-focus-v2";
 
-let viewMode  = "families";   // "overview" | "families" | "composition" | "spatial" | "scenarios"
+let viewMode  = "families";   // "overview" | "families" | "composition" | "spatial"
 let viewFocus = null;         // family id when in composition mode
-window.cpnScenarioState = window.cpnScenarioState || { id: null, tab: "stack" };
 let viewNodes = NODES.slice();
 let viewLinks = LINKS.slice();
 
@@ -3540,25 +3419,6 @@ function applyViewLevel(mode, opts){
   const prev = viewMode;
 
   if (prev === "spatial" && mode !== "spatial") exitSpatialView();
-  if (prev === "scenarios" && mode !== "scenarios") window.exitScenarioView?.();
-
-  if (mode === "scenarios"){
-    if (typeof closeTimelineView === "function" && $("#tl-wrap")?.classList.contains("show")){
-      closeTimelineView();
-      $("#tools-timeline")?.classList.remove("active");
-    }
-    viewMode = "scenarios";
-    viewFocus = null;
-    selected = null;
-    updateViewModeUI();
-    updateBreadcrumb();
-    if (!opts.initial){
-      try{ localStorage.setItem(VIEW_MODE_KEY, viewMode); }catch(e){}
-      try{ localStorage.setItem(VIEW_FOCUS_KEY, ""); }catch(e){}
-    }
-    window.enterScenarioView?.(opts.scenarioId);
-    return;
-  }
 
   if (mode === "spatial"){
     viewMode = "spatial";
@@ -3706,7 +3566,7 @@ function updateViewModeUI(){
   const pills = document.getElementById("cpills");
   const ucs = document.getElementById("ucs");
   const inds = document.getElementById("inds");
-  const muted = !(viewMode === "families" || viewMode === "all-products" || viewMode === "spatial" || viewMode === "scenarios");
+  const muted = !(viewMode === "families" || viewMode === "all-products" || viewMode === "spatial");
   [pills, ucs, inds].forEach(el => {
     if (!el) return;
     el.style.opacity = muted ? 0.45 : 1;
@@ -3718,9 +3578,6 @@ function updateViewModeUI(){
 //    state stays consistent across mode switches).
 function updateBreadcrumb(){
   const cb = document.getElementById("vm-crumb"); if (!cb) return;
-  if (viewMode === "scenarios"){
-    cb.classList.remove("show"); cb.innerHTML = ""; return;
-  }
   if (viewMode === "families"){
     cb.classList.remove("show"); cb.innerHTML = ""; return;
   }
@@ -3815,11 +3672,6 @@ window.getViewFocus   = () => viewFocus;
     applyViewLevel("spatial", { initial: true });
     return;
   }
-  if (savedMode === "scenarios"){
-    window.__cpnRestoreScenario = true;
-    applyViewLevel("families", { initial: true });
-    return;
-  }
   applyViewLevel("families", { initial: true });
 })();
 
@@ -3873,10 +3725,6 @@ function resetHL() {
 }
 
 function highlightStack() {
-  if (viewMode === "scenarios" && window.cpnScenarioState?.id){
-    window.renderScenarioDetail?.();
-    return;
-  }
   if (viewMode === "spatial"){
     if (spatialState.graph) spatialState.graph.nodeColor(spatialNodeColor);
     refreshSpatialLabelStyles();
@@ -4337,14 +4185,6 @@ function addToStack(id, type) {
   renderChips(); updateAB(); highlightStack();
   if(analyzed) runAnalysis();
 }
-function stackHasFamily(famId){
-  if (stack.has(famId) && stackItems.get(famId) === "node") return true;
-  for (const id of stack){
-    if (stackItems.get(id) === "product" && prodById[id]?.family === famId) return true;
-  }
-  return false;
-}
-window.stackHasFamily = stackHasFamily;
 function removeFromStack(id) {
   stackItems.delete(id); stack.delete(id);
   renderChips(); updateAB(); highlightStack();
@@ -4631,227 +4471,8 @@ document.getElementById("exp-btn").addEventListener("click",()=>{
 
 function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800);}
 
-function scEsc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function scById(){ return window.__cpnScenarios?.byId || {}; }
-function scList(){ return window.__cpnScenarios?.list || []; }
-
-function enterScenarioView(pickId){
-  const wrap = document.getElementById("sc-wrap");
-  if (!wrap) return;
-  wrap.hidden = false;
-  wrap.classList.add("show");
-  document.body.classList.add("scenarios-open");
-  svgEl.style.display = "none";
-  const sw = document.getElementById("spatial-wrap");
-  if (sw) sw.style.display = "none";
-  renderScenarioPicker();
-  const byId = scById();
-  let id = pickId;
-  if (!id || !byId[id]){
-    try{ id = localStorage.getItem(window.__cpnScenarios?.SCENARIO_KEY || "cpn-scenario-id-v1"); }catch(e){}
-  }
-  if (id && byId[id]) selectScenario(id);
-  else {
-    window.cpnScenarioState.id = null;
-    document.getElementById("sc-detail")?.classList.remove("show");
-    const empty = document.getElementById("sc-main-empty");
-    if (empty) empty.style.display = "";
-    const tabs = document.getElementById("sc-tab-seg");
-    if (tabs) tabs.style.display = "none";
-    const og = document.getElementById("sc-open-graph");
-    const ag = document.getElementById("sc-add-gaps");
-    if (og) og.style.display = "none";
-    if (ag) ag.style.display = "none";
-  }
-}
-function exitScenarioView(){
-  const wrap = document.getElementById("sc-wrap");
-  if (wrap){ wrap.classList.remove("show"); wrap.hidden = true; }
-  document.body.classList.remove("scenarios-open");
-  svgEl.style.display = "block";
-}
-function setScenarioTab(tab){
-  window.cpnScenarioState.tab = tab;
-  document.querySelectorAll("#sc-tab-seg button[data-sc-tab]").forEach(b => {
-    b.classList.toggle("active", b.dataset.scTab === tab);
-  });
-  const stackP = document.getElementById("sc-stack-panel");
-  const matrixP = document.getElementById("sc-matrix-panel");
-  if (stackP) stackP.style.display = tab === "stack" ? "" : "none";
-  if (matrixP) matrixP.style.display = tab === "matrix" ? "" : "none";
-}
-function selectScenario(id){
-  const sc = scById()[id];
-  if (!sc) return;
-  window.cpnScenarioState.id = id;
-  try{ localStorage.setItem(window.__cpnScenarios?.SCENARIO_KEY || "cpn-scenario-id-v1", id); }catch(e){}
-  renderScenarioPicker();
-  renderScenarioDetail();
-  const empty = document.getElementById("sc-main-empty");
-  if (empty) empty.style.display = "none";
-  document.getElementById("sc-detail")?.classList.add("show");
-  const tabs = document.getElementById("sc-tab-seg");
-  if (tabs) tabs.style.display = "";
-  document.getElementById("sc-open-graph").style.display = "";
-  document.getElementById("sc-add-gaps").style.display = "";
-  setScenarioTab(window.cpnScenarioState.tab);
-}
-function renderScenarioPicker(){
-  const el = document.getElementById("sc-picker");
-  if (!el) return;
-  const activeId = window.cpnScenarioState.id;
-  el.innerHTML = scList().map(sc => `
-    <button type="button" class="sc-pick-card${sc.id === activeId ? " active" : ""}"
-      data-sc-id="${sc.id}" aria-pressed="${sc.id === activeId}">
-      <div class="sc-pick-need">${scEsc(sc.needTo)}</div>
-      <div class="sc-pick-arch">${scEsc(sc.refArch)}</div>
-    </button>`).join("");
-  el.querySelectorAll("[data-sc-id]").forEach(btn => {
-    btn.addEventListener("click", () => selectScenario(btn.dataset.scId));
-  });
-}
-function renderScenarioChip(famId, note){
-  const n = nodeById[famId];
-  if (!n) return "";
-  const inStk = stackHasFamily(famId);
-  const col = catColor(n.category);
-  return `<button type="button" class="sc-chip${inStk ? " in-stack" : ""}" data-sc-fam="${famId}"
-    title="${scEsc(n.desc.slice(0, 200))}">
-    <span class="sc-chip-dot" style="background:${col}"></span>
-    ${scEsc(n.name)}${note ? `<span class="sc-chip-note">${scEsc(note)}</span>` : ""}
-  </button>`;
-}
-function renderScenarioStack(sc){
-  const el = document.getElementById("sc-stack-panel");
-  if (!el) return;
-  let html = "";
-  sc.layers.forEach((layer, i) => {
-    if (i > 0) html += `<div class="sc-arrow" aria-hidden="true">↓</div>`;
-    const chips = (layer.families || []).map(fid => renderScenarioChip(fid)).join("");
-    const empty = !chips && layer.hint;
-    html += `<div class="sc-layer">
-      <div class="sc-layer-hd">
-        <div class="sc-layer-title">${scEsc(layer.label)}</div>
-        ${layer.hint ? `<div class="sc-layer-hint">${scEsc(layer.hint)}</div>` : ""}
-      </div>
-      <div class="sc-layer-chips">${chips || (empty ? `<span style="font-size:11px;color:var(--subtle)">${scEsc(layer.hint)}</span>` : `<span style="font-size:11px;color:var(--subtle)">—</span>`)}</div>
-    </div>`;
-  });
-  el.innerHTML = html;
-  el.querySelectorAll("[data-sc-fam]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const n = nodeById[btn.dataset.scFam];
-      if (!n) return;
-      showDetailPanel(n);
-      document.getElementById("panel").classList.add("open");
-    });
-  });
-}
-function renderScenarioMatrix(sc){
-  const el = document.getElementById("sc-matrix-panel");
-  if (!el || !sc.matrix) return;
-  const mx = sc.matrix;
-  const cell = key => {
-    const ids = mx[key] || [];
-    if (!ids.length) return `<span style="color:var(--subtle);font-size:10px">—</span>`;
-    return `<div class="sc-mx-items">${ids.map(fid => renderScenarioChip(fid)).join("")}</div>`;
-  };
-  el.innerHTML = `
-    <table class="sc-mx-table" role="grid">
-      <thead>
-        <tr>
-          <th class="corner"></th>
-          <th>Inline (in the traffic path)</th>
-          <th>Out-of-band (policy, correlate, manage)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th scope="row">Cloud (SaaS)</th>
-          <td>${cell("cloud-inline")}</td>
-          <td>${cell("cloud-oob")}</td>
-        </tr>
-        <tr>
-          <th scope="row">On-prem / appliance</th>
-          <td>${cell("onprem-inline")}</td>
-          <td>${cell("onprem-oob")}</td>
-        </tr>
-        <tr class="sc-mx-endpoint">
-          <td class="sc-mx-lbl" colspan="1">Endpoint / agent</td>
-          <td colspan="2">${cell("endpoint")}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p class="sc-mx-foot"><strong>How to read this:</strong> “Inline” products sit in the path of user or application traffic (DNS, firewall, SD-WAN edge).
-      “Out-of-band” products configure, observe, or correlate without forwarding every packet (management, SIEM/XDR, ISE policy).
-      Endpoint items run on the user device. Click any chip for details or to add to your account stack.</p>`;
-  el.querySelectorAll("[data-sc-fam]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const n = nodeById[btn.dataset.scFam];
-      if (n){ showDetailPanel(n); document.getElementById("panel").classList.add("open"); }
-    });
-  });
-}
-function renderScenarioDetail(){
-  const sc = window.cpnScenarioState.id && scById()[window.cpnScenarioState.id];
-  if (!sc) return;
-  const desc = document.getElementById("sc-desc");
-  if (desc) desc.innerHTML = `<strong>${scEsc(sc.refArch)}</strong> — ${scEsc(sc.desc)}`;
-  const inCount = sc.products.filter(id => stackHasFamily(id)).length;
-  const foot = document.getElementById("sc-foot-actions");
-  if (foot){
-    foot.innerHTML = `<span style="font-size:11px;color:var(--muted);align-self:center">
-      Reference stack: ${sc.products.length} families · <strong style="color:var(--accent)">${inCount}</strong> in your account plan</span>`;
-  }
-  renderScenarioStack(sc);
-  renderScenarioMatrix(sc);
-}
-function openScenarioInGraph(){
-  const sc = window.cpnScenarioState.id && scById()[window.cpnScenarioState.id];
-  if (!sc) return;
-  applyViewLevel("families");
-  const ucs = document.getElementById("ucs");
-  if (ucs){
-    ucs.value = sc.refArch;
-    ucs.dispatchEvent(new Event("change"));
-  }
-  showToast(`Graph filtered for “${sc.refArch}”`);
-}
-function addScenarioGapsToPlan(){
-  const sc = window.cpnScenarioState.id && scById()[window.cpnScenarioState.id];
-  if (!sc) return;
-  let added = 0;
-  sc.products.forEach(id => {
-    if (!nodeById[id] || stackHasFamily(id)) return;
-    addToStack(id, "node");
-    added++;
-  });
-  if (!document.getElementById("planner").classList.contains("open")){
-    document.getElementById("planner-btn")?.click();
-  }
-  showToast(added ? `Added ${added} product${added === 1 ? "" : "s"} to account stack` : "Your stack already covers this reference architecture");
-  renderScenarioDetail();
-}
-function buildScenarioView(){
-  document.querySelectorAll("#sc-tab-seg button[data-sc-tab]").forEach(btn => {
-    btn.addEventListener("click", () => setScenarioTab(btn.dataset.scTab));
-  });
-  document.getElementById("sc-open-graph")?.addEventListener("click", openScenarioInGraph);
-  document.getElementById("sc-add-gaps")?.addEventListener("click", addScenarioGapsToPlan);
-}
-window.selectScenario = selectScenario;
-window.openScenarioInGraph = openScenarioInGraph;
-window.renderScenarioDetail = renderScenarioDetail;
-window.enterScenarioView = enterScenarioView;
-window.exitScenarioView = exitScenarioView;
-window.buildScenarioView = buildScenarioView;
-
 document.addEventListener("keydown",ev=>{
   if(ev.key==="Escape"){
-    if (viewMode === "scenarios" && !document.getElementById("panel").classList.contains("open")){
-      applyViewLevel("families");
-      return;
-    }
     if (viewMode === "spatial" && !document.getElementById("panel").classList.contains("open")){
       if (spatialState.focusFamily) exitSpatialComposition();
       else applyViewLevel("families");
@@ -4922,7 +4543,7 @@ document.addEventListener("keydown",ev=>{
     // ── View modes ───────────────────────────────────────────────────────────
     {
       target: "#vm-seg", place: "bottom",
-      title: "Six ways to explore the portfolio",
+      title: "Five ways to explore the portfolio",
       body: `Same data, multiple lenses — pick whichever zoom level fits the question you're asking:
              <ul style="margin:8px 0 0 16px;padding:0">
                <li><b>Overview</b> — 5 category bubbles. Best for first-look conversations.</li>
@@ -4930,7 +4551,6 @@ document.addEventListener("keydown",ev=>{
                <li><b>Composition</b> — one family pinned in the middle, every specific SKU around it, with dashed purple <em>"replaced by"</em> arrows to successor products.</li>
                <li><b>All</b> — every family + every product (~350 nodes) in one dense graph. Power-user view.</li>
                <li><b>Spatial</b> — immersive 3D map of families with always-visible name labels; orbit and zoom freely.</li>
-               <li><b>Scenarios</b> — <em>I need to…</em> outcome picker with a layered stack diagram and a <em>Where it runs</em> deployment matrix for newcomers.</li>
              </ul>`,
       tip: `<b>Two fast ways into Composition (2D or Spatial):</b> double-click any family bubble, or click <em>"Explore N products"</em> on its detail panel. In Spatial, double-click drills into a 3D composition where products orbit the family node. A breadcrumb chip under the topbar tracks your level — <code>Esc</code> steps back.`,
       before: () => {
@@ -4938,17 +4558,6 @@ document.addEventListener("keydown",ev=>{
           window.applyViewLevel && window.applyViewLevel("families");
         }
       }
-    },
-
-    {
-      target: '#vm-seg button[data-vm="scenarios"]', place: "bottom",
-      title: "Scenarios — teach how solutions fit together",
-      body: `Open <strong>Scenarios</strong> when your audience is new to Cisco. Pick an outcome like
-             <em>Secure remote workers</em> on the left, then walk through the <strong>Stack flow</strong>
-             (traffic top → bottom) or flip to <strong>Where it runs</strong> (cloud vs on-prem × inline vs out-of-band).
-             Chips glow when they're already in your account stack. Use <strong>Open in graph</strong> or
-             <strong>Add gaps to plan</strong> to continue in the portfolio map or planner.`,
-      tip: `Press <code>Y</code> to toggle Scenarios from anywhere. <code>Esc</code> returns to Families.`
     },
 
     {
@@ -5443,7 +5052,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.8.0";
+const APP_VERSION   = "2.7.6";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5692,178 +5301,6 @@ const REF_ARCH = {
 };
 
 /* ────────────────────────────────────────────────────────────────
-   Solution scenarios — "I need to…" + layered stack + deployment matrix
-   (refArch links to REF_ARCH key for graph overlay)
-   ────────────────────────────────────────────────────────────────*/
-const SCENARIO_KEY = "cpn-scenario-id-v1";
-const SCENARIOS = [
-  {
-    id: "secure-hybrid",
-    needTo: "Secure remote workers and SaaS access",
-    refArch: "SD-WAN / SASE",
-    products: ["sdwan","meraki-mx","secure-access","umbrella","duo","thousandeyes","isr-routers"],
-    desc: REF_ARCH["SD-WAN / SASE"].desc,
-    layers: [
-      { id: "users", label: "Users & apps", hint: "Remote users, branch sites, SaaS (M365, Salesforce…)", families: [] },
-      { id: "identity", label: "Identity", hint: "Who is allowed on the network and apps", families: ["duo"] },
-      { id: "sase", label: "Cloud security edge (SASE / SSE)", hint: "DNS and cloud policy before traffic hits your WAN", families: ["umbrella","secure-access"] },
-      { id: "wan", label: "WAN / branch edge", hint: "Pick one path per site — not all required", families: ["sdwan","meraki-mx","isr-routers"], optional: true },
-      { id: "obs", label: "Observability", hint: "SaaS and path quality from the user perspective", families: ["thousandeyes"] }
-    ],
-    matrix: {
-      "cloud-inline": ["umbrella","secure-access"],
-      "cloud-oob": ["thousandeyes"],
-      "onprem-inline": ["sdwan","meraki-mx","isr-routers"],
-      "onprem-oob": [],
-      "endpoint": ["duo"]
-    }
-  },
-  {
-    id: "zero-trust",
-    needTo: "Implement zero trust security",
-    refArch: "Zero Trust Security",
-    products: REF_ARCH["Zero Trust Security"].products,
-    desc: REF_ARCH["Zero Trust Security"].desc,
-    layers: [
-      { id: "users", label: "Users & devices", hint: "Employees, contractors, IoT, guest", families: [] },
-      { id: "identity", label: "Identity & posture", hint: "MFA and device trust before access", families: ["duo","ise"] },
-      { id: "edge", label: "Perimeter & branch", hint: "NGFW and segmentation at the edge", families: ["sf-branch","sf-enterprise"] },
-      { id: "cloud", label: "Cloud-delivered security", hint: "DNS, SWG, and secure access from anywhere", families: ["secure-access","umbrella"] },
-      { id: "endpoint", label: "Endpoint & correlation", hint: "EDR plus cross-domain detection", families: ["secure-endpoint","xdr","talos"] },
-      { id: "network", label: "Campus enforcement", hint: "Access layer policy and automation", families: ["catalyst-access"] }
-    ],
-    matrix: {
-      "cloud-inline": ["umbrella","secure-access"],
-      "cloud-oob": ["xdr","talos"],
-      "onprem-inline": ["sf-branch","sf-enterprise","catalyst-access"],
-      "onprem-oob": ["ise"],
-      "endpoint": ["duo","secure-endpoint"]
-    }
-  },
-  {
-    id: "modern-collab",
-    needTo: "Enable hybrid work and modern meetings",
-    refArch: "Hybrid Work",
-    products: REF_ARCH["Hybrid Work"].products,
-    desc: REF_ARCH["Hybrid Work"].desc,
-    layers: [
-      { id: "users", label: "People & places", hint: "Office, home, mobile, meeting rooms", families: [] },
-      { id: "collab", label: "Collaboration", hint: "Meetings, messaging, calling, devices", families: ["webex-app","webex-calling","webex-meetings","room-systems","desk-devices","cisco-headsets"] },
-      { id: "access", label: "Secure access", hint: "Safe connectivity from anywhere", families: ["duo","secure-access"] },
-      { id: "quality", label: "Experience assurance", hint: "Collab and SaaS path visibility", families: ["thousandeyes"] }
-    ],
-    matrix: {
-      "cloud-inline": ["webex-app","webex-calling","webex-meetings","secure-access"],
-      "cloud-oob": ["thousandeyes"],
-      "onprem-inline": ["room-systems","desk-devices"],
-      "onprem-oob": [],
-      "endpoint": ["duo","cisco-headsets"]
-    }
-  },
-  {
-    id: "ai-network",
-    needTo: "Build an AI-ready campus and WAN",
-    refArch: "AI Networking",
-    products: REF_ARCH["AI Networking"].products,
-    desc: REF_ARCH["AI Networking"].desc,
-    layers: [
-      { id: "ops", label: "Operations & assurance", hint: "Intent, automation, AI-driven insights", families: ["catalyst-center"] },
-      { id: "campus", label: "Campus fabric", hint: "Access, core, wireless for AI/IoT density", families: ["catalyst-access","catalyst-core","catalyst-wireless"] },
-      { id: "dc", label: "Data center spine", hint: "High-bandwidth AI workload fabrics", families: ["nexus","silicon-one"] },
-      { id: "obs", label: "End-to-end visibility", hint: "SaaS and path quality", families: ["thousandeyes"] }
-    ],
-    matrix: {
-      "cloud-inline": ["thousandeyes"],
-      "cloud-oob": ["catalyst-center"],
-      "onprem-inline": ["catalyst-access","catalyst-core","catalyst-wireless","nexus"],
-      "onprem-oob": ["catalyst-center","silicon-one"],
-      "endpoint": []
-    }
-  },
-  {
-    id: "modernize-dc",
-    needTo: "Modernize the data center",
-    refArch: "Data Center Modernization",
-    products: REF_ARCH["Data Center Modernization"].products,
-    desc: REF_ARCH["Data Center Modernization"].desc,
-    layers: [
-      { id: "compute", label: "Compute & hyperconverged", hint: "Servers and HCI for workloads", families: ["ucs","hyperflex"] },
-      { id: "network", label: "Data center network", hint: "Spine-leaf and policy-driven fabric", families: ["nexus","aci"] },
-      { id: "cloudops", label: "Cloud operations", hint: "Unified lifecycle across sites", families: ["intersight"] },
-      { id: "obs", label: "IT operations analytics", hint: "Logs, metrics, and incident response", families: ["splunk"] }
-    ],
-    matrix: {
-      "cloud-inline": [],
-      "cloud-oob": ["intersight","splunk"],
-      "onprem-inline": ["nexus","aci","ucs","hyperflex"],
-      "onprem-oob": ["intersight"],
-      "endpoint": []
-    }
-  },
-  {
-    id: "protect-ot",
-    needTo: "Secure OT / industrial operations",
-    refArch: "IoT / Industrial",
-    products: REF_ARCH["IoT / Industrial"].products,
-    desc: REF_ARCH["IoT / Industrial"].desc,
-    layers: [
-      { id: "ot", label: "Plant floor", hint: "Industrial Ethernet and OT visibility", families: ["industrial-eth","cyber-vision"] },
-      { id: "segment", label: "Segmentation", hint: "Identity and micro-segmentation for OT/IT", families: ["ise"] },
-      { id: "enforce", label: "Enforcement", hint: "Firewall policy at industrial edge", families: ["sf-branch"] },
-      { id: "manage", label: "Management", hint: "Campus/OT policy and automation", families: ["catalyst-center"] }
-    ],
-    matrix: {
-      "cloud-inline": [],
-      "cloud-oob": ["catalyst-center"],
-      "onprem-inline": ["industrial-eth","sf-branch"],
-      "onprem-oob": ["cyber-vision","ise","catalyst-center"],
-      "endpoint": []
-    }
-  },
-  {
-    id: "automate-net",
-    needTo: "Automate network operations across domains",
-    refArch: "Network Automation",
-    products: REF_ARCH["Network Automation"].products,
-    desc: REF_ARCH["Network Automation"].desc,
-    layers: [
-      { id: "campus", label: "Campus & branch", hint: "Intent-based campus automation", families: ["catalyst-center"] },
-      { id: "wan", label: "WAN", hint: "SD-WAN policy and orchestration", families: ["sdwan"] },
-      { id: "dc", label: "Data center", hint: "ACI application-centric policy", families: ["aci"] },
-      { id: "compute", label: "Compute ops", hint: "Server and workload lifecycle", families: ["intersight"] }
-    ],
-    matrix: {
-      "cloud-inline": [],
-      "cloud-oob": ["catalyst-center","intersight"],
-      "onprem-inline": ["sdwan","aci"],
-      "onprem-oob": ["catalyst-center","intersight"],
-      "endpoint": []
-    }
-  },
-  {
-    id: "dc-networking",
-    needTo: "Refresh data center switching and fabric",
-    refArch: "Data Center Networking",
-    products: REF_ARCH["Data Center Networking"].products,
-    desc: REF_ARCH["Data Center Networking"].desc,
-    layers: [
-      { id: "fabric", label: "Fabric", hint: "High-performance switching and Silicon One", families: ["nexus","silicon-one"] },
-      { id: "policy", label: "Policy & automation", hint: "Intent-based segmentation and ops", families: ["aci"] },
-      { id: "obs", label: "Telemetry analytics", hint: "Operational visibility and search", families: ["splunk"] }
-    ],
-    matrix: {
-      "cloud-inline": [],
-      "cloud-oob": ["splunk"],
-      "onprem-inline": ["nexus","aci"],
-      "onprem-oob": ["silicon-one"],
-      "endpoint": []
-    }
-  }
-];
-const scenarioById = Object.fromEntries(SCENARIOS.map(s => [s.id, s]));
-window.__cpnScenarios = { SCENARIO_KEY, list: SCENARIOS, byId: scenarioById };
-
-/* ────────────────────────────────────────────────────────────────
    [08] Industry starter templates
    ────────────────────────────────────────────────────────────────*/
 const INDUSTRY_TEMPLATES = [
@@ -5906,12 +5343,6 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
-  {ver:"2.8.0", date:"2026-06-01", items:[
-    "Scenarios view — new topbar mode with an <strong>I need to…</strong> picker, layered <strong>stack flow</strong> diagram (traffic top → bottom), and <strong>Where it runs</strong> deployment matrix (cloud vs on-prem × inline vs out-of-band + endpoint).",
-    "Eight curated scenarios aligned to reference architectures (SD-WAN/SASE, Zero Trust, Hybrid Work, AI Networking, DC modernization, OT, automation, DC networking).",
-    "Scenario actions — <strong>Open in graph</strong> overlays the reference arch on Families view; <strong>Add gaps to plan</strong> fills missing families; chips highlight account-stack coverage and open the detail panel.",
-    "Keyboard <code>Y</code> toggles Scenarios view; <code>Esc</code> returns to Families from Scenarios."
-  ]},
   {ver:"2.7.6", date:"2026-05-31", items:[
     "Spatial view — optional 3D map of product families with always-visible labels, orbit/zoom navigation, filters, and stack highlights. Double-click a family (or Explore N products) to drill into a 3D composition; Esc or the breadcrumb steps back. Bundled offline (no CDN); 2D hint bar hidden while Spatial is active.",
     "Guided tour updated (v2.5) — new Spatial step, Guided Plan AI deliverables, and export/AI context coverage.",
@@ -9736,10 +9167,6 @@ function wireKeyboardA11y(){
     else if (ev.key.toLowerCase() === "p"){ $("#planner-btn").click(); }
     else if (ev.key.toLowerCase() === "g"){ openGuidedWizard(); }
     else if (ev.key.toLowerCase() === "t"){ $("#tl-wrap")?.classList.contains("show") ? closeTimelineView() : openTimelineView(); }
-    else if (ev.key.toLowerCase() === "y"){
-      if (viewMode === "scenarios") applyViewLevel("families");
-      else applyViewLevel("scenarios");
-    }
     else if (ev.key.toLowerCase() === "a"){ document.getElementById("ai-fab")?.click(); }
     else if (ev.key === "?"){ window.startTour && window.startTour(); }
     else if (selected && ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(ev.key)){
@@ -9814,7 +9241,6 @@ function openShortcuts(){
     ["P", "Toggle account planner"],
     ["G", "Open Guided Plan wizard"],
     ["T", "Toggle timeline view"],
-    ["Y", "Toggle Scenarios view (I need to… / stack / matrix)"],
     ["A", "Toggle AI assistant"],
     ["?", "Re-launch guided tour"],
     ["Dbl-click family", "Drill into Composition view (graph)"],
@@ -9833,13 +9259,6 @@ function boot(){
   buildExportMenu();
   buildProfileBox();
   buildTemplatesStrip();
-  window.buildScenarioView?.();
-  if (window.__cpnRestoreScenario){
-    let scId = null;
-    try{ scId = localStorage.getItem("cpn-scenario-id-v1"); }catch(e){}
-    window.applyViewLevel("scenarios", { scenarioId: scId });
-    window.__cpnRestoreScenario = false;
-  }
   buildGuidedWizard();
   refreshGuidedBtnLabel();
   addPlannerTabs();
@@ -9893,7 +9312,7 @@ else window.addEventListener("load", boot);
 
 window.__cpnV2 = {
   APP_VERSION, DATA_UPDATED, STORAGE_KEYS, ALL_LEGACY, TIERS, COMPAT_RULES,
-  REF_ARCH, SCENARIOS, scenarioById, INDUSTRY_TEMPLATES, FIELD_NOTICES, FIELD_NOTICE_BY_PROD, CHANGELOG,
+  REF_ARCH, INDUSTRY_TEMPLATES, FIELD_NOTICES, FIELD_NOTICE_BY_PROD, CHANGELOG,
   helpers: { $, $$, lsGet, lsSet, lsDel, nameOf, catOf, downloadBlob, escapeHtml, relTime },
   phases: { readState, applyState, encodeShareableUrl, decodeShareableUrl,
     exportMarkdown, exportCSV, exportJSON, exportPDF, exportPPTX, exportText,
