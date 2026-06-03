@@ -3432,7 +3432,6 @@ function applyViewLevel(mode, opts){
       try{ localStorage.setItem(VIEW_FOCUS_KEY, ""); }catch(e){}
     }
     enterSpatialView().then(() => applyFilters());
-    ensurePersistentChrome();
     return;
   }
 
@@ -3514,12 +3513,7 @@ function applyViewLevel(mode, opts){
                :                            0.78;
     svg.transition().duration(prev === mode ? 0 : 550)
       .call(zoom.transform, d3.zoomIdentity.translate(w/2, h/2).scale(scale));
-    if (spatialState.graph){
-      const dims = getSpatialDims();
-      spatialState.graph.width(dims.w).height(dims.h);
-    }
   }, 50);
-  ensurePersistentChrome();
 }
 
 // ── Force-tuning per mode so each view feels right.
@@ -3918,18 +3912,8 @@ function productMatchesFilters(p){
    direct call (which would be a ReferenceError). Safe to call before v2 has
    booted — the optional chaining short-circuits to no-op. */
 function refreshTimelineIfOpen(){
-  const tlOn = document.body.classList.contains("tl-always") ||
-    document.querySelector("#tl-wrap.show");
-  if (!tlOn) return;
+  if (!document.querySelector("#tl-wrap.show")) return;
   window.__cpnV2?.phases?.renderTimeline?.();
-}
-function ensurePersistentChrome(){
-  const rp = document.getElementById("rp-panel");
-  const rpBtn = document.getElementById("tools-recent");
-  if (rp){ rp.classList.add("show"); rpBtn?.classList.add("active"); }
-  if (document.body.classList.contains("tl-always")){
-    window.__cpnV2?.phases?.openTimelineView?.();
-  }
 }
 function applyFilters() {
   // Category / use-case / industry filters apply in Families and All-Products
@@ -5068,7 +5052,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.7.7";
+const APP_VERSION   = "2.7.6";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5359,10 +5343,6 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
-  {ver:"2.7.7", date:"2026-06-03", items:[
-    "Recent / Pinned panel stays open by default and no longer dismisses when you click the graph or change view modes (Overview, Families, Composition, Spatial, planner, etc.).",
-    "EOS/EOL Timeline is docked along the bottom on load so it stays visible across view changes; the graph resizes above it. Minimize/Expand (or T) collapses to a slim header only — it does not fully disappear unless you use the legacy non-docked path.",
-  ]},
   {ver:"2.7.6", date:"2026-05-31", items:[
     "Spatial view — optional 3D map of product families with always-visible labels, orbit/zoom navigation, filters, and stack highlights. Double-click a family (or Explore N products) to drill into a 3D composition; Esc or the breadcrumb steps back. Bundled offline (no CDN); 2D hint bar hidden while Spatial is active.",
     "Guided tour updated (v2.5) — new Spatial step, Guided Plan AI deliverables, and export/AI context coverage.",
@@ -5713,14 +5693,12 @@ STYLE.textContent = `
   .cmp-col .cmp-x:hover{color:var(--red)}
   #cmp-empty{padding:30px;text-align:center;color:var(--subtle);font-size:12px;flex:1}
 
-  /* Recent + pinned panel — always visible (toggle only collapses) */
+  /* Recent + pinned panel */
   #rp-panel{position:fixed;left:20px;bottom:88px;width:260px;
     background:var(--surface);border:1px solid var(--border);border-radius:10px;
-    padding:8px 0;z-index:55;display:block;max-height:40vh;overflow-y:auto;
+    padding:8px 0;z-index:55;display:none;max-height:55vh;overflow-y:auto;
     box-shadow:0 8px 28px rgba(0,0,0,.45)}
-  #rp-panel:not(.show){display:none}
-  body.tl-always #rp-panel.show{bottom:calc(36vh + 100px);max-height:min(32vh,280px)}
-  body.tl-always.planner-open #rp-panel.show{bottom:calc(36vh + 100px)}
+  #rp-panel.show{display:block}
   .rp-sec{padding:6px 12px;font-size:9px;font-weight:700;text-transform:uppercase;
     letter-spacing:.1em;color:var(--subtle)}
   .rp-item{display:flex;align-items:center;gap:7px;padding:6px 12px;cursor:pointer;
@@ -5766,14 +5744,6 @@ STYLE.textContent = `
      the JS path). !important defeats later same-id selectors like
      "#tools{bottom:42px}" further down in the cascade. */
   #tl-wrap.show{display:flex;bottom:60px}
-  /* Always-visible dock: graph stays above, timeline pinned along the bottom */
-  body.tl-always #gw{bottom:calc(36vh + 60px)}
-  body.tl-always #tl-wrap.show{
-    top:auto;height:36vh;min-height:220px;max-height:48vh;bottom:60px;
-    border-top:1px solid var(--border);box-shadow:0 -6px 28px rgba(0,0,0,.4)}
-  body.tl-always #tl-wrap.tl-collapsed.show{height:auto;min-height:0;max-height:none}
-  body.tl-always #tl-wrap.tl-collapsed #tl-canvas{display:none}
-  body.tl-always.planner-open #gw{right:490px;bottom:calc(36vh + 60px)}
   body.planner-open #tl-wrap{right:490px}
   body:has(#tl-wrap.show) #v2-footer,
   body.tl-open #v2-footer{display:none !important}
@@ -6386,20 +6356,25 @@ function renderRecentPinned(){
 function buildRecentPinned(){
   const p = document.createElement("div");
   p.id = "rp-panel";
-  p.classList.add("show");
   document.body.appendChild(p);
+  // Toggle button in legend
   const tog = document.createElement("button");
-  tog.className = "tools-btn active";
+  tog.className = "tools-btn";
   tog.id = "tools-recent";
   tog.innerHTML = `<span class="ti">★</span><span>Recent / Pinned</span>`;
-  tog.title = "Show or hide recent and pinned items";
+  tog.title = "Recent and pinned items";
   tog.addEventListener("click", () => {
     p.classList.toggle("show");
     tog.classList.toggle("active", p.classList.contains("show"));
-    if (p.classList.contains("show")) renderRecentPinned();
+    renderRecentPinned();
   });
   $("#tools").appendChild(tog);
   renderRecentPinned();
+  document.addEventListener("click", e => {
+    if (!p.contains(e.target) && e.target !== tog && !tog.contains(e.target)){
+      p.classList.remove("show"); tog.classList.remove("active");
+    }
+  });
 }
 
 /* Detail-panel enhancement is wired via a MutationObserver in boot() so we
@@ -8181,7 +8156,7 @@ function buildTimelineView(){
           <button id="tl-zoom-fit" title="Fit data span to viewport (no horizontal scroll)" style="border-left:1px solid var(--border);font-size:10px;letter-spacing:.04em">FIT</button>
         </div>
         <button class="rc-btn" id="tl-only-stack">Show only stack items</button>
-        <button class="rc-btn" id="tl-close">Minimize</button>
+        <button class="rc-btn" id="tl-close">Close</button>
       </div>
     </div>
     <div id="tl-canvas"><div id="tl-inner"></div></div>
@@ -8193,7 +8168,7 @@ function buildTimelineView(){
     $("#tl-only-stack").textContent = TL.onlyStack ? "Show all" : "Show only stack items";
     renderTimeline();
   });
-  $("#tl-close").addEventListener("click", toggleTimelineCollapsed);
+  $("#tl-close").addEventListener("click", closeTimelineView);
   $("#tl-zoom-in").addEventListener("click",  () => setTimelineZoom(TL.zoom * 1.4));
   $("#tl-zoom-out").addEventListener("click", () => setTimelineZoom(TL.zoom / 1.4));
   // FIT now means "shrink the data to fit the current viewport" — it computes
@@ -8247,33 +8222,13 @@ function buildTimelineView(){
   tBtn.className = "tools-btn";
   tBtn.id = "tools-timeline";
   tBtn.innerHTML = `<span class="ti">⏱</span><span>Timeline view</span>`;
-  tBtn.title = "Expand or minimize EOS/EOL timeline (T)";
+  tBtn.title = "Open EOS/EOL timeline view (T)";
   tBtn.addEventListener("click", () => {
-    if (document.body.classList.contains("tl-always")){
-      toggleTimelineCollapsed();
-      return;
-    }
     const open = $("#tl-wrap").classList.contains("show");
     if (open) { closeTimelineView(); tBtn.classList.remove("active"); }
     else      { openTimelineView();  tBtn.classList.add("active"); }
   });
   $("#tools").appendChild(tBtn);
-  document.body.classList.add("tl-always");
-  openTimelineView();
-}
-function toggleTimelineCollapsed(){
-  const tl = $("#tl-wrap");
-  if (!tl) return;
-  if (!tl.classList.contains("show")) openTimelineView();
-  tl.classList.toggle("tl-collapsed");
-  const btn = $("#tl-close");
-  if (btn) btn.textContent = tl.classList.contains("tl-collapsed") ? "Expand" : "Minimize";
-}
-function ensureRecentPinnedVisible(){
-  const p = $("#rp-panel");
-  if (!p) return;
-  p.classList.add("show");
-  $("#tools-recent")?.classList.add("active");
 }
 function setTimelineZoom(z){
   TL.zoom = Math.max(TL.minZoom, Math.min(TL.maxZoom, z));
@@ -8294,27 +8249,12 @@ function fitTimelineZoom(){
   return Math.max(0.05, trackPx / (TL.yearSpan * TL_BASE_PX_PER_YEAR));
 }
 function openTimelineView(){
-  const tl = $("#tl-wrap");
-  if (!tl) return;
-  tl.classList.add("show");
-  tl.classList.remove("tl-collapsed");
+  $("#tl-wrap").classList.add("show");
   document.body.classList.add("tl-open");
   $("#tools-timeline")?.classList.add("active");
-  const closeBtn = $("#tl-close");
-  if (closeBtn) closeBtn.textContent = "Minimize";
   setTimelineZoom(TL.zoom);
-  requestAnimationFrame(() => {
-    if (spatialState.graph){
-      const dims = getSpatialDims();
-      spatialState.graph.width(dims.w).height(dims.h);
-    }
-  });
 }
 function closeTimelineView(){
-  if (document.body.classList.contains("tl-always")){
-    toggleTimelineCollapsed();
-    return;
-  }
   $("#tl-wrap").classList.remove("show");
   document.body.classList.remove("tl-open");
   $("#tools-timeline")?.classList.remove("active");
@@ -9226,10 +9166,7 @@ function wireKeyboardA11y(){
     if (ev.key === "/"){ ev.preventDefault(); $("#search").focus(); $("#search").select(); }
     else if (ev.key.toLowerCase() === "p"){ $("#planner-btn").click(); }
     else if (ev.key.toLowerCase() === "g"){ openGuidedWizard(); }
-    else if (ev.key.toLowerCase() === "t"){
-      if (document.body.classList.contains("tl-always")) toggleTimelineCollapsed();
-      else $("#tl-wrap")?.classList.contains("show") ? closeTimelineView() : openTimelineView();
-    }
+    else if (ev.key.toLowerCase() === "t"){ $("#tl-wrap")?.classList.contains("show") ? closeTimelineView() : openTimelineView(); }
     else if (ev.key.toLowerCase() === "a"){ document.getElementById("ai-fab")?.click(); }
     else if (ev.key === "?"){ window.startTour && window.startTour(); }
     else if (selected && ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(ev.key)){
@@ -9330,7 +9267,6 @@ function boot(){
   buildRefArchBadge();
   buildContextMenu();
   buildTimelineView();
-  ensureRecentPinnedVisible();
   buildDiffModal();
   buildFacets();
   buildAiAssistant();
@@ -9384,8 +9320,7 @@ window.__cpnV2 = {
     pushBreadcrumb, navHistory, bootRestore, buildPlansMenu, buildExportMenu,
     buildProfileBox, buildTemplatesStrip, buildComparePanel, buildRecentPinned,
     addPlannerTabs, refreshPlansBtn, applyRefArch, clearRefArch, renderTimeline,
-    openTimelineView, closeTimelineView, toggleTimelineCollapsed,
-    ensureRecentPinnedVisible, setTimelineZoom,
+    openTimelineView, closeTimelineView, setTimelineZoom,
     showStackDiff, sendAi, openAiWithPrompt, buildPlanContext, openChangelog, boot, savePlan, loadPlan, deletePlan,
     listPlans, planSummary }
 };
