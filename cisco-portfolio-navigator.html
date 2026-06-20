@@ -829,6 +829,9 @@ const PILLAR_CELL_TOP_PAD = 8;
 const PILLAR_LABEL_GAP = 8;
 const PILLAR_TITLE_BAND = 32;
 const PILLAR_LABEL_HEIGHT = 14;
+const PILLAR_LABEL_ZOOM_K = 1.15;
+const PILLAR_LABEL_ZOOM_FADE = 0.28;
+const PILLAR_LABEL_BASE_PX = 10;
 
 const CONNECTIVITY_SET = new Set(ONE_CISCO.connectivity.families);
 const AI_DC_SET = new Set([
@@ -2657,6 +2660,13 @@ function pillarNodeInCell(content, col, row, cols, rows){
 function pillarMinCellH(){
   return singlePillarFocused() ? PILLAR_MIN_CELL_H : PILLAR_ICON_ONLY_CELL_H;
 }
+function pillarZoomLabelFade(k){
+  if (k < PILLAR_LABEL_ZOOM_K) return 0;
+  return Math.min(1, (k - PILLAR_LABEL_ZOOM_K) / PILLAR_LABEL_ZOOM_FADE);
+}
+function pillarZoomLabelMaxLen(cellW, k){
+  return Math.max(12, Math.min(22, Math.floor((cellW || PILLAR_MIN_CELL_W) * k / 4.2)));
+}
 function pillarLabelMaxLen(cellW){
   if (singlePillarFocused())
     return Math.max(12, Math.min(22, Math.floor(cellW / 3.8)));
@@ -2984,18 +2994,29 @@ function forcePillar(alpha){
 }
 function applyPillarLabelStyles(selectedNode){
   if (!ndEl || !usePillarLayout()) return;
+  const k = svgEl ? d3.zoomTransform(svgEl).k : 1;
+  const zoomFade = allPillarsSelected() ? pillarZoomLabelFade(k) : 0;
   const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
   ndEl.select("text.nl")
-    .text(d => d._shortName || d.name)
-    .attr("y", d => d._r + PILLAR_LABEL_GAP)
+    .text(d => {
+      if (d._pillarShowLabel) return d._shortName || d.name;
+      if (zoomFade > 0) return pillarShortName(d.name, pillarZoomLabelMaxLen(d._pillarCellW, k));
+      return d._shortName || d.name;
+    })
+    .attr("y", d => d._r + PILLAR_LABEL_GAP / k)
     .style("dominant-baseline", "hanging")
     .style("opacity", d => {
       if (selectedNode && (d.id === selectedNode.id || conn?.has(d.id))) return 1;
       if (d.id === pillarHoverId) return 1;
       if (d._pillarShowLabel) return 1;
+      if (zoomFade > 0) return zoomFade;
       return 0;
     })
-    .style("font-size", "10px");
+    .style("font-size", `${PILLAR_LABEL_BASE_PX / k}px`);
+}
+function updatePillarLabelVisibility(_k){
+  if (!usePillarLayout() || !ndEl) return;
+  applyPillarLabelStyles(selected);
 }
 function applyAllProductsLabelStyles(selectedNode){
   if (!ndEl || viewMode !== "all-products") return;
@@ -3366,6 +3387,7 @@ const root = svg.append("g");
 const zoom = d3.zoom().scaleExtent([0.2,4]).on("zoom", ev => {
   root.attr("transform", ev.transform);
   updateCompositionLabelVisibility(ev.transform.k);
+  updatePillarLabelVisibility(ev.transform.k);
 });
 svg.call(zoom);
 
@@ -6601,7 +6623,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.16.1";
+const APP_VERSION   = "2.16.2";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6892,6 +6914,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.16.2", date:"2026-06-17", items:[
+    "Families — zoom in on the all-pillars view to progressively reveal family labels (counter-scaled text so spacing grows faster than label width); single-pillar focus still shows all labels immediately."
+  ]},
   {ver:"2.16.1", date:"2026-06-17", items:[
     "Families — all-pillars view shows icons only (names on hover/select via tooltip); single-pillar focus shows uniform labels on every family in that pillar.",
     "Layout regression test now verifies hidden labels in all-pillars mode and no label overlap when a pillar is focused."
