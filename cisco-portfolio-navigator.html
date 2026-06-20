@@ -171,6 +171,8 @@
     .pillar-pill{font-size:10px;font-weight:600;padding:3px 8px;border-radius:12px;border:1px solid color-mix(in srgb, var(--pc) 35%, var(--border));
       color:var(--subtle);opacity:.55}
     .pillar-pill.on{background:color-mix(in srgb, var(--pc) 22%, transparent);color:var(--text);opacity:1;border-color:color-mix(in srgb, var(--pc) 55%, var(--border))}
+    .overview-deck .ov-card rect{transition:stroke-width .15s, stroke-opacity .15s}
+    .overview-deck .ov-card:hover rect{stroke-opacity:1}
     .p-eol-banner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
       border-radius:8px;padding:10px 12px;margin-bottom:14px}
     .p-eos-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);
@@ -754,6 +756,18 @@ const ONE_CISCO = {
     "ai-defense", "silicon-one", "nexus-one", "hypershield", "catalyst-center",
     "nexus", "room-systems", "webex-app", "webex-cc"
   ])
+};
+
+// Overview deck geometry (matches One Cisco slide 12 layout)
+const OVERVIEW_DECK = {
+  accent: "#02C8FF",
+  topW: 360, topH: 68, gap: 16,
+  topY: -92,
+  connY: -12,
+  resW: 736, resH: 68, resY: 48,
+  aiY: 132,
+  get leftCx(){ return -(this.topW + this.gap) / 2; },
+  get rightCx(){ return (this.topW + this.gap) / 2; }
 };
 
 const PILLAR_BY_ID = Object.fromEntries(ONE_CISCO.pillars.map(p => [p.id, p]));
@@ -3158,13 +3172,28 @@ function fitVisibleGraphView(fallbackScale){
     })())));
 }
 
+function fitOverviewDeckView(){
+  const D = OVERVIEW_DECK;
+  const pad = 40;
+  const minX = -D.resW / 2 - pad;
+  const maxX = D.resW / 2 + pad;
+  const minY = D.topY - D.topH / 2 - pad;
+  const maxY = D.aiY + pad;
+  const { w, h } = getDims();
+  const pw = panelOffsetW();
+  const bw = maxX - minX;
+  const bh = maxY - minY;
+  const k = Math.min(1.08, Math.max(0.55, Math.min((w - pw - 56) / bw, (h - 108) / bh)));
+  applyGraphTransform(0, (minY + maxY) / 2, k);
+}
+
 let graphFitTimer = null;
 function scheduleGraphFit(mode){
   clearTimeout(graphFitTimer);
   const delay = mode === "composition" ? 60 : 280;
   graphFitTimer = setTimeout(() => {
     if (viewMode === "composition") fitCompositionView();
-    else if (viewMode === "overview") applyGraphTransform(0, 0, 0.95);
+    else if (viewMode === "overview") fitOverviewDeckView();
     else if (viewMode === "all-products") fitVisibleGraphView(0.50);
     else if (viewMode === "families") fitVisibleGraphView(0.78);
   }, delay);
@@ -3342,6 +3371,122 @@ function updatePillarGuides(){
   });
 }
 
+function ensureOverviewDefs(){
+  if (defs.select("#overview-resilience-grad").size()) return;
+  const lg = defs.append("linearGradient").attr("id", "overview-resilience-grad")
+    .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%");
+  lg.append("stop").attr("offset", "0%").attr("stop-color", "#02C8FF");
+  lg.append("stop").attr("offset", "50%").attr("stop-color", "#d946ef");
+  lg.append("stop").attr("offset", "100%").attr("stop-color", "#FF9000");
+  const mk = (id, orient) => {
+    defs.append("marker").attr("id", id).attr("viewBox", "0 0 10 10")
+      .attr("refX", orient === "r" ? 9 : 1).attr("refY", 5)
+      .attr("markerWidth", 6).attr("markerHeight", 6)
+      .attr("orient", orient === "r" ? "auto" : "auto-start-reverse")
+      .append("path").attr("d", "M 0 0 L 10 5 L 0 10 z").attr("fill", "#fff");
+  };
+  mk("ov-arrow-r", "r");
+  mk("ov-arrow-l", "l");
+}
+
+function updateOverviewDeck(){
+  lyr.select("g.overview-deck").remove();
+  if (viewMode !== "overview") return;
+  ensureOverviewDefs();
+  const D = OVERVIEW_DECK;
+  const g = lyr.append("g").attr("class", "overview-deck");
+
+  const connG = g.append("g").attr("class", "ov-conn").style("pointer-events", "none");
+  const span = D.resW / 2;
+  connG.append("line")
+    .attr("x1", -span).attr("y1", D.connY)
+    .attr("x2", span).attr("y2", D.connY)
+    .attr("stroke", "#fff").attr("stroke-width", 1)
+    .attr("marker-start", "url(#ov-arrow-l)")
+    .attr("marker-end", "url(#ov-arrow-r)");
+  const connLabel = ONE_CISCO.connectivityLabel;
+  const labelW = connLabel.length * 7.2 + 20;
+  connG.append("rect")
+    .attr("x", -labelW / 2).attr("y", D.connY - 11)
+    .attr("width", labelW).attr("height", 22)
+    .attr("fill", "#07182d");
+  connG.append("text")
+    .attr("x", 0).attr("y", D.connY + 5)
+    .attr("text-anchor", "middle")
+    .attr("fill", "#fff")
+    .style("font-size", "13px")
+    .style("font-weight", "500")
+    .text(connLabel);
+
+  function drawCard(spec){
+    const { cx, cy, w, h, pillarId, icon, label, gradient } = spec;
+    const card = g.append("g").attr("class", "ov-card")
+      .attr("transform", `translate(${cx - w / 2},${cy - h / 2})`)
+      .style("cursor", "pointer");
+    const border = card.append("rect").attr("class", "ov-border")
+      .attr("width", w).attr("height", h)
+      .attr("rx", gradient ? 6 : 4)
+      .attr("fill", "transparent")
+      .attr("stroke", gradient ? "url(#overview-resilience-grad)" : "#5eb8d4")
+      .attr("stroke-width", gradient ? 2 : 1.5)
+      .attr("stroke-opacity", gradient ? 1 : 0.85);
+    card.append("use")
+      .attr("href", `#icon-${icon}`)
+      .attr("x", 22).attr("y", (h - 36) / 2)
+      .attr("width", 36).attr("height", 36)
+      .attr("fill", "#ffffff")
+      .style("pointer-events", "none");
+    card.append("text")
+      .attr("x", 70).attr("y", h / 2 + 6)
+      .attr("fill", D.accent)
+      .style("font-size", "17px")
+      .style("font-weight", "600")
+      .style("pointer-events", "none")
+      .text(label);
+    const p = PILLAR_BY_ID[pillarId];
+    card.on("click", ev => {
+      ev.stopPropagation();
+      applyViewLevel("families");
+    });
+    card.on("dblclick", ev => { ev.stopPropagation(); applyViewLevel("families"); });
+    card.on("mouseover", ev => {
+      border.attr("stroke-width", gradient ? 2.5 : 2).attr("stroke-opacity", 1);
+      document.getElementById("tn").textContent = label;
+      document.getElementById("tc").textContent = `${p.promise} · ${familiesInPillar(pillarId)} families · Click to explore`;
+      tipEl.style.display = "block";
+      moveTip(ev);
+    });
+    card.on("mousemove", moveTip);
+    card.on("mouseout", () => { border.attr("stroke-width", gradient ? 2 : 1.5).attr("stroke-opacity", gradient ? 1 : 0.85); hideTip(); });
+  }
+
+  drawCard({ cx: D.leftCx, cy: D.topY, w: D.topW, h: D.topH, pillarId: "ai-dc", icon: "server", label: "AI-ready data centers" });
+  drawCard({ cx: D.rightCx, cy: D.topY, w: D.topW, h: D.topH, pillarId: "workplaces", icon: "fabric", label: "Future-proofed workplaces" });
+  drawCard({ cx: 0, cy: D.resY, w: D.resW, h: D.resH, pillarId: "resilience", icon: "shield-network", label: "Digital resilience", gradient: true });
+
+  const aiG = g.append("g").attr("class", "ov-ai").style("pointer-events", "none");
+  [-1, 1].forEach(dir => {
+    [0, 1, 2].forEach(i => {
+      aiG.append("text")
+        .attr("x", dir * (108 + i * 16))
+        .attr("y", D.aiY + 5)
+        .attr("text-anchor", dir < 0 ? "end" : "start")
+        .attr("fill", "#fff")
+        .attr("opacity", 0.25 + i * 0.22)
+        .style("font-size", "16px")
+        .style("font-weight", "600")
+        .text(dir < 0 ? "‹" : "›");
+    });
+  });
+  aiG.append("text")
+    .attr("x", 0).attr("y", D.aiY + 5)
+    .attr("text-anchor", "middle")
+    .attr("fill", "#fff")
+    .style("font-size", "14px")
+    .style("font-weight", "500")
+    .text(ONE_CISCO.aiLabel);
+}
+
 // ── Rebind selections to current viewNodes / viewLinks and restart simulation.
 //    Called by applyViewLevel() and any other code that mutates the view set.
 function rebindGraph(opts){
@@ -3460,11 +3605,20 @@ function rebindGraph(opts){
   else resetStandardLabelStyles();
   updateCompositionHint();
   updatePillarGuides();
+  if (viewMode === "overview"){
+    ndG.style("display", "none");
+    updateOverviewDeck();
+  } else {
+    ndG.style("display", null);
+    lyr.select("g.overview-deck").remove();
+  }
 
-  sim.nodes(viewNodes);
+  sim.nodes(viewMode === "overview" ? [] : viewNodes);
   sim.force("link").links(viewLinks);
   if (restart){
-    if (viewMode === "composition"){
+    if (viewMode === "overview"){
+      sim.alpha(0);
+    } else if (viewMode === "composition"){
       sim.alpha(0);
       for (let i = 0; i < 3; i++) sim.tick();
     } else sim.alpha(0.85).restart();
@@ -3595,34 +3749,9 @@ window.toggleConnectionDepth = function(nodeId){
 // VIEW LEVELS — Overview / Families / Composition
 // ═══════════════════════════════════════════════════════════════
 
-// ── Synthesize Overview-mode nodes/links: One Cisco 3-pillar hubs.
+// ── Synthesize Overview-mode: deck-style layout (rendered via updateOverviewDeck).
 function buildOverviewView(){
-  const nodes = ONE_CISCO.pillars.map(p => ({
-    id: "pillar-" + p.id,
-    name: p.shortLabel,
-    category: p.id === "ai-dc" ? "computing" : p.id === "workplaces" ? "collaboration" : "security",
-    _kind: "pillar",
-    _pillarId: p.id,
-    _pillarColor: p.color,
-    _iconKey: p.icon,
-    _r: p.id === "resilience" ? 58 : 52,
-    _badge: String(familiesInPillar(p.id)),
-    desc: p.promise,
-    promise: p.promise
-  }));
-  const links = [
-    { source: "pillar-ai-dc", target: "pillar-workplaces", type: "adjacent", label: ONE_CISCO.connectivityLabel },
-    { source: "pillar-ai-dc", target: "pillar-resilience", type: "adjacent", label: "Security & observability" },
-    { source: "pillar-workplaces", target: "pillar-resilience", type: "adjacent", label: "Assurance & protection" }
-  ];
-  nodes.forEach(n => {
-    const p = PILLAR_BY_ID[n._pillarId];
-    n.x = p.anchor.x;
-    n.y = p.anchor.y;
-    n.fx = p.anchor.x;
-    n.fy = p.anchor.y;
-  });
-  return { nodes, links };
+  return { nodes: [], links: [] };
 }
 
 // ── Synthesize All-Products mode: every family + every product in one graph.
@@ -5881,7 +6010,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.11.0";
+const APP_VERSION   = "2.11.1";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6172,6 +6301,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.11.1", date:"2026-06-20", items:[
+    "Overview — rebuilt as the One Cisco deck layout: two top pillar cards, Secure global connectivity spine, gradient Digital resilience bar, and Accelerated by Cisco AI footer."
+  ]},
   {ver:"2.11.0", date:"2026-06-20", items:[
     "One Cisco — Overview rebuilt as 3 outcome pillars (AI-ready DC, Workplaces, Digital resilience) aligned to the Dec 2025 strategy deck.",
     "Families view — pillar sector layout with connectivity spine when all categories are active; zone guides and cross-pillar link emphasis.",
