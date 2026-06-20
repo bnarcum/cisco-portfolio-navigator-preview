@@ -120,7 +120,15 @@ try {
 
   // Scenario A: API drill-in from all-pillars families view
   await page.evaluate((id) => window.applyViewLevel("composition", { focusFamily: id }), FAMILY);
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(500);
+  const panelA = await page.evaluate(() => ({
+    open: document.getElementById("panel")?.classList.contains("open"),
+    rows: document.querySelectorAll(".fam-prod-row").length,
+  }));
+  if (!panelA.open || panelA.rows < 8) {
+    console.error("FAIL [api-all-pillars]: family drawer", panelA);
+    failed = true;
+  }
   if (!assertComposition(await diag(page), "api-all-pillars")) failed = true;
 
   // Reset to families + workplaces pillar focus (zoomed single pillar)
