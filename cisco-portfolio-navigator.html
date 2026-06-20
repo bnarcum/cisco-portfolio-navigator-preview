@@ -3085,21 +3085,79 @@ function buildNodeGroup(sel){
 }
 
 function compositionLabelStyle(d){
-  if (d._kind === "family") return { fill: "#ffffff", stroke: "rgba(8,14,24,0.92)", weight: "700", size: "11.5px" };
-  if (d._status === "eol") return { fill: "#f0b4bc", stroke: "rgba(8,14,24,0.92)", weight: "500", size: "10px" };
-  if (d._status === "eos") return { fill: "#f0c878", stroke: "rgba(8,14,24,0.92)", weight: "500", size: "10px" };
-  return { fill: "#f1f5f9", stroke: "rgba(8,14,24,0.9)", weight: "600", size: "10.75px" };
+  if (d._kind === "family") return { fill: "#ffffff", stroke: "rgba(15,23,42,0.95)", weight: "700", size: "12px" };
+  if (d._status === "eol") return { fill: "#fecaca", stroke: "rgba(15,23,42,0.95)", weight: "600", size: "11px" };
+  if (d._status === "eos") return { fill: "#fde68a", stroke: "rgba(15,23,42,0.95)", weight: "600", size: "11px" };
+  return { fill: "#ffffff", stroke: "rgba(15,23,42,0.92)", weight: "600", size: "11px" };
 }
 
-function compositionLabelTransform(d){
-  if (d._kind === "family" || d._ox == null) return null;
-  if (d._oy > 28){
-    const ang = Math.atan2(d._oy, d._ox) * 180 / Math.PI;
-    let rot = ang + 90;
-    if (rot > 90 && rot < 270) rot += 180;
-    return `rotate(${rot})`;
+function panelOffsetW(){
+  if (typeof plannerOpen !== "undefined" && plannerOpen) return 490;
+  const panel = document.getElementById("panel");
+  return panel?.classList.contains("open") ? 390 : 0;
+}
+
+function nodeVisibleForFit(n){
+  if (viewMode === "composition") return true;
+  if (viewMode === "families") return familyNodeVisible(n);
+  if (viewMode === "all-products"){
+    if (n._kind === "product") return productMatchesFilters(n._productRef || prodById[n.id]);
+    return familyNodeVisible(n);
   }
-  return null;
+  return true;
+}
+
+function applyGraphTransform(cx, cy, k){
+  const {w, h} = getDims();
+  const pw = panelOffsetW();
+  svg.transition().duration(480)
+    .call(zoom.transform, d3.zoomIdentity.translate((w - pw) / 2, h / 2).scale(k).translate(-cx, -cy));
+}
+
+function fitCompositionView(){
+  const {w, h} = getDims();
+  const pw = panelOffsetW();
+  const r = (compositionOrbitR || 160) + 40;
+  const diameter = (r + 32) * 2;
+  const k = Math.min(1.05, Math.max(0.55, Math.min(w - pw - 48, h - 90) / diameter));
+  applyGraphTransform(0, 0, k);
+}
+
+function fitVisibleGraphView(fallbackScale){
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, count = 0;
+  viewNodes.forEach(n => {
+    if (!nodeVisibleForFit(n)) return;
+    const x = n.fx != null ? n.fx : n.x;
+    const y = n.fy != null ? n.fy : n.y;
+    if (x == null || y == null) return;
+    const pad = (n._r || 16) + 22;
+    minX = Math.min(minX, x - pad);
+    maxX = Math.max(maxX, x + pad);
+    minY = Math.min(minY, y - pad);
+    maxY = Math.max(maxY, y + pad + 16);
+    count++;
+  });
+  if (!count){ applyGraphTransform(0, 0, fallbackScale || 0.78); return; }
+  applyGraphTransform((minX + maxX) / 2, (minY + maxY) / 2,
+    Math.min(1.15, Math.max(0.35, (() => {
+      const {w, h} = getDims();
+      const pw = panelOffsetW();
+      const bw = Math.max(maxX - minX, 60);
+      const bh = Math.max(maxY - minY, 60);
+      return Math.min((w - pw - 72) / bw, (h - 96) / bh);
+    })())));
+}
+
+let graphFitTimer = null;
+function scheduleGraphFit(mode){
+  clearTimeout(graphFitTimer);
+  const delay = mode === "composition" ? 60 : 280;
+  graphFitTimer = setTimeout(() => {
+    if (viewMode === "composition") fitCompositionView();
+    else if (viewMode === "overview") applyGraphTransform(0, 0, 0.95);
+    else if (viewMode === "all-products") fitVisibleGraphView(0.50);
+    else if (viewMode === "families") fitVisibleGraphView(0.78);
+  }, delay);
 }
 
 function compositionInteractionSet(selectedNode){
@@ -3118,11 +3176,10 @@ function compositionInteractionSet(selectedNode){
   return related;
 }
 
-function updateCompositionLabelVisibility(k){
+function updateCompositionLabelVisibility(_k){
   if (viewMode !== "composition" || !ndEl) return;
-  const show = k >= 0.62;
-  ndEl.select("text.nl").style("opacity", show ? null : 0);
-  ndEl.select("text.nbadge").style("opacity", show ? null : 0);
+  ndEl.select("text.nl").style("opacity", 1);
+  ndEl.select("text.nbadge").style("opacity", 1);
 }
 
 function updateCompositionOrbitGuide(){
@@ -3181,8 +3238,8 @@ function applyCompositionInteractionStyles(selectedNode){
       if (nd._hasImage) return 1.2;
       return 0;
     });
-    g.select("text.nl").style("opacity", dim ? 0.35 : null)
-      .style("fill", isSel ? "#ffffff" : (isHov ? "#e2e8f0" : null));
+    g.select("text.nl").style("opacity", dim ? 0.35 : 1)
+      .style("fill", isSel ? "#ffffff" : (isHov ? "#f8fafc" : null));
   });
   if (lviz){
     lviz.attr("stroke-opacity", l => {
@@ -3225,18 +3282,19 @@ function applyCompositionNodeStyles(){
     .style("display", d => d._nodeBadge ? null : "none");
   ndEl.select("text.nl")
     .text(d => d._shortName || d.name)
-    .attr("y", d => d._r + (d._kind === "family" ? 17 : 13))
-    .attr("transform", compositionLabelTransform)
+    .attr("y", d => d._r + (d._kind === "family" ? 18 : 14))
+    .attr("transform", null)
+    .attr("text-anchor", "middle")
     .each(function(d){
       const s = compositionLabelStyle(d);
       d3.select(this)
         .style("font-size", s.size)
         .style("font-weight", s.weight)
         .style("fill", s.fill)
-        .style("letter-spacing", d._kind === "family" ? "0.04em" : "0.02em")
+        .style("letter-spacing", "0.02em")
         .style("paint-order", "stroke fill")
         .style("stroke", s.stroke)
-        .style("stroke-width", "4px")
+        .style("stroke-width", "5px")
         .style("stroke-linejoin", "round");
     });
   if (lviz){
@@ -4166,15 +4224,7 @@ function applyViewLevel(mode, opts){
   }
 
   // Recenter view after mode change so the user always sees the new content.
-  setTimeout(() => {
-    const {w,h} = getDims();
-    const scale = mode === "overview"     ? 0.95
-               : mode === "composition"   ? Math.max(0.72, Math.min(1.05, 1.15 - (viewNodes.length || 0) * 0.012))
-               : mode === "all-products"  ? 0.50
-               :                            0.78;
-    svg.transition().duration(prev === mode ? 0 : 550)
-      .call(zoom.transform, d3.zoomIdentity.translate(w/2, h/2).scale(scale));
-  }, 50);
+  scheduleGraphFit(mode);
 }
 
 // ── Force-tuning per mode so each view feels right.
@@ -4609,6 +4659,7 @@ function applyFilters() {
     rebindGraph();
     updateCompositionHint();
     refreshTimelineIfOpen();
+    scheduleGraphFit("composition");
     return;
   }
   if (viewMode === "overview"){
@@ -4650,6 +4701,7 @@ function applyFilters() {
   }
   else badge.style.display="none";
   refreshTimelineIfOpen();
+  if (viewMode === "families" || viewMode === "composition") scheduleGraphFit(viewMode);
 }
 
 function resetAll() {
