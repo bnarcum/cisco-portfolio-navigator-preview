@@ -5792,7 +5792,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.9.5";
+const APP_VERSION   = "2.9.6";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6083,6 +6083,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.9.6", date:"2026-06-20", items:[
+    "Auto-fit view — Collaboration filter and Composition orbit now center and scale to visible content (no more dragging from the corner).",
+    "Composition labels — always horizontal below nodes, larger white text with stronger halo for readability."
+  ]},
   {ver:"2.9.5", date:"2026-06-20", items:[
     "Hotfix — restored page boot after Composition zoom handler referenced viewMode before initialization."
   ]},
