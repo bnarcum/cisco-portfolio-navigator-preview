@@ -4942,16 +4942,6 @@ function spatialLabelVisible(){
   return true;
 }
 
-function spatialCategoryShape(cat){
-  return ({
-    networking: "hex",
-    security: "shield",
-    collaboration: "screen",
-    computing: "blade",
-    observability: "gauge"
-  })[cat] || "hex";
-}
-
 function spatialIconKeyForNode(node){
   if (node.kind === "product" || prodById[node.id]){
     const p = prodById[node.id] || node._productRef;
@@ -4983,30 +4973,13 @@ function spatialAccentHex(accent, channel){
   return "#" + n.toString(16).padStart(6, "0");
 }
 
-function spatialShapeMarkup(shape, stroke, fillId){
-  switch (shape){
-    case "shield":
-      return `<path d="M128 24 L216 64 V136 C216 176 176 212 128 232 C80 212 40 176 40 136 V64 Z" fill="url(#${fillId})" stroke="${stroke}" stroke-width="5.5"/>`;
-    case "screen":
-      return `<rect x="42" y="52" width="172" height="120" rx="20" fill="url(#${fillId})" stroke="${stroke}" stroke-width="5.5"/>`;
-    case "blade":
-      return `<rect x="58" y="78" width="140" height="88" rx="10" fill="url(#${fillId})" stroke="${stroke}" stroke-width="5.5"/>`;
-    case "gauge":
-      return `<circle cx="128" cy="128" r="86" fill="url(#${fillId})" stroke="${stroke}" stroke-width="5.5"/>
-        <path d="M128 128 L128 54 A74 74 0 0 1 198 146 Z" fill="${stroke}" opacity="0.22"/>`;
-    case "hex":
-    default:
-      return `<polygon points="128,34 208,82 208,174 128,222 48,174 48,82" fill="url(#${fillId})" stroke="${stroke}" stroke-width="5.5"/>`;
-  }
-}
-
 function spatialTileCacheKey(node){
   const accent = spatialNodeAccent(node);
   const profile = spatialNodeVisualProfile(node);
   return [
     node.id,
     spatialIconKeyForNode(node),
-    spatialCategoryShape(spatialNodeCategory(node)),
+    "icon",
     profile.mode,
     accent.core,
     selected?.id === node.id ? "sel" : "",
@@ -5016,27 +4989,11 @@ function spatialTileCacheKey(node){
 
 function buildSpatialTileSvg(node){
   const iconKey = spatialIconKeyForNode(node);
-  const shape = spatialCategoryShape(spatialNodeCategory(node));
   const accent = spatialNodeAccent(node);
-  const profile = spatialNodeVisualProfile(node);
-  const stroke = spatialAccentHex(accent, "glow");
   const iconColor = spatialAccentHex(accent, "core");
-  const fillId = "sg" + Math.random().toString(36).slice(2, 8);
   const inner = spatialSymbolInner(iconKey);
-  const orbitRing = profile.mode === "constellation"
-    ? `<circle cx="128" cy="128" r="118" fill="none" stroke="${stroke}" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.45"/>`
-    : `<rect x="28" y="28" width="200" height="200" rx="28" fill="none" stroke="${stroke}" stroke-width="2" opacity="0.28"/>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-    <defs>
-      <linearGradient id="${fillId}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#1e2d42" stop-opacity="0.98"/>
-        <stop offset="55%" stop-color="#101a28" stop-opacity="0.96"/>
-        <stop offset="100%" stop-color="#070e18" stop-opacity="0.99"/>
-      </linearGradient>
-    </defs>
-    ${orbitRing}
-    ${spatialShapeMarkup(shape, stroke, fillId)}
-    <g transform="translate(128,128) scale(0.5)" fill="${iconColor}" stroke="${iconColor}" color="${iconColor}">${inner}</g>
+    <g transform="translate(128,128) scale(0.72)" fill="${iconColor}" stroke="${iconColor}" color="${iconColor}">${inner}</g>
   </svg>`;
 }
 
@@ -5079,40 +5036,8 @@ function getSpatialTileSprite(node, radius, profile){
   return sprite;
 }
 
-function createSpatialTilePlaceholder(node, radius, profile){
-  const THREE = ensureSpatialTHREE();
-  if (!THREE?.Sprite || !THREE?.SpriteMaterial || !THREE?.CanvasTexture) return null;
-  const accent = spatialNodeAccent(node);
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 128;
-  const ctx = canvas.getContext("2d");
-  if (ctx){
-    ctx.fillStyle = "#101a28";
-    ctx.strokeStyle = spatialAccentHex(accent, "glow");
-    ctx.lineWidth = 4;
-    if (ctx.roundRect){
-      ctx.beginPath();
-      ctx.roundRect(16, 20, 96, 88, 12);
-      ctx.fill();
-      ctx.stroke();
-    } else {
-      ctx.fillRect(16, 20, 96, 88);
-      ctx.strokeRect(16, 20, 96, 88);
-    }
-  }
-  const map = spatialMakeTexture(canvas);
-  if (!map) return null;
-  const mat = new THREE.SpriteMaterial({
-    map,
-    transparent: true,
-    depthWrite: false,
-    opacity: 0.82
-  });
-  const sprite = new THREE.Sprite(mat);
-  const s = radius * profile.tileScale * 0.95;
-  sprite.scale.set(s, s, 1);
-  sprite.renderOrder = 2;
-  return sprite;
+function createSpatialTilePlaceholder(){
+  return null;
 }
 
 function spatialNodeBaseScale(node, profile){
@@ -7484,7 +7409,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.25.1";
+const APP_VERSION   = "2.25.2";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -7775,6 +7700,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.25.2", date:"2026-06-20", items:[
+    "Spatial — icon tiles show the glyph only (removed category shape plate and outline rectangle behind each icon)."
+  ]},
   {ver:"2.25.1", date:"2026-06-20", items:[
     "Spatial — fix icon tiles rendering as [object Object] by using native Three.js Sprite/CanvasTexture instead of SpriteText for tile billboards."
   ]},
