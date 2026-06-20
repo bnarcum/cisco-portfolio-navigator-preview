@@ -807,11 +807,11 @@ const PILLAR_LAYOUT = {
   spineY: 10,
   zones: [
     { id: "ai-dc", label: "AI-ready data centers", shortLabel: "AI-ready DC",
-      color: "#0A60FF", cx: -205, cy: -108, w: 390, h: 198 },
+      color: "#0A60FF", cx: -118, cy: -92, w: 400, h: 210 },
     { id: "workplaces", label: "Future-proofed workplaces", shortLabel: "Workplaces",
-      color: "#2dce5c", cx: 205, cy: -108, w: 390, h: 198 },
+      color: "#2dce5c", cx: 118, cy: -92, w: 400, h: 210 },
     { id: "resilience", label: "Digital resilience", shortLabel: "Resilience",
-      color: "#FF9000", cx: 0, cy: 148, w: 800, h: 198, gradient: true }
+      color: "#FF9000", cx: 0, cy: 88, w: 820, h: 228, gradient: true }
   ]
 };
 const PILLAR_ZONE_BY_ID = Object.fromEntries(PILLAR_LAYOUT.zones.map(z => [z.id, z]));
@@ -819,10 +819,11 @@ const PILLAR_BY_ID = Object.fromEntries(ONE_CISCO.pillars.map(p => [p.id, p]));
 const PILLAR_IDS = PILLAR_LAYOUT.zones.map(z => z.id);
 const PILLAR_NODE_R = 17;
 const PILLAR_GLOW_PAD = 4;
-const PILLAR_MIN_CELL_W = 64;
-const PILLAR_MIN_CELL_H = 58;
-const PILLAR_LABEL_MIN_CELL_W = 74;
-const PILLAR_LABEL_MIN_CELL_H = 72;
+const PILLAR_MIN_CELL_W = 68;
+const PILLAR_MIN_CELL_H = 86;
+const PILLAR_CELL_TOP_PAD = 10;
+const PILLAR_LABEL_GAP = 10;
+const PILLAR_LABEL_LINES = 2;
 
 const CONNECTIVITY_SET = new Set(ONE_CISCO.connectivity.families);
 const AI_DC_SET = new Set([
@@ -2583,6 +2584,19 @@ function computePillarGridCols(zone, n){
   if (zone.id === "workplaces") return Math.min(7, Math.max(4, Math.ceil(n / 4)));
   return Math.min(10, Math.max(5, Math.ceil(n / 3)));
 }
+function pillarNodeInCell(layoutZone, col, row, cols, rows, padX, padY, innerW, innerH){
+  const cellW = innerW / cols;
+  const cellH = innerH / rows;
+  const cellLeft = layoutZone.cx - layoutZone.w / 2 + padX + col * cellW;
+  const cellTop = layoutZone.cy - layoutZone.h / 2 + padY + row * cellH;
+  const iconY = cellTop + PILLAR_CELL_TOP_PAD + PILLAR_NODE_R;
+  return {
+    x: cellLeft + cellW * 0.5,
+    y: iconY,
+    cellW,
+    cellH
+  };
+}
 function layoutZoneForItems(zone, items){
   const n = items.length || 1;
   let cols = computePillarGridCols(zone, n);
@@ -2619,10 +2633,8 @@ function pillarAnchorForFamily(familyId, visibleIds){
   const cellH = innerH / rows;
   const col = idx % cols;
   const row = Math.floor(idx / cols);
-  return {
-    x: layoutZone.cx - layoutZone.w / 2 + padX + cellW * (col + 0.5),
-    y: layoutZone.cy - layoutZone.h / 2 + padY + cellH * (row + 0.5)
-  };
+  const pos = pillarNodeInCell(layoutZone, col, row, cols, rows, padX, padY, innerW, innerH);
+  return { x: pos.x, y: pos.y };
 }
 function familiesInPillar(pillarId){
   return NODES.filter(n => familyPillar(n.id) === pillarId).length;
@@ -2781,21 +2793,20 @@ function layoutPillarGrid(layoutZone, items){
   const rows = Math.ceil(n / cols);
   const cellW = innerW / cols;
   const cellH = innerH / rows;
-  const showLabel = cellW >= PILLAR_LABEL_MIN_CELL_W && cellH >= PILLAR_LABEL_MIN_CELL_H;
+  const showAllLabels = allPillarsSelected() || singlePillarFocused();
   items.forEach((node, idx) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
-    const x = layoutZone.cx - layoutZone.w / 2 + padX + cellW * (col + 0.5);
-    const y = layoutZone.cy - layoutZone.h / 2 + padY + cellH * (row + 0.5);
-    node.x = x;
-    node.y = y;
-    node.fx = x;
-    node.fy = y;
+    const pos = pillarNodeInCell(layoutZone, col, row, cols, rows, padX, padY, innerW, innerH);
+    node.x = pos.x;
+    node.y = pos.y;
+    node.fx = pos.x;
+    node.fy = pos.y;
     node._r = PILLAR_NODE_R;
-    node._shortName = pillarShortName(node.name);
+    node._shortName = pillarShortName(node.name, showAllLabels ? 16 : 18);
     node._pillarCellW = cellW;
     node._pillarCellH = cellH;
-    node._pillarShowLabel = showLabel;
+    node._pillarShowLabel = showAllLabels || (cellW >= 62 && cellH >= PILLAR_MIN_CELL_H - 4);
     node._pillarPinned = true;
   });
 }
@@ -2851,7 +2862,8 @@ function applyPillarLabelStyles(selectedNode){
   const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
   ndEl.select("text.nl")
     .text(d => d._shortName || d.name)
-    .attr("y", d => d._r + 12)
+    .attr("y", d => d._r + PILLAR_LABEL_GAP)
+    .style("dominant-baseline", "hanging")
     .style("opacity", d => {
       if (selectedNode && (d.id === selectedNode.id || conn?.has(d.id))) return 1;
       if (d.id === pillarHoverId) return 1;
@@ -6458,7 +6470,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.15.0";
+const APP_VERSION   = "2.15.1";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6749,6 +6761,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.15.1", date:"2026-06-20", items:[
+    "Families — all three pillars show spaced labels (icon top-aligned in cell, no row overlap); zones overlap in the center for the One Cisco story.",
+    "Pillar layout — AI-ready DC and Workplaces nudged inward; Digital resilience pulled up into the shared overlap region."
+  ]},
   {ver:"2.15.0", date:"2026-06-20", items:[
     "Families — auto-growing pillar grids with fixed icon size (no overlap in all-pillars view); short labels only when the cell fits, otherwise icon + tooltip.",
     "Pillar filter — multi-select: toggle any combination in the legend or zone panels; All pillars clears the filter.",
