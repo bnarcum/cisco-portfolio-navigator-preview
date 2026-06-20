@@ -1,0 +1,11 @@
+{
+  "name": "cisco-portfolio-navigator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:pillar-layout": "node scripts/test-pillar-layout.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}
