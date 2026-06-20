@@ -824,6 +824,7 @@ const PILLAR_NODE_R = 17;
 const PILLAR_GLOW_PAD = 4;
 const PILLAR_MIN_CELL_W = 72;
 const PILLAR_MIN_CELL_H = 94;
+const PILLAR_ICON_ONLY_CELL_H = 58;
 const PILLAR_CELL_TOP_PAD = 8;
 const PILLAR_LABEL_GAP = 8;
 const PILLAR_TITLE_BAND = 32;
@@ -2622,8 +2623,9 @@ function layoutZoneForItems(zone, items){
   const focused = singlePillarFocused() && focusedPillarId() === zone.id;
   let cols = computePillarGridCols(zone, n);
   let rows = Math.ceil(n / cols);
+  const minCellH = pillarMinCellH();
   let reqGridW = cols * PILLAR_MIN_CELL_W + 12;
-  let reqGridH = rows * PILLAR_MIN_CELL_H + 10;
+  let reqGridH = rows * minCellH + 10;
   let w = Math.max(zone.w, reqGridW / fracW);
   let h = Math.max(zone.h, reqGridH / fracH);
   for (let attempt = 0; attempt < 6; attempt++){
@@ -2633,7 +2635,7 @@ function layoutZoneForItems(zone, items){
     cols = maxCols;
     rows = Math.ceil(n / cols);
     reqGridW = cols * PILLAR_MIN_CELL_W + 12;
-    reqGridH = rows * PILLAR_MIN_CELL_H + 10;
+    reqGridH = rows * minCellH + 10;
     w = Math.max(zone.w, reqGridW / fracW);
     h = Math.max(zone.h, reqGridH / fracH);
   }
@@ -2652,8 +2654,26 @@ function pillarNodeInCell(content, col, row, cols, rows){
   const iconY = cellTop + PILLAR_CELL_TOP_PAD + PILLAR_NODE_R;
   return { x: cellLeft + cellW * 0.5, y: iconY, cellW, cellH };
 }
+function pillarMinCellH(){
+  return singlePillarFocused() ? PILLAR_MIN_CELL_H : PILLAR_ICON_ONLY_CELL_H;
+}
 function pillarLabelMaxLen(cellW){
+  if (singlePillarFocused())
+    return Math.max(12, Math.min(22, Math.floor(cellW / 3.8)));
   return Math.max(8, Math.min(16, Math.floor(cellW / 4.5)));
+}
+function pillarLabelTextBBox(n){
+  if (!n._pillarShowLabel) return null;
+  const text = n._shortName || n.name;
+  const cellW = n._pillarCellW || PILLAR_MIN_CELL_W;
+  const charW = 5.4;
+  const labelW = Math.min(text.length * charW, cellW * 0.92);
+  const y0 = n.y + n._r + PILLAR_LABEL_GAP;
+  return {
+    minX: n.x - labelW / 2, maxX: n.x + labelW / 2,
+    minY: y0, maxY: y0 + PILLAR_LABEL_HEIGHT,
+    pillar: familyPillar(n.id)
+  };
 }
 function pillarAnchorForFamily(familyId, visibleIds){
   const pid = familyPillar(familyId);
@@ -2694,8 +2714,8 @@ function zonesOverlap(a, b){
 }
 function __cpnPillarLayoutSelfTest(){
   const prev = new Set(activePillars);
-  clearPillarFilter();
   const vis = new Set(NODES.map(n => n.id));
+  clearPillarFilter();
   pinPillarNodes(viewNodes, vis);
   const placed = NODES.filter(n => vis.has(n.id));
   const boxes = placed.map(pillarNodeBBox);
@@ -2710,19 +2730,38 @@ function __cpnPillarLayoutSelfTest(){
       else within.push(pair);
     }
   }
+  const allPillarLabelsOff = placed.every(n => !n._pillarShowLabel);
   const zs = PILLAR_LAYOUT.zones.map(z => pillarZoneLayout?.[z.id] || layoutZoneForItems(z, NODES.filter(n => familyPillar(n.id) === z.id)));
   const overlapPairs = [];
   for (let i = 0; i < zs.length; i++)
     for (let j = i + 1; j < zs.length; j++)
       if (zonesOverlap(zs[i], zs[j])) overlapPairs.push([PILLAR_LAYOUT.zones[i].id, PILLAR_LAYOUT.zones[j].id]);
-  activePillars = prev;
   const tripleOverlap = overlapPairs.length >= 3;
+  let labelOverlaps = 0;
+  const focusedLabelCoverage = [];
+  for (const pid of PILLAR_IDS){
+    focusPillarOnly(pid);
+    pinPillarNodes(viewNodes, vis);
+    const inPillar = NODES.filter(n => familyPillar(n.id) === pid);
+    const allLabeled = inPillar.length > 0 && inPillar.every(n => n._pillarShowLabel);
+    const labelBoxes = inPillar.map(pillarLabelTextBBox).filter(Boolean);
+    for (let i = 0; i < labelBoxes.length; i++)
+      for (let j = i + 1; j < labelBoxes.length; j++)
+        if (bboxesOverlap(labelBoxes[i], labelBoxes[j], 2)) labelOverlaps++;
+    focusedLabelCoverage.push({ pillar: pid, allLabeled, count: inPillar.length });
+  }
+  activePillars = prev;
   return {
-    ok: cross.length === 0 && within.length === 0 && outside.length === 0 && tripleOverlap,
+    ok: cross.length === 0 && within.length === 0 && outside.length === 0 && tripleOverlap
+      && allPillarLabelsOff && labelOverlaps === 0
+      && focusedLabelCoverage.every(r => r.allLabeled),
     crossCollisions: cross.length,
     withinCollisions: within.length,
     outsideZone: outside.length,
     tripleZoneOverlap: tripleOverlap,
+    allPillarLabelsOff,
+    labelOverlaps,
+    focusedLabelCoverage,
     cross, within, outside, overlapPairs
   };
 }
@@ -2879,7 +2918,7 @@ function layoutPillarGrid(layoutZone, items){
   const rows = Math.ceil(n / cols);
   const cellW = content.w / cols;
   const cellH = content.h / rows;
-  const showAllLabels = allPillarsSelected() || singlePillarFocused();
+  const showAllLabels = singlePillarFocused();
   items.forEach((node, idx) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
@@ -2892,7 +2931,7 @@ function layoutPillarGrid(layoutZone, items){
     node._shortName = pillarShortName(node.name, pillarLabelMaxLen(cellW));
     node._pillarCellW = cellW;
     node._pillarCellH = cellH;
-    node._pillarShowLabel = showAllLabels && cellH >= PILLAR_MIN_CELL_H - 10;
+    node._pillarShowLabel = showAllLabels;
     node._pillarPinned = true;
   });
 }
@@ -6562,7 +6601,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.16.0";
+const APP_VERSION   = "2.16.1";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6853,6 +6892,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.16.1", date:"2026-06-17", items:[
+    "Families — all-pillars view shows icons only (names on hover/select via tooltip); single-pillar focus shows uniform labels on every family in that pillar.",
+    "Layout regression test now verifies hidden labels in all-pillars mode and no label overlap when a pillar is focused."
+  ]},
   {ver:"2.16.0", date:"2026-06-20", items:[
     "Families — unified pillar layout: borders, titles, and icons share one zone; inset grids keep icons inside overlapping panels without collision.",
     "Regression test now checks cross-pillar collisions, icons inside zones, and triple zone overlap (npm run test:pillar-layout)."

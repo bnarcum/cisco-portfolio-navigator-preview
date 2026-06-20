@@ -25,10 +25,13 @@ try {
       result.withinCollisions && `${result.withinCollisions} within-pillar collisions`,
       result.outsideZone && `${result.outsideZone} icons outside zone`,
       !result.tripleZoneOverlap && "zones do not triple-overlap",
+      result.allPillarLabelsOff === false && "labels visible in all-pillars mode",
+      result.labelOverlaps && `${result.labelOverlaps} label overlaps when focused`,
+      result.focusedLabelCoverage?.some(r => !r.allLabeled) && "missing labels in focused pillar",
     ].filter(Boolean).join("; "));
     process.exit(1);
   }
-  console.log("PASS: unified pillar layout OK");
+  console.log("PASS: pillar layout + label strategy OK");
 } finally {
   await browser.close();
 }
