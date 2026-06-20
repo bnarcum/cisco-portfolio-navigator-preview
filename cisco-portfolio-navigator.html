@@ -2802,22 +2802,6 @@ function compositionMatrixKey(p){
   return e ? (e.matrixId || e.hash || p.id) : p?.id;
 }
 
-function compositionProductBadge(p, dupes){
-  if (!p || dupes < 2) return null;
-  const id = p.id || "";
-  const name = p.name || "";
-  if (/g2/i.test(id) || /\bG2\b/i.test(name)) return "G2";
-  if (/75/.test(id)) return '75″';
-  if (/55/.test(id)) return '55″';
-  if (/mini/i.test(id)) return "Mini";
-  if (/quad/i.test(id)) return "Quad";
-  if (/ptz|4k/i.test(id)) return "4K";
-  if (/plus/i.test(id)) return "Plus";
-  if (/eq/i.test(id)) return "EQ";
-  if (/pro/i.test(id)) return "Pro";
-  return null;
-}
-
 const MATRIX_IMG_INSET = 0.72;
 let compositionHoverId = null;
 let compositionOrbitR = 0;
@@ -3069,15 +3053,6 @@ function buildNodeGroup(sel){
     .style("color", "#ffffff")
     .style("pointer-events", "none")
     .style("display", d => d._hasImage ? "none" : null);
-  inner.append("text").attr("class","nbadge")
-    .attr("y", d => -d._r + 6)
-    .attr("text-anchor", "middle")
-    .text(d => d._nodeBadge || "")
-    .style("font-size", "7px")
-    .style("font-weight", "800")
-    .style("fill", "#0f172a")
-    .style("pointer-events", "none")
-    .style("display", d => d._nodeBadge ? null : "none");
   const lwrap = inner.append("g").attr("class", "nl-wrap").style("pointer-events", "none");
   lwrap.append("text").attr("class","nl")
     .attr("y", d => d._r + 14).text(d => d._shortName || d.name)
@@ -3216,7 +3191,6 @@ function compositionInteractionSet(selectedNode){
 function updateCompositionLabelVisibility(_k){
   if (viewMode !== "composition" || !ndEl) return;
   ndEl.select("text.nl").style("opacity", 1);
-  ndEl.select("text.nbadge").style("opacity", 1);
 }
 
 function updateCompositionOrbitGuide(){
@@ -3315,9 +3289,7 @@ function applyCompositionNodeStyles(){
       return "transparent";
     })
     .attr("stroke-width", d => (d._hasImage || d._kind === "family" || (d._status && d._status !== "current")) ? (d._kind === "family" ? 2.2 : 1.2) : 0);
-  ndEl.select("text.nbadge")
-    .text(d => d._nodeBadge || "")
-    .style("display", d => d._nodeBadge ? null : "none");
+  ndEl.select("text.nbadge").remove();
   const labelText = ndEl.select("text.nl")
     .text(d => d._shortName || d.name)
     .attr("y", d => compositionLabelY(d))
@@ -3461,7 +3433,6 @@ function rebindGraph(opts){
       .attr("x", -pad).attr("y", -pad)
       .attr("clip-path", `url(#clip-prod-${String(d.id).replace(/[^a-z0-9_-]/gi, "_")})`);
   });
-  ndEl.select("text.nbadge").text(d => d._nodeBadge || "");
   ndEl.select("text.nl").text(d => d._shortName || d.name);
   if (viewMode === "composition") applyCompositionNodeStyles();
   else resetStandardLabelStyles();
@@ -3738,7 +3709,6 @@ function buildCompositionView(familyId){
         _family: p.family,
         _iconKey: productIconKey(p),
         _shortName: compositionShortName(p),
-        _nodeBadge: compositionProductBadge(p, dupes),
         _status: p.status,
         _hasImage: hasImg,
         _hasSuccessor: successorIds.has(p.id) || !!p.successor,
@@ -5821,7 +5791,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.9.8";
+const APP_VERSION   = "2.9.9";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6112,6 +6082,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.9.9", date:"2026-06-20", items:[
+    "Composition — removed in-circle variant badges (G2, Plus, Mini, etc.); product names below nodes only."
+  ]},
   {ver:"2.9.8", date:"2026-06-20", items:[
     "Composition labels — removed pill backdrops that overlapped nodes; labels sit clear below circles with text-only halo.",
     "Graph labels — brighter default text under category icons; tooltip body copy lightened for readability."
