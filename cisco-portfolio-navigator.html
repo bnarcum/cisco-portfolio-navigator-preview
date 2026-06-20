@@ -6494,9 +6494,6 @@ function closePlanner(){
   plannerBtn.innerHTML=`<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1" fill="currentColor" opacity=".6"/><rect x="2" y="9" width="5" height="5" rx="1" fill="currentColor" opacity=".6"/><rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor"/></svg> Account Planner`;
   selected=null; resetHL();
 }
-document.getElementById("pln-guided-link")?.addEventListener("click", () => {
-  if (typeof openGuidedWizard === "function") openGuidedWizard();
-});
 document.getElementById("pln-edit-stack")?.addEventListener("click", () => {
   plannerSetupExpanded = true;
   updatePlannerUI();
@@ -7536,7 +7533,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.26.0";
+const APP_VERSION   = "2.26.1";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -7827,6 +7824,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.26.1", date:"2026-06-20", items:[
+    "Account Planner — fix Start Guided Plan banner link; export menu and planner actions covered by Playwright QA."
+  ]},
   {ver:"2.26.0", date:"2026-06-20", items:[
     "Account Planner — cleaner layout: collapsible Legacy and Quick start sections, Guided Plan banner, sticky Analyze footer, compact post-analyze summary bar, and Clear moved to overflow menu."
   ]},
@@ -10335,6 +10335,8 @@ function buildGuidedWizard() {
     </div>`;
   document.body.appendChild(ov);
   $("#guided-btn")?.addEventListener("click", openGuidedWizard);
+  $("#pln-guided-link")?.addEventListener("click", openGuidedWizard);
+  window.openGuidedWizard = openGuidedWizard;
   $("#gw-skip").addEventListener("click", () => closeGuidedWizard(false));
   $("#gw-edit").addEventListener("click", () => { wizardState.step = 1; wizardRenderStep(); });
   $("#gw-reset").addEventListener("click", () => {

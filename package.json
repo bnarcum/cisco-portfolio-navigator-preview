@@ -8,7 +8,8 @@
     "test:composition-spatial": "node scripts/test-composition-spatial.mjs",
     "test:panel-hero": "node scripts/test-panel-hero.mjs",
     "test:spatial-labels": "node scripts/test-spatial-labels.mjs",
-    "test": "npm run test:pillar-layout && npm run test:composition && npm run test:composition-spatial && npm run test:panel-hero && npm run test:spatial-labels"
+    "test:planner-ui": "node scripts/test-planner-ui.mjs",
+    "test": "npm run test:pillar-layout && npm run test:composition && npm run test:composition-spatial && npm run test:panel-hero && npm run test:spatial-labels && npm run test:planner-ui"
   },
   "devDependencies": {
     "playwright": "^1.49.0"
