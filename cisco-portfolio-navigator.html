@@ -2766,6 +2766,57 @@ function compositionShortName(p){
   return n;
 }
 
+let PRODUCT_IMAGES = {
+  "room-bar":"assets/products/room-bar.svg","room-bar-pro":"assets/products/room-bar-pro.svg",
+  "board-pro-55":"assets/products/board-pro-55.svg","board-pro-75":"assets/products/board-pro-75.svg",
+  "board-pro-g2":"assets/products/board-pro-g2.svg","room-kit-mini":"assets/products/room-kit-mini.svg",
+  "room-kit-eq":"assets/products/room-kit-eq.svg","room-kit-pro":"assets/products/room-kit-pro.svg",
+  "codec-plus":"assets/products/codec-plus.svg","codec-pro":"assets/products/codec-pro.svg",
+  "quad-camera":"assets/products/quad-camera.svg","ptz-4k":"assets/products/ptz-4k.svg",
+  "room-navigator":"assets/products/room-navigator.svg","sx10":"assets/products/sx10.svg",
+  "sx20":"assets/products/sx20.svg","sx80":"assets/products/sx80.svg",
+  "mx700":"assets/products/mx700.svg","mx800":"assets/products/mx800.svg"
+};
+let PRODUCT_LAYERS = {
+  "room-bar":"capture","room-bar-pro":"capture","board-pro-55":"display","board-pro-75":"display",
+  "board-pro-g2":"display","room-kit-mini":"capture","room-kit-eq":"compute","room-kit-pro":"compute",
+  "codec-plus":"compute","codec-pro":"compute","quad-camera":"capture","ptz-4k":"capture",
+  "room-navigator":"control"
+};
+function productImageUrl(id){ return id ? (PRODUCT_IMAGES[id] || null) : null; }
+function productLayerLabel(id){
+  const L = { display:"Display", capture:"Capture & video bars", compute:"Compute & room kits",
+    control:"Touch control", legacy:"Legacy" };
+  const k = PRODUCT_LAYERS[id] || (prodById[id]?.status !== "current" ? "legacy" : null);
+  return k ? L[k] || k : null;
+}
+async function loadProductImagesManifest(){
+  try {
+    const res = await fetch("product-images.json", { cache: "no-cache" });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.products) PRODUCT_IMAGES = data.products;
+    if (data.layers) PRODUCT_LAYERS = data.layers;
+    refreshCompositionProductImages();
+  } catch (_) { /* file:// or offline — inline defaults above */ }
+}
+function refreshCompositionProductImages(){
+  if (viewMode !== "composition" || !viewNodes.length) return;
+  viewNodes.forEach(n => {
+    if (n._kind !== "product") return;
+    n._hasImage = !!productImageUrl(n.id);
+    if (n._hasImage){
+      n._r = n._status === "current" ? 22 : 16;
+    }
+  });
+  if (typeof rebindGraph === "function") rebindGraph({ restart: false });
+  const pb = document.getElementById("pbody");
+  if (pb?.dataset.lastKind === "product" && pb.dataset.lastId){
+    pb.querySelector(".p-hero")?.remove();
+    if (typeof window.insertProductHero === "function") window.insertProductHero(pb.dataset.lastId, "product");
+  }
+}
+
 function productIconKey(p){
   const id = (p?.id || "").toLowerCase();
   const name = (p?.name || "").toLowerCase();
@@ -2854,6 +2905,20 @@ const root = svg.append("g");
 const zoom = d3.zoom().scaleExtent([0.2,4]).on("zoom", ev => root.attr("transform", ev.transform));
 svg.call(zoom);
 
+const blueprintG = root.insert("g", ":first-child").attr("class", "blueprint-decor");
+const clipDefHost = svg.select("defs").append("g").attr("class", "product-clip-defs");
+
+function ensureProductClip(id, r){
+  const cid = "clip-prod-" + String(id).replace(/[^a-z0-9_-]/gi, "_");
+  let cp = clipDefHost.select("#" + cid);
+  if (cp.empty()){
+    cp = clipDefHost.append("clipPath").attr("id", cid);
+    cp.append("circle").attr("cx", 0).attr("cy", 0);
+  }
+  cp.select("circle").attr("r", r * 0.94);
+  return cid;
+}
+
 const degree = {};
 NODES.forEach(n => degree[n.id] = 0);
 LINKS.forEach(l => { degree[l.source]++; degree[l.target]++; });
@@ -2889,10 +2954,31 @@ function buildNodeGroup(sel){
     .attr("r", d => d._r + 9).attr("fill", d => catColor(d.category))
     .attr("fill-opacity", 0).attr("filter","url(#glow)");
   sel.append("circle").attr("class","mc")
-    .attr("r", d => d._r).attr("fill", d => catColor(d.category))
-    .attr("fill-opacity", 0.88).attr("stroke","transparent").attr("stroke-width", 2.5);
-  // White icon overlay — symbol library is defined in <defs>. Icon size is ~75% of
-  // the node diameter so it reads clearly without crowding the circle edge.
+    .attr("r", d => d._r).attr("fill", d => d._hasImage ? "#0d1520" : catColor(d.category))
+    .attr("fill-opacity", d => d._hasImage ? 0.98 : 0.88)
+    .attr("stroke","transparent").attr("stroke-width", 2.5);
+  sel.append("circle").attr("class","mring")
+    .attr("r", d => d._r + 1.5).attr("fill", "none")
+    .attr("stroke", d => {
+      if (d._status === "eol") return "#ef4444";
+      if (d._status === "eos") return "#FF9000";
+      if (d._kind === "family") return "#ffffff";
+      return d._hasImage ? "rgba(45,206,92,0.55)" : "transparent";
+    })
+    .attr("stroke-width", d => (d._hasImage || d._kind === "family") ? 1.8 : 0)
+    .attr("stroke-opacity", 0.85)
+    .style("pointer-events", "none");
+  sel.filter(d => d._hasImage && productImageUrl(d.id)).each(function(d){
+    const g = d3.select(this);
+    const cid = ensureProductClip(d.id, d._r);
+    const pad = d._r * 1.05;
+    g.append("image").attr("class", "pimg")
+      .attr("href", productImageUrl(d.id))
+      .attr("width", pad * 2).attr("height", pad * 2)
+      .attr("x", -pad).attr("y", -pad)
+      .attr("clip-path", `url(#${cid})`)
+      .style("pointer-events", "none");
+  });
   sel.append("use").attr("class","icn")
     .attr("href",   d => "#icon-" + iconKey(d))
     .attr("width",  d => d._r * 1.5)
@@ -2901,29 +2987,84 @@ function buildNodeGroup(sel){
     .attr("y",      d => -d._r * 0.75)
     .attr("fill",   "#ffffff")
     .style("color", "#ffffff")
-    .style("pointer-events", "none");
+    .style("pointer-events", "none")
+    .style("display", d => d._hasImage ? "none" : null);
   sel.append("text").attr("class","nl")
     .attr("y", d => d._r + 14).text(d => d._shortName || d.name)
     .style("font-size","10px").style("fill","#525E6C")
     .style("text-anchor","middle").style("pointer-events","none");
 }
 
+function updateBlueprintDecor(){
+  if (!blueprintG) return;
+  blueprintG.selectAll("*").remove();
+  if (viewMode !== "composition" || viewFocus !== "room-systems") return;
+  const layers = [
+    { y: -115, label: "Display" },
+    { y: -35,  label: "Capture & bars" },
+    { y: 50,   label: "Compute & kits" },
+    { y: 130,  label: "Control" },
+    { y: 210,  label: "Legacy" }
+  ];
+  blueprintG.append("rect")
+    .attr("x", -335).attr("y", -158).attr("width", 670).attr("height", 405)
+    .attr("rx", 14)
+    .attr("fill", "rgba(8,14,24,0.72)")
+    .attr("stroke", "rgba(45,206,92,0.18)").attr("stroke-width", 1.5);
+  blueprintG.append("rect")
+    .attr("x", -325).attr("y", -148).attr("width", 650).attr("height", 385)
+    .attr("rx", 10)
+    .attr("fill", "none")
+    .attr("stroke", "rgba(110,118,129,0.12)").attr("stroke-width", 1);
+  blueprintG.append("text")
+    .attr("x", 0).attr("y", -172).attr("text-anchor", "middle")
+    .attr("fill", "rgba(45,206,92,0.5)").attr("font-size", "10px")
+    .attr("font-weight", "700").attr("letter-spacing", "0.16em")
+    .text("ROOM BLUEPRINT");
+  layers.forEach(l => {
+    blueprintG.append("line")
+      .attr("x1", -310).attr("x2", 310).attr("y1", l.y).attr("y2", l.y)
+      .attr("stroke", "rgba(110,118,129,0.22)").attr("stroke-dasharray", "5 6");
+    blueprintG.append("text")
+      .attr("x", -318).attr("y", l.y + 3.5).attr("text-anchor", "end")
+      .attr("fill", "rgba(139,148,158,0.65)").attr("font-size", "8.5px")
+      .attr("font-weight", "600").attr("letter-spacing", "0.08em")
+      .text(l.label.toUpperCase());
+  });
+}
+
 function applyCompositionNodeStyles(){
   if (viewMode !== "composition" || !ndEl) return;
   ndEl.select(".mc")
+    .attr("fill", d => d._hasImage ? "#0d1520" : catColor(d.category))
     .attr("fill-opacity", d => {
+      if (d._hasImage) return d._status === "eol" ? 0.55 : d._status === "eos" ? 0.72 : 0.98;
       if (d._kind === "family") return 0.95;
       if (d._status === "eol") return 0.42;
       if (d._status === "eos") return 0.62;
       return 0.92;
     })
     .attr("stroke", d => {
+      if (d._hasImage) return "transparent";
       if (d._status === "eol") return "#ef4444";
       if (d._status === "eos") return "#FF9000";
       if (d._kind === "family") return "#ffffff";
       return "transparent";
     })
-    .attr("stroke-width", d => (d._status && d._status !== "current") || d._kind === "family" ? 2 : 0);
+    .attr("stroke-width", d => (!d._hasImage && ((d._status && d._status !== "current") || d._kind === "family")) ? 2 : 0);
+  ndEl.select(".mring")
+    .attr("stroke", d => {
+      if (d._status === "eol") return "#ef4444";
+      if (d._status === "eos") return "#FF9000";
+      if (d._kind === "family") return "rgba(255,255,255,0.85)";
+      if (d._hasImage) return "rgba(45,206,92,0.65)";
+      return "transparent";
+    })
+    .attr("stroke-width", d => d._hasImage || d._kind === "family" ? 2 : (d._status && d._status !== "current" ? 1.5 : 0))
+    .attr("stroke-dasharray", d => d._status === "eol" ? "3 2" : null);
+  ndEl.select("image.pimg")
+    .attr("opacity", d => d._status === "eol" ? 0.45 : d._status === "eos" ? 0.65 : 1);
+  ndEl.select("use.icn").style("display", d => d._hasImage ? "none" : null);
   ndEl.select(".gr")
     .attr("fill-opacity", d => d._kind === "family" ? 0.28 : d._status === "eol" ? 0.08 : 0.12);
   ndEl.select("text.nl")
@@ -2955,6 +3096,10 @@ function updateCompositionHint(){
   const prods = PRODUCTS.filter(p => p.family === viewFocus);
   const cur = prods.filter(p => p.status === "current").length;
   const leg = prods.length - cur;
+  if (viewFocus === "room-systems"){
+    hint.textContent = `Room blueprint · ${cur} current · ${leg} legacy · Layered by role in the room · Purple dashed = upgrade path · Esc to go back`;
+    return;
+  }
   hint.textContent = `${cur} current${leg ? ` · ${leg} legacy` : ""} · Click a product for details · Purple dashed = upgrade path · Esc to go back`;
 }
 
@@ -3008,7 +3153,7 @@ function rebindGraph(opts){
             .on("drag",(ev,d)=>{ d.fx=ev.x; d.fy=ev.y; })
             .on("end",(ev,d)=>{
               if(!ev.active) sim.alphaTarget(0);
-              if (d._pinned) { d.fx = 0; d.fy = 0; }
+              if (d._pinned) { d.fx = d._ox ?? 0; d.fy = d._oy ?? 0; d.x = d.fx; d.y = d.fy; }
               else if (d._orbitFixed && viewMode === "composition") { d.fx = d._ox; d.fy = d._oy; d.x = d._ox; d.y = d._oy; }
               else { d.fx = d.fy = null; }
             }))
@@ -3035,8 +3180,11 @@ function rebindGraph(opts){
           .on("mouseover",(ev,d)=>{ if(d!==selected) showNodeTip(ev,d); })
           .on("mousemove", moveTip).on("mouseout", hideTip);
         buildNodeGroup(g);
-        // Fade-in for new nodes.
-        g.style("opacity", 0).transition().duration(320).style("opacity", 1);
+        g.each(function(d, i){
+          const delay = (viewMode === "composition" && d._kind === "product") ? i * 22 : 0;
+          d3.select(this).style("opacity", 0)
+            .transition().duration(380).delay(delay).style("opacity", 1);
+        });
         return g;
       },
       update => update,
@@ -3045,9 +3193,21 @@ function rebindGraph(opts){
 
   // Refresh dynamic attributes on update — needed when a node's role
   // changes between modes (e.g. family in Families vs Composition).
-  ndEl.select("use.icn").attr("href", d => "#icon-" + iconKey(d));
+  ndEl.select("use.icn").attr("href", d => "#icon-" + iconKey(d))
+    .style("display", d => d._hasImage ? "none" : null);
+  ndEl.select("image.pimg").each(function(d){
+    if (!d._hasImage) return;
+    ensureProductClip(d.id, d._r);
+    const pad = d._r * 1.05;
+    d3.select(this)
+      .attr("href", productImageUrl(d.id))
+      .attr("width", pad * 2).attr("height", pad * 2)
+      .attr("x", -pad).attr("y", -pad)
+      .attr("clip-path", `url(#clip-prod-${String(d.id).replace(/[^a-z0-9_-]/gi, "_")})`);
+  });
   ndEl.select("text.nl").text(d => d._shortName || d.name);
   applyCompositionNodeStyles();
+  updateBlueprintDecor();
   updateCompositionHint();
 
   sim.nodes(viewNodes);
@@ -3282,6 +3442,81 @@ function buildAllProductsView(){
 }
 
 // ── Synthesize Composition-mode nodes/links for one family.
+function makeCompositionProductNode(p, fx, fy){
+  const isLegacy = p.status !== "current";
+  const hasImg = !!productImageUrl(p.id);
+  return {
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    _kind: "product",
+    _r: hasImg ? (isLegacy ? 16 : 22) : (isLegacy ? 11 : 15),
+    _productRef: p,
+    _family: p.family,
+    _iconKey: productIconKey(p),
+    _shortName: compositionShortName(p),
+    _status: p.status,
+    _blueprintLayer: PRODUCT_LAYERS[p.id] || (isLegacy ? "legacy" : null),
+    _hasImage: hasImg,
+    _orbitFixed: true,
+    _ox: fx, _oy: fy,
+    fx, fy, x: fx, y: fy
+  };
+}
+
+function spreadBlueprintRow(items, y){
+  if (!items.length) return [];
+  const spacing = Math.min(108, Math.max(74, 620 / items.length));
+  const total = (items.length - 1) * spacing;
+  return items.map((p, i) => {
+    const fx = items.length === 1 ? 0 : -total / 2 + i * spacing;
+    return makeCompositionProductNode(p, fx, y);
+  });
+}
+
+function buildRoomSystemsBlueprint(familyId, fam, products, current, legacy){
+  const center = Object.assign({}, fam, {
+    _kind: "family",
+    _r: 38,
+    _pinned: true,
+    fx: 0, fy: -185, x: 0, y: -185,
+    _ox: 0, _oy: -185,
+    _badge: String(products.length),
+    _shortName: "Room Systems",
+    _hasImage: false
+  });
+  const byLayer = { display: [], capture: [], compute: [], control: [] };
+  current.forEach(p => {
+    const layer = PRODUCT_LAYERS[p.id] || "capture";
+    (byLayer[layer] || byLayer.capture).push(p);
+  });
+  Object.values(byLayer).forEach(arr => arr.sort((a, b) => a.name.localeCompare(b.name)));
+
+  const nodes = [center];
+  nodes.push(...spreadBlueprintRow(byLayer.display, -115));
+  nodes.push(...spreadBlueprintRow(byLayer.capture, -35));
+  nodes.push(...spreadBlueprintRow(byLayer.compute, 50));
+  nodes.push(...spreadBlueprintRow(byLayer.control, 130));
+  if (legacy.length){
+    const spacing = Math.min(92, Math.max(64, 520 / legacy.length));
+    const total = (legacy.length - 1) * spacing;
+    legacy.forEach((p, i) => {
+      const fx = legacy.length === 1 ? 0 : -total / 2 + i * spacing;
+      nodes.push(makeCompositionProductNode(p, fx, 210));
+    });
+  }
+
+  const links = products.map(p => ({
+    source: familyId, target: p.id, type: "composition", label: "contains"
+  }));
+  products.forEach(p => {
+    if (p.successor && products.some(q => q.id === p.successor)){
+      links.push({ source: p.id, target: p.successor, type: "succession", label: "replaced by" });
+    }
+  });
+  return { nodes, links, _blueprint: true };
+}
+
 function buildCompositionView(familyId){
   const fam = nodeById[familyId];
   if (!fam) return { nodes:[], links:[] };
@@ -3290,13 +3525,19 @@ function buildCompositionView(familyId){
   const legacy = products.filter(p => p.status !== "current")
     .sort((a, b) => (a.status === "eos" ? 0 : 1) - (b.status === "eos" ? 0 : 1));
 
+  if (familyId === "room-systems"){
+    return buildRoomSystemsBlueprint(familyId, fam, products, current, legacy);
+  }
+
   const center = Object.assign({}, fam, {
     _kind: "family",
     _r: 42,
     _pinned: true,
     fx: 0, fy: 0, x: 0, y: 0,
+    _ox: 0, _oy: 0,
     _badge: String(products.length),
-    _shortName: fam.name.replace(/^Cisco\s+/i, "")
+    _shortName: fam.name.replace(/^Cisco\s+/i, ""),
+    _hasImage: false
   });
 
   const nodes = [center];
@@ -3307,22 +3548,7 @@ function buildCompositionView(familyId){
       const angle = offset + (2 * Math.PI * i) / items.length;
       const fx = Math.cos(angle) * radius;
       const fy = Math.sin(angle) * radius;
-      const isLegacy = p.status !== "current";
-      nodes.push({
-        id: p.id,
-        name: p.name,
-        category: p.category,
-        _kind: "product",
-        _r: isLegacy ? 11 : 15,
-        _productRef: p,
-        _family: p.family,
-        _iconKey: productIconKey(p),
-        _shortName: compositionShortName(p),
-        _status: p.status,
-        _orbitFixed: true,
-        _ox: fx, _oy: fy,
-        fx, fy, x: fx, y: fy
-      });
+      nodes.push(makeCompositionProductNode(p, fx, fy));
     });
   };
 
@@ -3821,7 +4047,8 @@ function applyViewLevel(mode, opts){
   setTimeout(() => {
     const {w,h} = getDims();
     const scale = mode === "overview"     ? 0.95
-               : mode === "composition"   ? Math.max(0.72, Math.min(1.05, 1.15 - (viewNodes.length || 0) * 0.012))
+               : mode === "composition"   ? (viewFocus === "room-systems" ? 0.86
+                  : Math.max(0.72, Math.min(1.05, 1.15 - (viewNodes.length || 0) * 0.012)))
                : mode === "all-products"  ? 0.50
                :                            0.78;
     svg.transition().duration(prev === mode ? 0 : 550)
@@ -5360,7 +5587,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.8.0";
+const APP_VERSION   = "2.9.0";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5651,6 +5878,11 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.9.0", date:"2026-06-20", items:[
+    "Room Systems blueprint composition — products laid out by room role (Display, Capture, Compute, Control, Legacy) instead of a generic orbit.",
+    "Product heroes — drawer shows SKU-specific device art from product-images.json; Room Systems includes In the room stack companion chips.",
+    "Composition nodes — circular product thumbnails with status rings; staggered entrance animation on load."
+  ]},
   {ver:"2.8.0", date:"2026-06-17", items:[
     "Composition view — fixed orbit layout (current outer ring, legacy inner), product-specific icons, short readable labels, and status styling for EOL/EOS.",
     "All-products mode — product nodes use descriptive icons by form factor and category."
@@ -5959,6 +6191,30 @@ STYLE.textContent = `
   .p-photo{width:100%;height:120px;background:linear-gradient(135deg,var(--surface2),var(--surface3));
     border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;
     border:1px solid var(--border);overflow:hidden;position:relative}
+  .p-hero{width:100%;height:210px;margin-bottom:14px;border-radius:10px;overflow:hidden;position:relative;
+    background:radial-gradient(ellipse 80% 70% at 50% 55%, rgba(45,206,92,0.12), rgba(8,14,24,0.95) 70%),
+               linear-gradient(165deg, #121a28 0%, #0a1018 100%);
+    border:1px solid rgba(45,206,92,0.22);box-shadow:0 8px 28px rgba(0,0,0,0.35)}
+  .p-hero img{width:100%;height:100%;object-fit:contain;padding:18px 22px 28px;
+    filter:drop-shadow(0 10px 22px rgba(0,0,0,0.55));box-sizing:border-box;position:relative;z-index:1}
+  .p-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.55) 100%);
+    pointer-events:none}
+  .p-hero-meta{position:absolute;left:12px;right:12px;bottom:10px;display:flex;align-items:center;
+    justify-content:space-between;gap:8px;pointer-events:none}
+  .p-hero-layer{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+    color:rgba(45,206,92,0.9);background:rgba(0,0,0,0.45);padding:3px 8px;border-radius:4px}
+  .p-hero-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--subtle)}
+  .p-hero-fallback{display:flex;align-items:center;justify-content:center;height:100%;
+    position:absolute;inset:0;z-index:0}
+  .p-hero-fallback svg{width:72px;height:72px;color:var(--accent);opacity:.7}
+  .p-stack-hint{margin:-4px 0 12px;padding:10px 12px;border-radius:8px;background:var(--surface2);
+    border:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.45}
+  .p-stack-hint strong{color:var(--text);font-weight:600;display:block;margin-bottom:6px;font-size:10px;
+    text-transform:uppercase;letter-spacing:.08em}
+  .p-stack-chip{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:5px;
+    background:var(--surface3);border:1px solid var(--border);font-size:10px;font-weight:500;
+    color:var(--text);cursor:pointer;transition:border-color .12s}
+  .p-stack-chip:hover{border-color:var(--accent);color:var(--accent)}
   .p-photo svg{width:60px;height:60px;color:var(--accent);opacity:.65}
   .p-photo .p-photo-cat{position:absolute;bottom:6px;left:8px;font-size:9px;color:var(--subtle);
     text-transform:uppercase;letter-spacing:.1em;font-weight:700}
@@ -8239,24 +8495,81 @@ function enhanceProductPanel(id){
     insertPinAndCompareBtns(id, "product");
   }, 0);
 }
-function insertPhotoPlaceholder(id, kind){
+function productCompanions(id){
+  const p = prodById[id]; if (!p) return [];
+  const seen = new Set([id]);
+  const out = [];
+  const add = pid => {
+    if (!pid || seen.has(pid) || !prodById[pid]) return;
+    seen.add(pid); out.push(prodById[pid]);
+  };
+  add(p.successor);
+  PRODUCTS.filter(x => x.successor === id).forEach(x => add(x.id));
+  const kit = {
+    "room-kit-pro": ["codec-pro", "quad-camera", "room-navigator"],
+    "room-kit-eq": ["ptz-4k", "room-navigator"],
+    "room-bar": ["room-navigator"],
+    "room-bar-pro": ["room-navigator"],
+    "codec-pro": ["quad-camera", "room-navigator"],
+    "codec-plus": ["room-navigator"]
+  };
+  (kit[id] || []).forEach(add);
+  return out.slice(0, 4);
+}
+
+function insertProductHero(id, kind){
   const pb = $("#pbody"); if (!pb) return;
-  if (pb.querySelector(".p-photo")) return;
+  pb.querySelector(".p-hero")?.remove();
+  pb.querySelector(".p-photo")?.remove();
+  pb.querySelector(".p-stack-hint")?.remove();
   const n = (kind === "product") ? prodById[id] : nodeById[id];
   if (!n) return;
   const cat = catOf(id);
+  const imgUrl = (kind === "product") ? productImageUrl(id) : null;
   const symId = "#icon-" + (kind === "node" ? iconKey(nodeById[id]) :
-    iconKey(nodeById[prodById[id].family] || {category: prodById[id].category}));
-  const photo = document.createElement("div");
-  photo.className = "p-photo";
-  photo.innerHTML = `
-    <svg viewBox="0 0 24 24" style="color:${cat?CATS[cat].color:"#fff"}"><use href="${symId}"/></svg>
-    <div class="p-photo-cat">${cat?CATS[cat].label:""}</div>
-  `;
-  // Insert before .p-name
+    iconKey({ _kind: "product", _productRef: prodById[id], id }));
+  const layer = (kind === "product") ? productLayerLabel(id) : null;
+
+  const hero = document.createElement("div");
+  hero.className = "p-hero";
+  if (imgUrl){
+    hero.innerHTML = `
+      <div class="p-hero-fallback" aria-hidden="true"><svg viewBox="0 0 24 24" style="color:${cat ? CATS[cat].color : "#fff"}"><use href="${symId}"/></svg></div>
+      <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(n.name)}" loading="lazy"
+           onerror="this.style.display='none'"/>
+      <div class="p-hero-scrim"></div>
+      <div class="p-hero-meta">
+        ${layer ? `<span class="p-hero-layer">${escapeHtml(layer)}</span>` : "<span></span>"}
+        <span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span>
+      </div>`;
+  } else {
+    hero.innerHTML = `
+      <div class="p-hero-fallback"><svg viewBox="0 0 24 24" style="color:${cat ? CATS[cat].color : "#fff"}"><use href="${symId}"/></svg></div>
+      <div class="p-hero-scrim"></div>
+      <div class="p-hero-meta">
+        ${layer ? `<span class="p-hero-layer">${escapeHtml(layer)}</span>` : "<span></span>"}
+        <span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span>
+      </div>`;
+  }
   const nameEl = pb.querySelector(".p-name");
-  if (nameEl) pb.insertBefore(photo, nameEl);
+  if (nameEl) pb.insertBefore(hero, nameEl);
+  else pb.prepend(hero);
+
+  if (kind === "product"){
+    const companions = productCompanions(id);
+    if (companions.length){
+      const hint = document.createElement("div");
+      hint.className = "p-stack-hint";
+      hint.innerHTML = `<strong>In the room stack</strong>` +
+        companions.map(c => `<span class="p-stack-chip" onclick="showProductDetail('${c.id}')">${escapeHtml(compositionShortName(c))}</span>`).join("");
+      const desc = pb.querySelector(".p-desc");
+      if (desc) desc.parentNode.insertBefore(hint, desc);
+      else pb.insertBefore(hint, hero.nextSibling);
+    }
+  }
 }
+function insertPhotoPlaceholder(id, kind){ insertProductHero(id, kind); }
+window.insertProductHero = insertProductHero;
 function insertTierBadge(nodeId){
   const t = TIERS[nodeId]; if (!t) return;
   const pb = $("#pbody"); if (!pb || pb.querySelector(".p-tier")) return;
@@ -9777,6 +10090,7 @@ function openShortcuts(){
    ════════════════════════════════════════════════════════════════════════*/
 function boot(){
   loadDcloudLinks().then(refreshDcloudPanelIfOpen);
+  loadProductImagesManifest();
   buildPlansMenu();
   buildExportMenu();
   buildProfileBox();

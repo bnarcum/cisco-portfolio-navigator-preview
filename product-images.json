@@ -1,0 +1,40 @@
+{
+  "defaults": {
+    "basePath": "assets/products"
+  },
+  "products": {
+    "room-bar": "assets/products/room-bar.svg",
+    "room-bar-pro": "assets/products/room-bar-pro.svg",
+    "board-pro-55": "assets/products/board-pro-55.svg",
+    "board-pro-75": "assets/products/board-pro-75.svg",
+    "board-pro-g2": "assets/products/board-pro-g2.svg",
+    "room-kit-mini": "assets/products/room-kit-mini.svg",
+    "room-kit-eq": "assets/products/room-kit-eq.svg",
+    "room-kit-pro": "assets/products/room-kit-pro.svg",
+    "codec-plus": "assets/products/codec-plus.svg",
+    "codec-pro": "assets/products/codec-pro.svg",
+    "quad-camera": "assets/products/quad-camera.svg",
+    "ptz-4k": "assets/products/ptz-4k.svg",
+    "room-navigator": "assets/products/room-navigator.svg",
+    "sx10": "assets/products/sx10.svg",
+    "sx20": "assets/products/sx20.svg",
+    "sx80": "assets/products/sx80.svg",
+    "mx700": "assets/products/mx700.svg",
+    "mx800": "assets/products/mx800.svg"
+  },
+  "layers": {
+    "room-bar": "capture",
+    "room-bar-pro": "capture",
+    "board-pro-55": "display",
+    "board-pro-75": "display",
+    "board-pro-g2": "display",
+    "room-kit-mini": "capture",
+    "room-kit-eq": "compute",
+    "room-kit-pro": "compute",
+    "codec-plus": "compute",
+    "codec-pro": "compute",
+    "quad-camera": "capture",
+    "ptz-4k": "capture",
+    "room-navigator": "control"
+  }
+}
