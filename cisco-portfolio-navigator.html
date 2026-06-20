@@ -2721,6 +2721,34 @@ const ICON_DEFS = `
   <circle cx="12" cy="15" r="1.4" fill="rgba(0,0,0,0.5)"/>
   <path d="M8 10l4 5M16 10l-4 5M8 10h8" stroke="rgba(0,0,0,0.5)" stroke-width="1.1" fill="none"/>
 </symbol>
+<symbol id="icon-camera" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M4 8.5h3.2L9 6h6l1.8 2.5H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"/>
+  <circle cx="12" cy="13" r="4" fill="rgba(0,0,0,0.45)"/>
+  <circle cx="12" cy="13" r="2.2" fill="rgba(255,255,255,0.35)"/>
+</symbol>
+<symbol id="icon-board" viewBox="0 0 24 24" fill="currentColor">
+  <rect x="4" y="3" width="16" height="11" rx="1.2"/>
+  <rect x="6" y="5.5" width="12" height="6.5" rx="0.6" fill="rgba(0,0,0,0.4)"/>
+  <path d="M10 14h4v2.5H10z"/><path d="M8 16.5h8v3.5H8z"/>
+</symbol>
+<symbol id="icon-codec" viewBox="0 0 24 24" fill="currentColor">
+  <rect x="3" y="7" width="18" height="10" rx="1.4"/>
+  <circle cx="8" cy="12" r="1.3" fill="rgba(0,0,0,0.45)"/>
+  <circle cx="12" cy="12" r="1.3" fill="rgba(0,0,0,0.45)"/>
+  <circle cx="16" cy="12" r="1.3" fill="rgba(0,0,0,0.45)"/>
+  <rect x="5" y="9" width="14" height="1.2" rx="0.4" fill="rgba(0,0,0,0.25)"/>
+</symbol>
+<symbol id="icon-videobar" viewBox="0 0 24 24" fill="currentColor">
+  <rect x="2" y="9" width="20" height="6" rx="1.2"/>
+  <circle cx="12" cy="12" r="2.2" fill="rgba(0,0,0,0.45)"/>
+  <rect x="4" y="10.2" width="2" height="3.6" rx="0.4" fill="rgba(0,0,0,0.3)"/>
+  <rect x="18" y="10.2" width="2" height="3.6" rx="0.4" fill="rgba(0,0,0,0.3)"/>
+</symbol>
+<symbol id="icon-touch" viewBox="0 0 24 24" fill="currentColor">
+  <rect x="6" y="3" width="12" height="18" rx="1.6"/>
+  <rect x="8" y="5.5" width="8" height="11" rx="0.8" fill="rgba(0,0,0,0.4)"/>
+  <circle cx="12" cy="18.5" r="0.9" fill="rgba(0,0,0,0.45)"/>
+</symbol>
 <symbol id="icon-product" viewBox="0 0 24 24" fill="currentColor">
   <rect x="4" y="5" width="16" height="14" rx="1.6"/>
   <rect x="7" y="8" width="10" height="2" rx="0.5" fill="rgba(0,0,0,0.45)"/>
@@ -2730,10 +2758,50 @@ const ICON_DEFS = `
 `;
 defs.node().insertAdjacentHTML("beforeend", ICON_DEFS);
 
+function compositionShortName(p){
+  let n = (p?.name || "").replace(/^Cisco\s+/i, "");
+  n = n.replace(/^TelePresence\s+/i, "TP ");
+  n = n.replace(/^Webex\s+/i, "");
+  if (n.length > 26) n = n.slice(0, 24) + "…";
+  return n;
+}
+
+function productIconKey(p){
+  const id = (p?.id || "").toLowerCase();
+  const name = (p?.name || "").toLowerCase();
+  const s = id + " " + name;
+  if (/room-bar|video-bar/.test(s)) return "videobar";
+  if (/board-pro|board pro/.test(s)) return "board";
+  if (/quad-camera|ptz|camera/.test(s)) return "camera";
+  if (/room-kit|codec|room kit/.test(s)) return "codec";
+  if (/room-navigator|navigator/.test(s)) return "touch";
+  if (/telepresence|\bsx\d|\bmx\d|mx700|mx800/.test(s)) return "video";
+  if (/desk-pro|desk mini|desk phone|deskphone|9811|8821|9841|9861|phone/.test(s)) return "deskphone";
+  if (/headset/.test(s)) return "headset";
+  if (/access point|wireless|917|913|912|910|916/.test(s)) return "wifi";
+  if (/catalyst|switch|9200|9300|9400|9600|meraki.*switch|nexus/.test(s)) return "switch";
+  if (/router|isr|asr|8000|c8000|secure-router/.test(s)) return "router";
+  if (/firewall|ftd|asa|firepower|hypershield/.test(s)) return "shield";
+  if (/ucs|server|blade|c220|c240|hyperflex/.test(s)) return "server";
+  if (/splunk|thousandeyes|appdynamics|fso/.test(s)) return "chart-line";
+  const cat = p?.category;
+  if (cat === "collaboration") return "video";
+  if (cat === "networking") return "switch";
+  if (cat === "security") return "shield";
+  if (cat === "computing") return "server";
+  if (cat === "observability") return "chart-line";
+  return "product";
+}
+
 function iconKey(n) {
   // Synthetic node overrides used in Overview / Composition view modes.
   if (n._iconKey) return n._iconKey;
-  if (n._kind === "product") return "product";
+  if (n._kind === "product"){
+    if (n._productRef) return productIconKey(n._productRef);
+    const p = prodById[n.id];
+    if (p) return productIconKey(p);
+    return "product";
+  }
   const id = n.id;
   // Networking
   if (/^(catalyst-access|catalyst-core|meraki-switches|nexus|nexus-one)$/.test(id)) return "switch";
@@ -2835,9 +2903,59 @@ function buildNodeGroup(sel){
     .style("color", "#ffffff")
     .style("pointer-events", "none");
   sel.append("text").attr("class","nl")
-    .attr("y", d => d._r + 14).text(d => d.name)
+    .attr("y", d => d._r + 14).text(d => d._shortName || d.name)
     .style("font-size","10px").style("fill","#525E6C")
     .style("text-anchor","middle").style("pointer-events","none");
+}
+
+function applyCompositionNodeStyles(){
+  if (viewMode !== "composition" || !ndEl) return;
+  ndEl.select(".mc")
+    .attr("fill-opacity", d => {
+      if (d._kind === "family") return 0.95;
+      if (d._status === "eol") return 0.42;
+      if (d._status === "eos") return 0.62;
+      return 0.92;
+    })
+    .attr("stroke", d => {
+      if (d._status === "eol") return "#ef4444";
+      if (d._status === "eos") return "#FF9000";
+      if (d._kind === "family") return "#ffffff";
+      return "transparent";
+    })
+    .attr("stroke-width", d => (d._status && d._status !== "current") || d._kind === "family" ? 2 : 0);
+  ndEl.select(".gr")
+    .attr("fill-opacity", d => d._kind === "family" ? 0.28 : d._status === "eol" ? 0.08 : 0.12);
+  ndEl.select("text.nl")
+    .text(d => d._shortName || d.name)
+    .attr("y", d => d._r + (d._kind === "family" ? 16 : 13))
+    .style("font-size", d => d._kind === "family" ? "11px" : "9.5px")
+    .style("font-weight", d => d._kind === "family" ? "700" : "500")
+    .style("fill", d => {
+      if (d._kind === "family") return "#ffffff";
+      if (d._status === "eol") return "#b89098";
+      if (d._status === "eos") return "#c9a060";
+      return "#c8d2dc";
+    });
+  if (lviz){
+    lviz.attr("stroke", d => d.type === "succession" ? "#a855f7" : "#4a5568")
+      .attr("stroke-opacity", d => d.type === "succession" ? 0.42 : 0.5)
+      .attr("stroke-width", d => d.type === "succession" ? 1.3 : 1)
+      .attr("stroke-dasharray", d => d.type === "succession" ? "4 4" : null);
+  }
+}
+
+function updateCompositionHint(){
+  const hint = document.getElementById("hint");
+  if (!hint) return;
+  if (viewMode !== "composition" || !viewFocus){
+    hint.textContent = "Scroll to zoom · Drag to pan · Click node for details";
+    return;
+  }
+  const prods = PRODUCTS.filter(p => p.family === viewFocus);
+  const cur = prods.filter(p => p.status === "current").length;
+  const leg = prods.length - cur;
+  hint.textContent = `${cur} current${leg ? ` · ${leg} legacy` : ""} · Click a product for details · Purple dashed = upgrade path · Esc to go back`;
 }
 
 // ── Rebind selections to current viewNodes / viewLinks and restart simulation.
@@ -2890,9 +3008,9 @@ function rebindGraph(opts){
             .on("drag",(ev,d)=>{ d.fx=ev.x; d.fy=ev.y; })
             .on("end",(ev,d)=>{
               if(!ev.active) sim.alphaTarget(0);
-              // In Composition mode keep the central family pinned at origin.
               if (d._pinned) { d.fx = 0; d.fy = 0; }
-              else            { d.fx = d.fy = null; }
+              else if (d._orbitFixed && viewMode === "composition") { d.fx = d._ox; d.fy = d._oy; d.x = d._ox; d.y = d._oy; }
+              else { d.fx = d.fy = null; }
             }))
           .on("click",(ev,d)=>{
             ev.stopPropagation();
@@ -2928,11 +3046,18 @@ function rebindGraph(opts){
   // Refresh dynamic attributes on update — needed when a node's role
   // changes between modes (e.g. family in Families vs Composition).
   ndEl.select("use.icn").attr("href", d => "#icon-" + iconKey(d));
-  ndEl.select("text.nl").text(d => d.name);
+  ndEl.select("text.nl").text(d => d._shortName || d.name);
+  applyCompositionNodeStyles();
+  updateCompositionHint();
 
   sim.nodes(viewNodes);
   sim.force("link").links(viewLinks);
-  if (restart) sim.alpha(0.85).restart();
+  if (restart){
+    if (viewMode === "composition"){
+      sim.alpha(0);
+      for (let i = 0; i < 3; i++) sim.tick();
+    } else sim.alpha(0.85).restart();
+  }
   if (typeof watchDirectNodeClicks === "function") watchDirectNodeClicks();
 }
 
@@ -3126,7 +3251,8 @@ function buildAllProductsView(){
   const productNodes = PRODUCTS.map(p => ({
     id: p.id, name: p.name, category: p.category,
     _kind: "product", _r: 7,
-    _productRef: p, _family: p.family
+    _productRef: p, _family: p.family,
+    _iconKey: productIconKey(p)
   }));
   // Family-to-family edges (preserve the original adjacency map).
   // IMPORTANT: D3's link force mutates LINKS in place, replacing string IDs
@@ -3160,33 +3286,64 @@ function buildCompositionView(familyId){
   const fam = nodeById[familyId];
   if (!fam) return { nodes:[], links:[] };
   const products = PRODUCTS.filter(p => p.family === familyId);
+  const current = products.filter(p => p.status === "current");
+  const legacy = products.filter(p => p.status !== "current")
+    .sort((a, b) => (a.status === "eos" ? 0 : 1) - (b.status === "eos" ? 0 : 1));
+
   const center = Object.assign({}, fam, {
     _kind: "family",
-    _r: 38,
+    _r: 42,
     _pinned: true,
-    fx: 0, fy: 0,
-    _badge: String(products.length)
+    fx: 0, fy: 0, x: 0, y: 0,
+    _badge: String(products.length),
+    _shortName: fam.name.replace(/^Cisco\s+/i, "")
   });
-  const productNodes = products.map(p => ({
-    id: p.id,
-    name: p.name,
-    category: p.category,
-    _kind: "product",
-    _r: p.status === "current" ? 14 : 12,
-    _productRef: p,
-    _family: p.family,
-    _iconKey: "product"
-  }));
+
+  const nodes = [center];
+  const placeOnRing = (items, radius) => {
+    if (!items.length) return;
+    const offset = -Math.PI / 2;
+    items.forEach((p, i) => {
+      const angle = offset + (2 * Math.PI * i) / items.length;
+      const fx = Math.cos(angle) * radius;
+      const fy = Math.sin(angle) * radius;
+      const isLegacy = p.status !== "current";
+      nodes.push({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        _kind: "product",
+        _r: isLegacy ? 11 : 15,
+        _productRef: p,
+        _family: p.family,
+        _iconKey: productIconKey(p),
+        _shortName: compositionShortName(p),
+        _status: p.status,
+        _orbitFixed: true,
+        _ox: fx, _oy: fy,
+        fx, fy, x: fx, y: fy
+      });
+    });
+  };
+
+  if (legacy.length && current.length){
+    placeOnRing(current, Math.max(145, 80 + current.length * 7));
+    placeOnRing(legacy, Math.max(78, 48 + legacy.length * 5));
+  } else {
+    const all = [...current, ...legacy];
+    const radius = Math.max(125, Math.min(215, 82 + all.length * 8.5));
+    placeOnRing(all, radius);
+  }
+
   const links = products.map(p => ({
     source: familyId, target: p.id, type: "composition", label: "contains"
   }));
-  // Succession edges between products of the same family.
   products.forEach(p => {
     if (p.successor && products.some(q => q.id === p.successor)){
       links.push({ source: p.id, target: p.successor, type: "succession", label: "replaced by" });
     }
   });
-  return { nodes: [center, ...productNodes], links };
+  return { nodes, links };
 }
 
 // ══════════════════════════════════════
@@ -3641,6 +3798,7 @@ function applyViewLevel(mode, opts){
   // Update UI surfaces.
   updateViewModeUI();
   updateBreadcrumb();
+  updateCompositionHint();
 
   // Run the appropriate post-mode filter pass.
   if (mode === "families" || mode === "all-products") applyFilters();
@@ -3663,7 +3821,7 @@ function applyViewLevel(mode, opts){
   setTimeout(() => {
     const {w,h} = getDims();
     const scale = mode === "overview"     ? 0.95
-               : mode === "composition"   ? 1.05
+               : mode === "composition"   ? Math.max(0.72, Math.min(1.05, 1.15 - (viewNodes.length || 0) * 0.012))
                : mode === "all-products"  ? 0.50
                :                            0.78;
     svg.transition().duration(prev === mode ? 0 : 550)
@@ -3678,9 +3836,9 @@ function configureForcesForMode(mode){
     sim.force("collide", d3.forceCollide(d => d._r + 60).strength(0.95));
     sim.force("link").distance(280).strength(0.15);
   } else if (mode === "composition"){
-    sim.force("charge",  d3.forceManyBody().strength(-420));
-    sim.force("collide", d3.forceCollide(d => d._r + 18).strength(0.95));
-    sim.force("link").distance(d => d.type === "succession" ? 100 : 130).strength(0.6);
+    sim.force("charge",  d3.forceManyBody().strength(0));
+    sim.force("collide", d3.forceCollide(0));
+    sim.force("link").distance(() => 1).strength(0);
   } else if (mode === "all-products"){
     // Lighter forces tuned for ~350 nodes. Products stick close to their
     // family via short "composition" links, families spread out via charge.
@@ -5202,7 +5360,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.7.10";
+const APP_VERSION   = "2.8.0";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5493,6 +5651,13 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.8.0", date:"2026-06-17", items:[
+    "Composition view — fixed orbit layout (current outer ring, legacy inner), product-specific icons, short readable labels, and status styling for EOL/EOS.",
+    "All-products mode — product nodes use descriptive icons by form factor and category."
+  ]},
+  {ver:"2.7.10", date:"2026-06-17", items:[
+    "Product-specific dCloud demos (e.g. Room Kit Pro G2) only appear on matching product pages — not every sibling in the family."
+  ]},
   {ver:"2.7.9", date:"2026-06-17", items:[
     "dCloud panel only appears when the open product or family matches a demo entry — primary flag no longer shows demos on unrelated products."
   ]},
