@@ -160,6 +160,17 @@
     #pcl:hover{border-color:var(--accent);color:var(--accent)}
     .p-badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;
       font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+    .p-pillar{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;
+      font-size:10px;font-weight:700;letter-spacing:.02em;margin-left:6px;border:1px solid var(--pc, var(--border));
+      background:color-mix(in srgb, var(--pc, #888) 18%, transparent);color:var(--text)}
+    .pillar-guides .pillar-zone{stroke-width:1.2}
+    .pillar-guides .pillar-label{font-size:11px;font-weight:600;fill:var(--subtle);text-anchor:middle;letter-spacing:.04em;text-transform:uppercase;opacity:.85}
+    .pillar-cov{margin:10px 0 6px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px}
+    .pillar-cov-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--subtle);margin-bottom:6px}
+    .pillar-cov-row{display:flex;flex-wrap:wrap;gap:6px}
+    .pillar-pill{font-size:10px;font-weight:600;padding:3px 8px;border-radius:12px;border:1px solid color-mix(in srgb, var(--pc) 35%, var(--border));
+      color:var(--subtle);opacity:.55}
+    .pillar-pill.on{background:color-mix(in srgb, var(--pc) 22%, transparent);color:var(--text);opacity:1;border-color:color-mix(in srgb, var(--pc) 55%, var(--border))}
     .p-eol-banner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
       border-radius:8px;padding:10px 12px;margin-bottom:14px}
     .p-eos-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);
@@ -692,6 +703,70 @@ const CATS = {
   computing:     {label:"Computing",     color:"#0A60FF"},
   observability: {label:"Observability", color:"#FF9000"}
 };
+
+// ── One Cisco 3-pillar strategy (Dec 2025 deck) ─────────────────────────────
+const ONE_CISCO = {
+  headline: "Cisco powers how people and technology work together across the physical and digital worlds",
+  connectivityLabel: "Secure global connectivity",
+  aiLabel: "Accelerated by Cisco AI",
+  pillars: [
+    {
+      id: "ai-dc",
+      label: "AI-ready data centers",
+      shortLabel: "AI-ready DC",
+      promise: "Transform data centers to power AI workloads anywhere",
+      color: "#0A60FF",
+      icon: "chip",
+      anchor: { x: -240, y: -130 }
+    },
+    {
+      id: "workplaces",
+      label: "Future-proofed workplaces",
+      shortLabel: "Workplaces",
+      promise: "Modernize everywhere people and technology work",
+      color: "#2dce5c",
+      icon: "video",
+      anchor: { x: 240, y: -130 }
+    },
+    {
+      id: "resilience",
+      label: "Digital resilience",
+      shortLabel: "Resilience",
+      promise: "Securely up and running through any disruption",
+      color: "#FF9000",
+      icon: "shield-network",
+      anchor: { x: 0, y: 200 }
+    }
+  ],
+  connectivity: {
+    id: "connectivity",
+    label: "Secure global connectivity",
+    shortLabel: "Connectivity",
+    color: "#02C8FF",
+    icon: "globe",
+    anchor: { x: 0, y: 30 },
+    families: [
+      "sdwan", "meraki-mx", "isr-routers", "wan-routers", "secure-routers",
+      "secure-access", "duo", "umbrella", "ise", "catalyst-center"
+    ]
+  },
+  aiAccelerated: new Set([
+    "ai-defense", "silicon-one", "nexus-one", "hypershield", "catalyst-center",
+    "nexus", "room-systems", "webex-app", "webex-cc"
+  ])
+};
+
+const PILLAR_BY_ID = Object.fromEntries(ONE_CISCO.pillars.map(p => [p.id, p]));
+const CONNECTIVITY_SET = new Set(ONE_CISCO.connectivity.families);
+const AI_DC_SET = new Set([
+  "nexus", "aci", "nexus-one", "silicon-one", "ucs", "hyperflex", "intersight"
+]);
+const WORKPLACES_SET = new Set([
+  "webex-app", "webex-meetings", "webex-calling", "webex-cc", "webex-connect",
+  "room-systems", "desk-devices", "ip-phones", "conf-phones", "cisco-headsets",
+  "catalyst-access", "catalyst-core", "catalyst-wireless",
+  "meraki-switches", "meraki-wireless", "industrial-eth", "thousandeyes"
+]);
 
 const NODES = [
   // NETWORKING
@@ -2400,6 +2475,46 @@ const prodById = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
 // Assign category to products from parent node
 PRODUCTS.forEach(p => { p.category = nodeById[p.family]?.category || "networking"; });
 
+// One Cisco family → pillar mapping
+const FAMILY_PILLAR = {};
+NODES.forEach(n => {
+  if (AI_DC_SET.has(n.id)) FAMILY_PILLAR[n.id] = "ai-dc";
+  else if (WORKPLACES_SET.has(n.id)) FAMILY_PILLAR[n.id] = "workplaces";
+  else if (CONNECTIVITY_SET.has(n.id)) FAMILY_PILLAR[n.id] = "connectivity";
+  else if (n.category === "security" || n.category === "observability") FAMILY_PILLAR[n.id] = "resilience";
+  else if (n.category === "collaboration") FAMILY_PILLAR[n.id] = "workplaces";
+  else if (n.category === "computing") FAMILY_PILLAR[n.id] = "ai-dc";
+  else FAMILY_PILLAR[n.id] = "connectivity";
+});
+function familyPillar(familyId){ return FAMILY_PILLAR[familyId] || "resilience"; }
+function pillarMeta(pillarId){
+  if (pillarId === "connectivity") return ONE_CISCO.connectivity;
+  return PILLAR_BY_ID[pillarId] || null;
+}
+function pillarColorForFamily(familyId){
+  const m = pillarMeta(familyPillar(familyId));
+  return m ? m.color : catColor(nodeById[familyId]?.category);
+}
+function pillarAnchorForFamily(familyId){
+  const pid = familyPillar(familyId);
+  const meta = pillarMeta(pid);
+  if (!meta) return { x: 0, y: 0 };
+  const a = meta.anchor;
+  if (pid === "connectivity"){
+    const idx = ONE_CISCO.connectivity.families.indexOf(familyId);
+    const spread = (idx >= 0 ? idx - 4.5 : 0) * 28;
+    return { x: a.x + spread, y: a.y + (idx % 2 ? 12 : -8) };
+  }
+  const bucket = NODES.filter(n => familyPillar(n.id) === pid);
+  const idx = bucket.findIndex(n => n.id === familyId);
+  const ring = 55 + Math.min(40, bucket.length * 2);
+  const angle = idx >= 0 ? (idx / Math.max(bucket.length, 1)) * Math.PI * 1.35 - Math.PI * 0.675 : 0;
+  return { x: a.x + Math.cos(angle) * ring, y: a.y + Math.sin(angle) * ring * 0.72 };
+}
+function familiesInPillar(pillarId){
+  return NODES.filter(n => familyPillar(n.id) === pillarId).length;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // PLANNER DATA
 // ═══════════════════════════════════════════════════════════════
@@ -2504,6 +2619,33 @@ let viewMode  = "families";   // "overview" | "families" | "composition" | "spat
 let viewFocus = null;         // family id when in composition mode
 let viewNodes = NODES.slice();
 let viewLinks = LINKS.slice();
+
+function usePillarLayout(){
+  return viewMode === "families"
+    && activeCats.size === Object.keys(CATS).length
+    && !activeUC && !activeInd;
+}
+function seedPillarLayout(nodes){
+  if (!usePillarLayout()) return;
+  nodes.forEach(n => {
+    if (!nodeById[n.id]) return;
+    const a = pillarAnchorForFamily(n.id);
+    n.x = a.x + (Math.random() - 0.5) * 18;
+    n.y = a.y + (Math.random() - 0.5) * 18;
+    n.fx = null; n.fy = null;
+  });
+}
+function forcePillar(alpha){
+  if (!usePillarLayout()) return;
+  const k = 0.12;
+  for (const node of viewNodes){
+    if (node.fx != null || node.fy != null) continue;
+    if (!nodeById[node.id]) continue;
+    const a = pillarAnchorForFamily(node.id);
+    node.vx += (a.x - node.x) * k * alpha;
+    node.vy += (a.y - node.y) * k * alpha;
+  }
+}
 
 // D3 Graph
 const svgEl = document.getElementById("gs");
@@ -2849,6 +2991,7 @@ const sim = d3.forceSimulation(NODES)
   .force("charge", d3.forceManyBody().strength(-560))
   .force("center", d3.forceCenter(0,0))
   .force("collide", d3.forceCollide(d => d._r + 30).strength(0.85))
+  .force("pillar", forcePillar)
   .alphaDecay(0.018);
 
 const lyr = root.append("g");
@@ -2869,11 +3012,11 @@ function linkKey(l){
 function buildNodeGroup(sel){
   const inner = sel.append("g").attr("class", "node-scaler");
   inner.append("circle").attr("class","gr")
-    .attr("r", d => d._r + 9).attr("fill", d => catColor(d.category))
+    .attr("r", d => d._r + 9).attr("fill", d => d._pillarColor || catColor(d.category))
     .attr("fill-opacity", 0).attr("filter","url(#glow)");
   inner.append("circle").attr("class","mc")
     .attr("r", d => d._r)
-    .attr("fill", d => d._hasImage ? MATRIX_NODE_FILL : catColor(d.category))
+    .attr("fill", d => d._hasImage ? MATRIX_NODE_FILL : (d._pillarColor || catColor(d.category)))
     .attr("fill-opacity", d => d._hasImage ? 1 : 0.88)
     .attr("stroke", d => d._hasImage ? MATRIX_NODE_RING : "transparent")
     .attr("stroke-width", d => d._hasImage ? 1.4 : 2.5);
@@ -3176,6 +3319,29 @@ function updateCompositionHint(){
   hint.textContent = `${cur} current${leg ? ` · ${leg} EoL` : ""} · Click a product for details · Purple dashed = upgrade path · Esc to go back`;
 }
 
+function updatePillarGuides(){
+  const show = usePillarLayout();
+  lyr.select("g.pillar-guides").remove();
+  if (!show) return;
+  const g = lyr.insert("g", ":first-child").attr("class", "pillar-guides").style("pointer-events", "none");
+  const zones = [
+    ...ONE_CISCO.pillars.map(p => ({ id: p.id, label: p.shortLabel, color: p.color, anchor: p.anchor, rx: 210, ry: 125 })),
+    { id: "connectivity", label: ONE_CISCO.connectivity.shortLabel, color: ONE_CISCO.connectivity.color,
+      anchor: ONE_CISCO.connectivity.anchor, rx: 300, ry: 48 }
+  ];
+  zones.forEach(z => {
+    const zg = g.append("g").attr("class", "zone");
+    zg.append("ellipse").attr("class", "pillar-zone")
+      .attr("cx", z.anchor.x).attr("cy", z.anchor.y)
+      .attr("rx", z.rx).attr("ry", z.ry)
+      .attr("fill", z.color).attr("fill-opacity", 0.05)
+      .attr("stroke", z.color).attr("stroke-opacity", 0.2);
+    zg.append("text").attr("class", "pillar-label")
+      .attr("x", z.anchor.x).attr("y", z.anchor.y - z.ry + 14)
+      .text(z.label);
+  });
+}
+
 // ── Rebind selections to current viewNodes / viewLinks and restart simulation.
 //    Called by applyViewLevel() and any other code that mutates the view set.
 function rebindGraph(opts){
@@ -3232,7 +3398,9 @@ function rebindGraph(opts){
             }))
           .on("click",(ev,d)=>{
             ev.stopPropagation();
-            if (d._kind === "category"){
+            if (d._kind === "pillar"){
+              applyViewLevel("families");
+            } else if (d._kind === "category"){
               applyViewLevel("families", { focusCategory: d.category });
             } else if (d._kind === "product"){
               window.showProductDetail(d.id);
@@ -3242,9 +3410,8 @@ function rebindGraph(opts){
           })
           .on("dblclick",(ev,d)=>{
             ev.stopPropagation();
-            // Double-click family or category bubble to drill into composition.
-            if (d._kind === "category") return;       // already handled by single click
-            if (d._kind === "product")  return;        // products open detail panel only
+            if (d._kind === "category" || d._kind === "pillar") return;
+            if (d._kind === "product")  return;
             // Family node — drill in.
             if (PRODUCTS.some(p => p.family === d.id)){
               applyViewLevel("composition", { focusFamily: d.id });
@@ -3292,6 +3459,7 @@ function rebindGraph(opts){
   if (viewMode === "composition") applyCompositionNodeStyles();
   else resetStandardLabelStyles();
   updateCompositionHint();
+  updatePillarGuides();
 
   sim.nodes(viewNodes);
   sim.force("link").links(viewLinks);
@@ -3427,53 +3595,32 @@ window.toggleConnectionDepth = function(nodeId){
 // VIEW LEVELS — Overview / Families / Composition
 // ═══════════════════════════════════════════════════════════════
 
-// ── Synthesize Overview-mode nodes/links: one bubble per category.
-const OVERVIEW_ICONS = {
-  networking: "fabric",
-  security: "shield-network",
-  collaboration: "video",
-  computing: "chip",
-  observability: "chart-line"
-};
-
+// ── Synthesize Overview-mode nodes/links: One Cisco 3-pillar hubs.
 function buildOverviewView(){
-  const cats = Object.keys(CATS);
-  const nodes = cats.map(cat => {
-    const familiesInCat   = NODES.filter(n => n.category === cat);
-    const productsInCat   = PRODUCTS.filter(p => p.category === cat);
-    return {
-      id: "cat-" + cat,
-      _iconKey: OVERVIEW_ICONS[cat],
-      name: CATS[cat].label,
-      category: cat,
-      _kind: "category",
-      _r: 52,
-      _badge: String(familiesInCat.length),
-      _familyCount: familiesInCat.length,
-      _productCount: productsInCat.length
-    };
-  });
-  // Aggregate inter-category link counts so we can draw connections between bubbles.
-  const pair = new Map();
-  LINKS.forEach(l => {
-    const sc = nodeById[sid(l)]?.category, tc = nodeById[tid(l)]?.category;
-    if (!sc || !tc || sc === tc) return;
-    const key = [sc,tc].sort().join("|");
-    pair.set(key, (pair.get(key)||0) + 1);
-  });
-  const links = [];
-  pair.forEach((count,key) => {
-    const [a,b] = key.split("|");
-    if (count < 1) return;
-    links.push({ source:"cat-"+a, target:"cat-"+b, type:"adjacent", label:`${count} connection${count === 1 ? "" : "s"}` });
-  });
-  // Seed a compact ring so all category bubbles start grouped (Collaboration
-  // had no links at the old ≥2 threshold and was repelled to the edge).
-  const ringR = 140;
-  nodes.forEach((n, i) => {
-    const a = (i / nodes.length) * 2 * Math.PI - Math.PI / 2;
-    n.x = Math.cos(a) * ringR;
-    n.y = Math.sin(a) * ringR;
+  const nodes = ONE_CISCO.pillars.map(p => ({
+    id: "pillar-" + p.id,
+    name: p.shortLabel,
+    category: p.id === "ai-dc" ? "computing" : p.id === "workplaces" ? "collaboration" : "security",
+    _kind: "pillar",
+    _pillarId: p.id,
+    _pillarColor: p.color,
+    _iconKey: p.icon,
+    _r: p.id === "resilience" ? 58 : 52,
+    _badge: String(familiesInPillar(p.id)),
+    desc: p.promise,
+    promise: p.promise
+  }));
+  const links = [
+    { source: "pillar-ai-dc", target: "pillar-workplaces", type: "adjacent", label: ONE_CISCO.connectivityLabel },
+    { source: "pillar-ai-dc", target: "pillar-resilience", type: "adjacent", label: "Security & observability" },
+    { source: "pillar-workplaces", target: "pillar-resilience", type: "adjacent", label: "Assurance & protection" }
+  ];
+  nodes.forEach(n => {
+    const p = PILLAR_BY_ID[n._pillarId];
+    n.x = p.anchor.x;
+    n.y = p.anchor.y;
+    n.fx = p.anchor.x;
+    n.fy = p.anchor.y;
   });
   return { nodes, links };
 }
@@ -4054,6 +4201,7 @@ function applyViewLevel(mode, opts){
     const counts = {};
     PRODUCTS.forEach(p => { if (productMatchesFilters(p)) counts[p.family] = (counts[p.family]||0) + 1; });
     viewNodes.forEach(n => { n._badge = counts[n.id] && counts[n.id] > 1 ? "+"+counts[n.id] : null; });
+    seedPillarLayout(viewNodes);
     if (opts.focusCategory){
       activeCats = new Set([opts.focusCategory]);
       document.querySelectorAll(".cp").forEach(b => {
@@ -4093,16 +4241,16 @@ function applyViewLevel(mode, opts){
 // ── Force-tuning per mode so each view feels right.
 function configureForcesForMode(mode){
   if (mode === "overview"){
-    sim.force("charge",  d3.forceManyBody().strength(-1400));
-    sim.force("collide", d3.forceCollide(d => d._r + 60).strength(0.95));
-    sim.force("link").distance(280).strength(0.15);
+    sim.force("charge",  d3.forceManyBody().strength(-200));
+    sim.force("collide", d3.forceCollide(d => d._r + 40).strength(0.95));
+    sim.force("link").distance(320).strength(0.08);
+    sim.force("pillar", null);
   } else if (mode === "composition"){
     sim.force("charge",  d3.forceManyBody().strength(0));
     sim.force("collide", d3.forceCollide(0));
     sim.force("link").distance(() => 1).strength(0);
+    sim.force("pillar", null);
   } else if (mode === "all-products"){
-    // Lighter forces tuned for ~350 nodes. Products stick close to their
-    // family via short "composition" links, families spread out via charge.
     sim.force("charge",  d3.forceManyBody().strength(d => d._kind === "family" ? -380 : -45));
     sim.force("collide", d3.forceCollide(d => d._r + 6).strength(0.9));
     sim.force("link").distance(d => {
@@ -4111,12 +4259,27 @@ function configureForcesForMode(mode){
       if (d.type === "direct")       return 180;
       return 240;
     }).strength(d => d.type === "composition" ? 0.9 : 0.25);
+    sim.force("pillar", null);
   } else {
-    sim.force("charge",  d3.forceManyBody().strength(-560));
-    sim.force("collide", d3.forceCollide(d => d._r + 30).strength(0.85));
+    const pillarLayout = usePillarLayout();
+    sim.force("charge",  d3.forceManyBody().strength(pillarLayout ? -400 : -560));
+    sim.force("collide", d3.forceCollide(d => d._r + (pillarLayout ? 22 : 30)).strength(0.85));
     sim.force("link")
-      .distance(d => d.type==="direct" ? 150 : 230)
-      .strength(d => d.type==="direct" ? 0.55 : 0.25);
+      .distance(d => {
+        if (pillarLayout){
+          const sp = familyPillar(sid(d)), tp = familyPillar(tid(d));
+          if (sp !== tp) return d.type === "direct" ? 115 : 165;
+        }
+        return d.type === "direct" ? 150 : 230;
+      })
+      .strength(d => {
+        if (pillarLayout){
+          const sp = familyPillar(sid(d)), tp = familyPillar(tid(d));
+          if (sp !== tp) return d.type === "direct" ? 0.62 : 0.32;
+        }
+        return d.type === "direct" ? 0.55 : 0.25;
+      });
+    sim.force("pillar", pillarLayout ? forcePillar : null);
   }
 }
 
@@ -4340,7 +4503,28 @@ function highlightStack() {
 
 // ── Detail Panel
 function showDetailPanel(d) {
+  if (d._kind === "pillar"){
+    const p = PILLAR_BY_ID[d._pillarId];
+    const connCount = familiesInPillar("connectivity");
+    document.getElementById("pbody").innerHTML = `
+      <div class="p-badge" style="background:${p.color};color:${d._pillarId === "ai-dc" ? "#fff" : "#000"}">One Cisco</div>
+      <div class="p-name">${p.label}</div>
+      <p class="p-desc">${p.promise}</p>
+      <div class="p-sec"><div class="p-sec-t">Portfolio families</div>
+        <p class="p-desc" style="margin:0">${d._badge} families mapped to this outcome · ${connCount} in ${ONE_CISCO.connectivityLabel}</p></div>
+      <div class="p-sec"><div class="p-sec-t">Strategy</div>
+        <p class="p-desc" style="margin:0">${ONE_CISCO.headline}</p></div>`;
+    const expBtn = document.createElement("button");
+    expBtn.className = "explore-btn";
+    expBtn.textContent = "Explore all families in this pillar →";
+    expBtn.addEventListener("click", () => applyViewLevel("families"));
+    document.getElementById("pbody").appendChild(expBtn);
+    document.getElementById("panel").classList.add("open");
+    return;
+  }
+
   const cat=CATS[d.category];
+  const pm = pillarMeta(familyPillar(d.id));
   const inStk=stack.has(d.id);
 
   // Find specific products that belong to this family (respect status/tier facets)
@@ -4363,7 +4547,10 @@ function showDetailPanel(d) {
   }
 
   document.getElementById("pbody").innerHTML = `
-    <div class="p-badge" style="background:${cat.color};color:${d.category==='computing'?'#fff':'#000'}">${cat.label}</div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:10px">
+      <div class="p-badge" style="background:${cat.color};color:${d.category==='computing'?'#fff':'#000'}">${cat.label}</div>
+      ${pm ? `<div class="p-pillar" style="--pc:${pm.color}">${pm.shortLabel || pm.label}</div>` : ""}
+    </div>
     <div class="p-name">${d.name}</div>
     <p class="p-desc">${d.desc}</p>
     ${prodsHtml}
@@ -4563,6 +4750,14 @@ function applyFilters() {
     badge.style.display="block";
   }
   else badge.style.display="none";
+  if (viewMode === "families"){
+    configureForcesForMode("families");
+    if (usePillarLayout() && vis.size === NODES.length){
+      seedPillarLayout(viewNodes);
+      sim.alpha(0.55).restart();
+    }
+    updatePillarGuides();
+  }
   refreshTimelineIfOpen();
   if (viewMode === "families" || viewMode === "composition") scheduleGraphFit(viewMode);
 }
@@ -4585,7 +4780,13 @@ function resetAll() {
 
 // ── Tooltip
 const tipEl=document.getElementById("tip");
-function showNodeTip(ev,d){ document.getElementById("tn").textContent=d.name; document.getElementById("tc").textContent=CATS[d.category].label; tipEl.style.display="block"; moveTip(ev); }
+function showNodeTip(ev,d){
+  document.getElementById("tn").textContent = d.name;
+  const tc = d._kind === "pillar" ? (d.promise || PILLAR_BY_ID[d._pillarId]?.label)
+    : (nodeById[d.id] ? (pillarMeta(familyPillar(d.id))?.label || CATS[d.category].label) : CATS[d.category].label);
+  document.getElementById("tc").textContent = tc;
+  tipEl.style.display = "block"; moveTip(ev);
+}
 function moveTip(ev){ const {w}=getDims(),x=ev.clientX+14,y=ev.clientY-10; tipEl.style.left=(x+240>w?x-254:x)+"px"; tipEl.style.top=y+"px"; }
 function hideTip(){ tipEl.style.display="none"; }
 
@@ -4803,8 +5004,33 @@ function getEffectiveNodeId(id) {
   return id;
 }
 
+function stackPillarCoverage(){
+  const eff = new Set([...stack].map(id => getEffectiveNodeId(id)));
+  const hit = { "ai-dc": false, workplaces: false, resilience: false, connectivity: false };
+  eff.forEach(id => { if (nodeById[id]) hit[familyPillar(id)] = true; });
+  return hit;
+}
+function renderPillarCoverage(){
+  let el = document.getElementById("pillar-cov");
+  if (!el){
+    el = document.createElement("div");
+    el.id = "pillar-cov";
+    el.className = "pillar-cov";
+    chipsEl.parentNode.insertBefore(el, chipsEl);
+  }
+  if (!stack.size){ el.innerHTML = ""; el.style.display = "none"; return; }
+  const hit = stackPillarCoverage();
+  const rows = [...ONE_CISCO.pillars, ONE_CISCO.connectivity];
+  el.style.display = "block";
+  el.innerHTML = `<div class="pillar-cov-t">One Cisco coverage</div>
+    <div class="pillar-cov-row">${rows.map(r =>
+      `<span class="pillar-pill ${hit[r.id] ? "on" : "off"}" style="--pc:${r.color}">${r.shortLabel}</span>`
+    ).join("")}</div>`;
+}
+
 function renderChips() {
   stackCntEl.textContent=`${stack.size} item${stack.size!==1?"s":""}`;
+  renderPillarCoverage();
   chipsEl.innerHTML="";
   [...stack].forEach(id=>{
     const isProd=stackItems.get(id)==="product";
@@ -5655,7 +5881,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.10.0";
+const APP_VERSION   = "2.11.0";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5946,6 +6172,11 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.11.0", date:"2026-06-20", items:[
+    "One Cisco — Overview rebuilt as 3 outcome pillars (AI-ready DC, Workplaces, Digital resilience) aligned to the Dec 2025 strategy deck.",
+    "Families view — pillar sector layout with connectivity spine when all categories are active; zone guides and cross-pillar link emphasis.",
+    "Account Planner — One Cisco coverage pills show which pillars your stack touches; family detail panel shows pillar badge."
+  ]},
   {ver:"2.10.0", date:"2026-06-20", items:[
     "Icons — replaced hand-drawn graph glyphs with Phosphor Icons Regular (unified style across Overview, Families, and product fallbacks)."
   ]},
