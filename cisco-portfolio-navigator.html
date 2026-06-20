@@ -222,7 +222,9 @@
       font-size:10px;font-weight:700;letter-spacing:.02em;margin-left:6px;border:1px solid var(--pc, var(--border));
       background:color-mix(in srgb, var(--pc, #888) 18%, transparent);color:var(--text)}
     .pillar-guides .zone-rect{stroke-width:1.5}
-    .pillar-guides .zone-label{font-size:12px;font-weight:600;fill:#e2e8f0;text-anchor:middle;letter-spacing:.02em}
+    .pillar-guides .zone-header image{pointer-events:none}
+    .pillar-guides .zone-title{font-size:15px;font-weight:600;fill:#02C8FF;letter-spacing:.01em}
+    .pillar-guides .zone-dim .zone-header{opacity:.42}
     .pillar-guides .zone-count{font-size:10px;font-weight:500;fill:#94a3b8;text-anchor:middle}
     .pillar-guides .zone-spine{stroke-dasharray:6 5;opacity:.55}
     .pillar-guides .zone-hit{cursor:pointer}
@@ -946,13 +948,13 @@ const PILLAR_LAYOUT = {
   zones: [
     { id: "ai-dc", label: "AI-ready data centers", shortLabel: "AI-ready DC",
       color: "#0A60FF", cx: -260, cy: -105, w: 480, h: 400,
-      contentInset: { left: 0.08, top: 0.16, right: 0.08, bottom: 0.10 } },
+      contentInset: { left: 0.08, top: 0.20, right: 0.08, bottom: 0.10 } },
     { id: "workplaces", label: "Future-proofed workplaces", shortLabel: "Workplaces",
       color: "#2dce5c", cx: 260, cy: -105, w: 520, h: 430,
-      contentInset: { left: 0.08, top: 0.16, right: 0.08, bottom: 0.10 } },
+      contentInset: { left: 0.08, top: 0.20, right: 0.08, bottom: 0.10 } },
     { id: "resilience", label: "Digital resilience", shortLabel: "Resilience",
       color: "#FF9000", cx: 0, cy: 288, w: 980, h: 320, gradient: true,
-      contentInset: { left: 0.06, top: 0.14, right: 0.06, bottom: 0.08 } }
+      contentInset: { left: 0.06, top: 0.20, right: 0.06, bottom: 0.08 } }
   ]
 };
 const PILLAR_ZONE_BY_ID = Object.fromEntries(PILLAR_LAYOUT.zones.map(z => [z.id, z]));
@@ -4263,6 +4265,48 @@ function updateCompositionHint(){
   hint.textContent = `${cur} current${leg ? ` · ${leg} EoL` : ""} · Click a product for details · Purple dashed = upgrade path · Esc to go back`;
 }
 
+function appendPillarZoneHeader(zg, z, x, y, w, opacity){
+  const iconSize = 32;
+  const gap = 12;
+  const padX = 20;
+  const padY = 16;
+  const accent = OVERVIEW_DECK.accent;
+  const headerG = zg.append("g").attr("class", "zone-header").style("pointer-events", "none");
+  const iconY = y + padY;
+  const centered = !!z.gradient;
+
+  if (centered){
+    const content = headerG.append("g");
+    const iconImg = content.append("image")
+      .attr("href", DECK_ICON_URI[z.id])
+      .attr("x", x + padX).attr("y", iconY)
+      .attr("width", iconSize).attr("height", iconSize)
+      .attr("opacity", opacity)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+    const textEl = content.append("text").attr("class", "zone-title")
+      .attr("x", x + padX + iconSize + gap).attr("y", iconY + iconSize / 2 + 5)
+      .attr("fill", accent).attr("fill-opacity", opacity)
+      .text(z.label);
+    const tb = textEl.node().getBBox();
+    const totalW = iconSize + gap + tb.width;
+    const contentX = x + (w - totalW) / 2;
+    iconImg.attr("x", contentX);
+    textEl.attr("x", contentX + iconSize + gap);
+  } else {
+    const contentX = x + padX;
+    headerG.append("image")
+      .attr("href", DECK_ICON_URI[z.id])
+      .attr("x", contentX).attr("y", iconY)
+      .attr("width", iconSize).attr("height", iconSize)
+      .attr("opacity", opacity)
+      .attr("preserveAspectRatio", "xMidYMid meet");
+    headerG.append("text").attr("class", "zone-title")
+      .attr("x", contentX + iconSize + gap).attr("y", iconY + iconSize / 2 + 5)
+      .attr("fill", accent).attr("fill-opacity", opacity)
+      .text(z.label);
+  }
+}
+
 function updatePillarGuides(){
   const show = usePillarLayout();
   lyr.select("g.pillar-guides").remove();
@@ -4315,13 +4359,7 @@ function updatePillarGuides(){
     const lz = laidOut[z.id] || layoutZoneForItems(z, items);
     const zg = g.append("g").attr("class", "zone zone-" + z.id + (dim ? " zone-dim" : "") + (hot ? " zone-hot" : ""));
     const x = lz.cx - lz.w / 2, y = lz.cy - lz.h / 2;
-    zg.append("text").attr("class", "zone-title")
-      .attr("x", x + 18).attr("y", y + 24)
-      .attr("fill", z.color)
-      .attr("fill-opacity", hot ? 0.95 : 0.78)
-      .style("font-size", "12px").style("font-weight", "600")
-      .style("pointer-events", "none")
-      .text(z.label);
+    const headerOp = dim ? 0.45 : hot ? 1 : 0.9;
     zg.append("rect").attr("class", "zone-rect zone-fill")
       .attr("x", x).attr("y", y).attr("width", lz.w).attr("height", lz.h)
       .attr("rx", z.gradient ? 8 : 6)
@@ -4332,9 +4370,11 @@ function updatePillarGuides(){
       .attr("x", x).attr("y", y).attr("width", lz.w).attr("height", lz.h)
       .attr("rx", z.gradient ? 8 : 6)
       .attr("fill", "none")
-      .attr("stroke", z.gradient ? "url(#pillar-resilience-grad)" : z.color)
-      .attr("stroke-opacity", hot ? 0.78 : 0.42)
+      .attr("stroke", z.gradient ? "url(#pillar-resilience-grad)" : "#5eb8d4")
+      .attr("stroke-width", z.gradient ? 2 : 1.5)
+      .attr("stroke-opacity", hot ? (z.gradient ? 1 : 0.95) : (z.gradient ? 0.88 : 0.78))
       .style("pointer-events", "none");
+    appendPillarZoneHeader(zg, z, x, y, lz.w, headerOp);
     zg.append("rect").attr("class", "zone-hit")
       .attr("x", x).attr("y", y).attr("width", lz.w).attr("height", lz.h)
       .attr("rx", z.gradient ? 8 : 6)
@@ -7799,7 +7839,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.29.1";
+const APP_VERSION   = "2.29.2";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8090,6 +8130,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.29.2", date:"2026-06-20", items:[
+    "Families — pillar panels use Overview deck logos and headers (AI-ready data centers, Future-proofed workplaces, Digital resilience) with matching cyan borders."
+  ]},
   {ver:"2.29.1", date:"2026-06-20", items:[
     "Spatial — transparent WebGL canvas so the ambient glow/grid/mesh shows through behind 3D family map and product orbit."
   ]},
