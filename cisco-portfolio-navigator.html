@@ -824,22 +824,24 @@ const PILLAR_GLOW_PAD = 4;
 const PILLAR_MIN_CELL_W = 78;
 const PILLAR_MIN_CELL_H = 94;
 const PILLAR_ICON_ONLY_CELL_H = 58;
-const PILLAR_CELL_LAYOUT_H = 64;
+const PILLAR_CELL_LAYOUT_H = 68;
 const PILLAR_CELL_TOP_PAD = 8;
 const PILLAR_LABEL_GAP = 10;
+const PILLAR_LABEL_ICON_GAP = 9;
 const PILLAR_TITLE_BAND = 32;
 const PILLAR_LABEL_HEIGHT = 14;
 const PILLAR_LABEL_ZOOM_K = 1.15;
 const PILLAR_LABEL_ZOOM_FADE = 0.28;
-const PILLAR_LABEL_BASE_PX = 10;
+const PILLAR_LABEL_BASE_PX = 11.5;
 const PILLAR_LABEL_CHAR_W = 0.55;
 const PILLAR_LABEL_CELL_FILL = 0.86;
 
 function pillarLabelFontPx(k, cellH){
   const counter = PILLAR_LABEL_BASE_PX / (k || 1);
   if (!cellH) return counter;
-  const labelSpace = cellH - PILLAR_CELL_TOP_PAD - PILLAR_NODE_R * 2 - PILLAR_LABEL_GAP / (k || 1) - 3;
-  const maxFit = Math.max(5.5, labelSpace / 1.35);
+  const iconFoot = PILLAR_CELL_TOP_PAD + PILLAR_NODE_R * 2 + PILLAR_GLOW_PAD + PILLAR_LABEL_ICON_GAP;
+  const labelSpace = cellH - iconFoot - 2;
+  const maxFit = Math.max(6.5, labelSpace / 1.3);
   return Math.min(counter, maxFit);
 }
 function pillarLabelMaxChars(cellW, k, cellH){
@@ -2694,14 +2696,25 @@ function pillarNodeInCell(content, col, row, cols, rows){
   const cellH = content.h / rows;
   const cellLeft = content.x + col * cellW;
   const cellTop = content.y + row * cellH;
-  const iconY = cellTop + PILLAR_CELL_TOP_PAD + PILLAR_NODE_R;
+  const labelBand = pillarLabelBandH();
+  const iconBlock = PILLAR_NODE_R * 2 + PILLAR_CELL_TOP_PAD;
+  const iconY = cellTop + Math.max(PILLAR_CELL_TOP_PAD, (cellH - labelBand - iconBlock) * 0.5 + PILLAR_CELL_TOP_PAD) + PILLAR_NODE_R;
   return { x: cellLeft + cellW * 0.5, y: iconY, cellW, cellH };
 }
 function pillarMinCellH(){
   if (singlePillarFocused()) return PILLAR_MIN_CELL_H;
   return PILLAR_CELL_LAYOUT_H;
 }
-function pillarLabelBandH(){ return PILLAR_LABEL_GAP + PILLAR_LABEL_HEIGHT + 4; }
+function pillarNodeVisualBottom(d){
+  return d._r + PILLAR_GLOW_PAD + 2.5;
+}
+function pillarLabelBandH(){
+  return PILLAR_LABEL_ICON_GAP + PILLAR_LABEL_HEIGHT + 6;
+}
+function pillarLabelY(d, k, zoomFade){
+  void k; void zoomFade;
+  return pillarNodeVisualBottom(d) + PILLAR_LABEL_ICON_GAP;
+}
 function pillarZoomLabelFade(k){
   if (k < PILLAR_LABEL_ZOOM_K) return 0;
   return Math.min(1, (k - PILLAR_LABEL_ZOOM_K) / PILLAR_LABEL_ZOOM_FADE);
@@ -2709,13 +2722,8 @@ function pillarZoomLabelFade(k){
 function pillarZoomLabelMaxLen(cellW, k){
   return pillarLabelMaxChars(cellW, k);
 }
-function pillarLabelY(d, k, zoomFade){
-  const fontPx = pillarLabelFontPx(k, d._pillarCellH);
-  const extra = zoomFade > 0 && !d._pillarShowLabel ? 2 / k : 0;
-  return d._r + PILLAR_GLOW_PAD / k + PILLAR_LABEL_GAP / k + extra + fontPx * 0.05;
-}
 function pillarLabelMaxLen(cellW, k, cellH){
-  return pillarLabelMaxChars(cellW, k, cellH);
+  return pillarLabelMaxChars(cellW, k || 1, cellH);
 }
 function pillarLabelTextBBox(n, k){
   k = k || 1;
@@ -2819,12 +2827,20 @@ function __cpnPillarLayoutSelfTest(){
   clearPillarFilter();
   pinPillarNodes(viewNodes, vis);
   let zoomLabelOverlaps = 0;
+  let iconLabelOverlap = 0;
   const zoomK = 2.2;
   const zoomLabelBoxes = placed.map(n => pillarLabelTextBBox(n, zoomK)).filter(Boolean);
   for (let i = 0; i < zoomLabelBoxes.length; i++)
     for (let j = i + 1; j < zoomLabelBoxes.length; j++)
       if (zoomLabelBoxes[i].pillar === zoomLabelBoxes[j].pillar
           && bboxesOverlap(zoomLabelBoxes[i], zoomLabelBoxes[j], 3)) zoomLabelOverlaps++;
+  for (const n of placed){
+    for (const zk of [1.4, 2.2, 3]){
+      if (pillarZoomLabelFade(zk) <= 0) continue;
+      const labelTop = n.y + pillarLabelY(n, zk, pillarZoomLabelFade(zk)) + 1;
+      if (labelTop < n.y + pillarNodeVisualBottom(n) + 2) iconLabelOverlap++;
+    }
+  }
   activePillars = prev;
   const prevCats = new Set(activeCats);
   activeCats = new Set(["networking", "collaboration", "computing", "observability"]);
@@ -2847,6 +2863,7 @@ function __cpnPillarLayoutSelfTest(){
   return {
     ok: cross.length === 0 && within.length === 0 && outside.length === 0 && zonesNoOverlap
       && allPillarLabelsOff && labelOverlaps === 0 && zoomLabelOverlaps === 0
+      && iconLabelOverlap === 0
       && focusedLabelCoverage.every(r => r.allLabeled)
       && filtLayoutOk,
     crossCollisions: cross.length,
@@ -2856,6 +2873,7 @@ function __cpnPillarLayoutSelfTest(){
     allPillarLabelsOff,
     labelOverlaps,
     zoomLabelOverlaps,
+    iconLabelOverlap,
     focusedLabelCoverage,
     filtLayoutOk, filtVisCount: filtVis.size,
     cross, within, outside, overlapPairs
@@ -3127,19 +3145,19 @@ function applyPillarLabelStyles(selectedNode){
     const fontPx = pillarLabelFontPx(k, d._pillarCellH);
     const yOff = pillarLabelY(d, k, zoomFade);
     const label = show ? pillarShortName(d.name, pillarLabelMaxChars(cellW, k, d._pillarCellH)) : "";
-    const tw = Math.min(pillarLabelTextLen(cellW), pillarLabelTextWidth(label, fontPx) + 6);
-    const th = fontPx * 1.35;
+    const tw = Math.min(pillarLabelTextLen(cellW), pillarLabelTextWidth(label, fontPx) + 8);
+    const th = fontPx * 1.4;
     let bg = wrap.select("rect.nl-bg");
     if (bg.empty()) bg = wrap.insert("rect", "text.nl").attr("class", "nl-bg");
-    bg.attr("x", -tw / 2).attr("y", yOff - 1)
-      .attr("width", tw).attr("height", th + 2)
-      .attr("rx", 3)
-      .attr("fill", "rgba(8,14,26,0.92)")
+    bg.attr("x", -tw / 2).attr("y", yOff + 1)
+      .attr("width", tw).attr("height", th + 4)
+      .attr("rx", 4)
+      .attr("fill", "rgba(6,11,22,0.94)")
       .style("opacity", show ? (pillarLabelPriority(d, selectedNode, conn) >= 3 ? 1 : zoomFade) : 0);
     wrap.select("text.nl").text(label);
   });
   ndEl.select("text.nl")
-    .attr("y", d => pillarLabelY(d, k, zoomFade))
+    .attr("y", d => pillarLabelY(d, k, zoomFade) + 3)
     .style("text-anchor", "middle")
     .style("dominant-baseline", "text-before-edge")
     .attr("textLength", null)
@@ -3147,16 +3165,15 @@ function applyPillarLabelStyles(selectedNode){
     .style("opacity", d => {
       if (!pillarLabelShown(d, selectedNode, conn, zoomFade)) return 0;
       if (pillarLabelPriority(d, selectedNode, conn) >= 3) return 1;
-      return Math.max(0.85, zoomFade);
+      return Math.max(0.9, zoomFade);
     })
     .style("font-size", d => `${pillarLabelFontPx(k, d._pillarCellH)}px`)
-    .style("font-weight", d => pillarLabelPriority(d, selectedNode, conn) >= 3 ? "600" : "500")
-    .style("fill", d => pillarLabelPriority(d, selectedNode, conn) >= 3 ? "#ffffff" : "#e2e8f0")
-    .style("letter-spacing", null)
-    .style("paint-order", "stroke fill")
-    .style("stroke", "rgba(8,14,26,0.95)")
-    .style("stroke-width", d => `${Math.max(2, pillarLabelFontPx(k, d._pillarCellH) * 0.35)}px`)
-    .style("stroke-linejoin", "round");
+    .style("font-weight", "600")
+    .style("fill", "#ffffff")
+    .style("letter-spacing", "0.02em")
+    .style("stroke", null)
+    .style("stroke-width", null)
+    .style("paint-order", null);
   applyPillarLinkStyles(k);
 }
 function updatePillarLabelVisibility(_k){
@@ -4266,7 +4283,13 @@ function rebindGraph(opts){
               applyCompositionInteractionStyles(selected);
               showCompositionNodeTip(ev, d);
             } else {
-              if (usePillarLayout()){ pillarHoverId = d.id; applyPillarLabelStyles(selected); }
+              if (usePillarLayout()){
+                pillarHoverId = d.id;
+                applyPillarLabelStyles(selected);
+                const zk = d3.zoomTransform(svgEl).k;
+                const zf = singlePillarFocused() ? 0 : pillarZoomLabelFade(zk);
+                if (zf === 0 && d !== selected) showNodeTip(ev, d);
+              }
               else if (viewMode === "all-products"){ pillarHoverId = d.id; applyAllProductsLabelStyles(selected); }
               if (d !== selected) showNodeTip(ev, d);
             }
@@ -6786,7 +6809,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.22.1";
+const APP_VERSION   = "2.22.2";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -7077,6 +7100,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.22.2", date:"2026-06-20", items:[
+    "Families — fixed label/icon overlap (fixed gap below glow ring, icons shifted up in cell); larger readable white labels on dark pills; tooltip suppressed when zoom labels already show."
+  ]},
   {ver:"2.22.1", date:"2026-06-20", items:[
     "Families — removed SVG textLength stretching on zoom labels; truncation only, backdrop sized to actual text width."
   ]},
