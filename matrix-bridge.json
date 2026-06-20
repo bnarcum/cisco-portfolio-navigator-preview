@@ -23,8 +23,6 @@
     "headset-320": { "matrixId": "headset-320", "hash": "25c4f2bbed" },
     "headset-532": { "matrixId": "headset-520", "hash": "5ada38fb4a" },
     "headset-720": { "matrixId": "headset-730", "hash": "8cb7938ed5" },
-    "headset-730": { "matrixId": "headset-730", "hash": "8cb7938ed5" },
-    "desk-phone-9841": { "matrixId": "desk-phone-9841", "hash": "8610de7dca" },
-    "conference-8832": { "matrixId": "conference-8832", "hash": "68cffcece7" }
+    "headset-730": { "matrixId": "headset-730", "hash": "8cb7938ed5" }
   }
 }

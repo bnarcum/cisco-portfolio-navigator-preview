@@ -85,12 +85,6 @@
       color:var(--muted);font-size:12px;padding:5px 9px;cursor:pointer;
       transition:all .15s;white-space:nowrap;flex-shrink:0}
     #rst:hover{border-color:var(--accent);color:var(--accent)}
-    #ai-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
-      background:linear-gradient(135deg,#0A60FF 0%,#02C8FF 100%);color:#fff;border:none;border-radius:7px;
-      font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:transform .15s,box-shadow .15s;
-      white-space:nowrap;box-shadow:0 2px 12px rgba(10,96,255,.38)}
-    #ai-btn:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(2,200,255,.48)}
-    #ai-btn.active{background:var(--surface2);color:var(--accent);border:1px solid var(--accent);box-shadow:none}
     #guided-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
       background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:7px;
       font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:all .15s;white-space:nowrap}
@@ -509,7 +503,7 @@
 
     /* ─── Guided Tour / Help ──────────────────────────────────────────── */
     #help-fab{
-      position:fixed;right:20px;bottom:36px;width:42px;height:42px;border-radius:50%;
+      position:fixed;right:20px;bottom:20px;width:42px;height:42px;border-radius:50%;
       background:var(--cisco-blue);color:#fff;border:none;font-size:18px;font-weight:700;
       cursor:pointer;z-index:60;box-shadow:0 4px 14px rgba(4,159,217,.4);
       display:flex;align-items:center;justify-content:center;
@@ -644,14 +638,6 @@
   </div>
   <button id="rst">Reset</button>
   <div class="actionbar-end">
-  <button id="ai-btn" type="button" title="Ask AI — generate stacks, justify recs (BYOK)">
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M8 1.5l1.1 2.4 2.6.4-1.9 1.8.45 2.6L8 7.6 5.75 8.7l.45-2.6-1.9-1.8 2.6-.4L8 1.5Z" fill="currentColor"/>
-      <path d="M3.5 11.5h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-      <path d="M5 13.5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".7"/>
-    </svg>
-    Ask AI
-  </button>
   <button id="guided-btn" type="button" title="Step-by-step guided account plan">
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
@@ -3212,8 +3198,6 @@ function applyPillarLabelStyles(selectedNode){
       .attr("width", tw).attr("height", pillH)
       .attr("rx", 4)
       .attr("fill", "rgba(6,11,22,0.94)")
-      .attr("stroke", "rgba(255,255,255,0.14)")
-      .attr("stroke-width", 1)
       .style("opacity", show ? (pillarLabelPriority(d, selectedNode, conn) >= 3 ? 1 : zoomFade) : 0);
     wrap.select("text.nl")
       .text(label)
@@ -3329,22 +3313,10 @@ const ICON_DEFS = `
   <path d="M222.37,158.46l-47.11-21.11-.13-.06a16,16,0,0,0-15.17,1.4,8.12,8.12,0,0,0-.75.56L134.87,160c-15.42-7.49-31.34-23.29-38.83-38.51l20.78-24.71c.2-.25.39-.5.57-.77a16,16,0,0,0,1.32-15.06l0-.12L97.54,33.64a16,16,0,0,0-16.62-9.52A56.26,56.26,0,0,0,32,80c0,79.4,64.6,144,144,144a56.26,56.26,0,0,0,55.88-48.92A16,16,0,0,0,222.37,158.46ZM176,208A128.14,128.14,0,0,1,48,80,40.2,40.2,0,0,1,82.87,40a.61.61,0,0,0,0,.12l21,47L83.2,111.86a6.13,6.13,0,0,0-.57.77,16,16,0,0,0-1,15.7c9.06,18.53,27.73,37.06,46.46,46.11a16,16,0,0,0,15.75-1.14,8.44,8.44,0,0,0,.74-.56L168.89,152l47,21.05h0s.08,0,.11,0A40.21,40.21,0,0,1,176,208Z"/>
 </symbol>
 <symbol id="icon-deskphone" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"
-    d="M54 172 C46 150 46 128 58 108"/>
-  <path fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"
-    d="M78 208 H178 L166 74 H90 Z"/>
-  <rect x="98" y="88" width="60" height="32" rx="5" fill="none" stroke="currentColor" stroke-width="8"/>
-  <circle cx="108" cy="138" r="6" fill="currentColor"/><circle cx="128" cy="138" r="6" fill="currentColor"/><circle cx="148" cy="138" r="6" fill="currentColor"/>
-  <circle cx="108" cy="160" r="6" fill="currentColor"/><circle cx="128" cy="160" r="6" fill="currentColor"/><circle cx="148" cy="160" r="6" fill="currentColor"/>
-  <circle cx="108" cy="182" r="6" fill="currentColor"/><circle cx="128" cy="182" r="6" fill="currentColor"/><circle cx="148" cy="182" r="6" fill="currentColor"/>
+  <path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"/>
 </symbol>
 <symbol id="icon-confphone" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round" d="M128 48 L204 208 H52 Z"/>
-  <line x1="36" y1="208" x2="220" y2="208" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
-  <circle cx="128" cy="96" r="7" fill="currentColor"/>
-  <circle cx="104" cy="108" r="5" fill="currentColor"/><circle cx="152" cy="108" r="5" fill="currentColor"/>
-  <circle cx="86" cy="126" r="5" fill="currentColor"/><circle cx="170" cy="126" r="5" fill="currentColor"/>
-  <circle cx="128" cy="168" r="6" fill="currentColor"/>
+  <path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.84,8,57,57,0,0,0-98.16,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"/>
 </symbol>
 <symbol id="icon-headset" viewBox="0 0 256 256">
   <path d="M201.89,54.66A103.43,103.43,0,0,0,128.79,24H128A104,104,0,0,0,24,128v56a24,24,0,0,0,24,24H64a24,24,0,0,0,24-24V144a24,24,0,0,0-24-24H40.36A88.12,88.12,0,0,1,190.54,65.93,87.39,87.39,0,0,1,215.65,120H192a24,24,0,0,0-24,24v40a24,24,0,0,0,24,24h24a24,24,0,0,1-24,24H136a8,8,0,0,0,0,16h56a40,40,0,0,0,40-40V128A103.41,103.41,0,0,0,201.89,54.66ZM64,136a8,8,0,0,1,8,8v40a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V136Zm128,56a8,8,0,0,1-8-8V144a8,8,0,0,1,8-8h24v56Z"/>
@@ -3405,286 +3377,6 @@ const ICON_DEFS = `
 </symbol>
 <symbol id="icon-product" viewBox="0 0 256 256">
   <path d="M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32l80.34,44-29.77,16.3-80.35-44ZM128,120,47.66,76l33.9-18.56,80.34,44ZM40,90l80,43.78v85.79L40,175.82Zm176,85.78h0l-80,43.79V133.82l32-17.51V152a8,8,0,0,0,16,0V107.55L216,90v85.77Z"/>
-</symbol>
-<symbol id="icon-cat-center" viewBox="0 0 256 256">
-  <rect x="48" y="56" width="160" height="112" rx="10" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="128" cy="112" r="28" fill="none" stroke="currentColor" stroke-width="8"/>
-  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M128 90 v8 M128 126 v8 M106 112 h8 M142 112 h8"/>
-</symbol>
-<symbol id="icon-switch-access" viewBox="0 0 256 256">
-  <rect x="44" y="108" width="168" height="56" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="68" cy="136" r="5" fill="currentColor"/><circle cx="88" cy="136" r="5" fill="currentColor"/><circle cx="108" cy="136" r="5" fill="currentColor"/>
-  <circle cx="148" cy="136" r="5" fill="currentColor"/><circle cx="168" cy="136" r="5" fill="currentColor"/><circle cx="188" cy="136" r="5" fill="currentColor"/>
-  <line x1="56" y1="124" x2="200" y2="124" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
-</symbol>
-<symbol id="icon-switch-core" viewBox="0 0 256 256">
-  <rect x="52" y="72" width="152" height="48" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <rect x="52" y="136" width="152" height="48" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="72" y1="96" x2="184" y2="96" stroke="currentColor" stroke-width="6"/><line x1="72" y1="160" x2="184" y2="160" stroke="currentColor" stroke-width="6"/>
-</symbol>
-<symbol id="icon-wifi-ap" viewBox="0 0 256 256">
-  <line x1="128" y1="200" x2="128" y2="120" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
-  <path fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" d="M88 168 Q128 128 168 168"/>
-  <path fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" d="M68 148 Q128 96 188 148"/>
-  <ellipse cx="128" cy="108" rx="36" ry="14" fill="none" stroke="currentColor" stroke-width="9"/>
-</symbol>
-<symbol id="icon-mx-gateway" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M72 88 Q128 56 184 88"/>
-  <rect x="40" y="108" width="176" height="64" rx="8" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="68" cy="140" r="6" fill="currentColor"/><circle cx="128" cy="140" r="6" fill="currentColor"/><circle cx="188" cy="140" r="6" fill="currentColor"/>
-</symbol>
-<symbol id="icon-switch-meraki" viewBox="0 0 256 256">
-  <rect x="48" y="100" width="160" height="72" rx="18" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="88" cy="136" r="8" fill="currentColor"/><circle cx="168" cy="136" r="8" fill="currentColor"/>
-</symbol>
-<symbol id="icon-sdwan" viewBox="0 0 256 256">
-  <circle cx="128" cy="88" r="24" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="128" y1="112" x2="64" y2="176" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
-  <line x1="128" y1="112" x2="128" y2="184" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
-  <line x1="128" y1="112" x2="192" y2="176" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
-  <rect x="44" y="176" width="40" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="7"/>
-  <rect x="108" y="184" width="40" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="7"/>
-  <rect x="172" y="176" width="40" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="7"/>
-</symbol>
-<symbol id="icon-router-branch" viewBox="0 0 256 256">
-  <rect x="56" y="120" width="144" height="56" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="80" y1="120" x2="72" y2="88" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
-  <line x1="176" y1="120" x2="184" y2="88" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="72" cy="84" r="5" fill="currentColor"/><circle cx="184" cy="84" r="5" fill="currentColor"/>
-</symbol>
-<symbol id="icon-router-spine" viewBox="0 0 256 256">
-  <rect x="72" y="48" width="112" height="160" rx="8" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="88" y1="80" x2="168" y2="80" stroke="currentColor" stroke-width="6"/><line x1="88" y1="104" x2="168" y2="104" stroke="currentColor" stroke-width="6"/>
-  <line x1="88" y1="128" x2="168" y2="128" stroke="currentColor" stroke-width="6"/><line x1="88" y1="152" x2="168" y2="152" stroke="currentColor" stroke-width="6"/>
-</symbol>
-<symbol id="icon-router-secure" viewBox="0 0 256 256">
-  <rect x="48" y="128" width="120" height="48" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linejoin="round" d="M168 72 L168 120 Q168 168 128 184 Q88 168 88 120 L88 72 Q128 48 168 72 Z"/>
-</symbol>
-<symbol id="icon-switch-spine" viewBox="0 0 256 256">
-  <rect x="96" y="40" width="64" height="176" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="108" y1="72" x2="148" y2="72" stroke="currentColor" stroke-width="6"/><line x1="108" y1="96" x2="148" y2="96" stroke="currentColor" stroke-width="6"/>
-  <line x1="108" y1="120" x2="148" y2="120" stroke="currentColor" stroke-width="6"/><line x1="108" y1="144" x2="148" y2="144" stroke="currentColor" stroke-width="6"/>
-  <line x1="108" y1="168" x2="148" y2="168" stroke="currentColor" stroke-width="6"/>
-</symbol>
-<symbol id="icon-aci-fabric" viewBox="0 0 256 256">
-  <circle cx="128" cy="72" r="20" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="72" cy="184" r="20" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="184" cy="184" r="20" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="128" y1="92" x2="72" y2="164" stroke="currentColor" stroke-width="8"/><line x1="128" y1="92" x2="184" y2="164" stroke="currentColor" stroke-width="8"/>
-  <line x1="92" y1="184" x2="164" y2="184" stroke="currentColor" stroke-width="8"/>
-</symbol>
-<symbol id="icon-nexus-one" viewBox="0 0 256 256">
-  <rect x="56" y="96" width="144" height="72" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <path fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" d="M128 48 L136 72 L160 72 L142 88 L148 112 L128 100 L108 112 L114 88 L96 72 L120 72 Z"/>
-</symbol>
-<symbol id="icon-industrial" viewBox="0 0 256 256">
-  <rect x="48" y="140" width="160" height="48" fill="none" stroke="currentColor" stroke-width="9"/>
-  <rect x="72" y="88" width="32" height="52" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="152" y="72" width="32" height="68" fill="none" stroke="currentColor" stroke-width="8"/>
-  <line x1="88" y1="72" x2="88" y2="56" stroke="currentColor" stroke-width="7"/><line x1="168" y1="56" x2="168" y2="72" stroke="currentColor" stroke-width="7"/>
-</symbol>
-<symbol id="icon-silicon" viewBox="0 0 256 256">
-  <rect x="80" y="80" width="96" height="96" rx="8" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="104" y1="80" x2="104" y2="64" stroke="currentColor" stroke-width="6"/><line x1="128" y1="80" x2="128" y2="64" stroke="currentColor" stroke-width="6"/>
-  <line x1="152" y1="80" x2="152" y2="64" stroke="currentColor" stroke-width="6"/><line x1="104" y1="176" x2="104" y2="192" stroke="currentColor" stroke-width="6"/>
-  <line x1="128" y1="176" x2="128" y2="192" stroke="currentColor" stroke-width="6"/><line x1="152" y1="176" x2="152" y2="192" stroke="currentColor" stroke-width="6"/>
-  <line x1="80" y1="104" x2="64" y2="104" stroke="currentColor" stroke-width="6"/><line x1="80" y1="128" x2="64" y2="128" stroke="currentColor" stroke-width="6"/>
-  <line x1="176" y1="104" x2="192" y2="104" stroke="currentColor" stroke-width="6"/><line x1="176" y1="128" x2="192" y2="128" stroke="currentColor" stroke-width="6"/>
-</symbol>
-<symbol id="icon-fw-branch" viewBox="0 0 256 256">
-  <rect x="64" y="112" width="128" height="64" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <path fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round" d="M128 56 L148 96 H108 Z"/>
-</symbol>
-<symbol id="icon-fw-enterprise" viewBox="0 0 256 256">
-  <rect x="88" y="48" width="80" height="160" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <rect x="104" y="72" width="48" height="24" rx="3" fill="none" stroke="currentColor" stroke-width="7"/>
-  <line x1="104" y1="120" x2="152" y2="120" stroke="currentColor" stroke-width="6"/><line x1="104" y1="144" x2="152" y2="144" stroke="currentColor" stroke-width="6"/>
-</symbol>
-<symbol id="icon-hypershield" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linejoin="round" d="M128 44 L196 72 V128 Q196 184 128 212 Q60 184 60 128 V72 Z"/>
-  <line x1="96" y1="120" x2="160" y2="120" stroke="currentColor" stroke-width="7"/><line x1="128" y1="96" x2="128" y2="144" stroke="currentColor" stroke-width="7"/>
-</symbol>
-<symbol id="icon-shield-ai" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linejoin="round" d="M128 48 L196 72 V128 Q196 176 128 200 Q60 176 60 128 V72 Z"/>
-  <circle cx="128" cy="120" r="20" fill="none" stroke="currentColor" stroke-width="7"/>
-  <path fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" d="M128 108 v24 M116 120 h24"/>
-</symbol>
-<symbol id="icon-sse-cloud" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M72 120 Q96 88 128 96 Q160 88 184 120"/>
-  <rect x="96" y="120" width="64" height="48" rx="6" fill="none" stroke="currentColor" stroke-width="8"/>
-  <line x1="128" y1="168" x2="128" y2="200" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
-</symbol>
-<symbol id="icon-duo-mfa" viewBox="0 0 256 256">
-  <rect x="56" y="72" width="56" height="96" rx="8" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="84" cy="152" r="6" fill="currentColor"/>
-  <rect x="144" y="96" width="56" height="72" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M112 120 L144 132"/>
-</symbol>
-<symbol id="icon-umbrella-dns" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M64 144 Q128 72 192 144"/>
-  <line x1="128" y1="144" x2="128" y2="200" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
-  <circle cx="128" cy="208" r="8" fill="currentColor"/>
-</symbol>
-<symbol id="icon-mail-secure" viewBox="0 0 256 256">
-  <rect x="48" y="88" width="160" height="96" rx="8" fill="none" stroke="currentColor" stroke-width="9"/>
-  <path fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round" d="M48 88 L128 144 L208 88"/>
-  <path fill="none" stroke="currentColor" stroke-width="7" d="M168 72 L168 96 Q168 112 152 112 H104 Q88 112 88 96 V72 Q104 56 128 56 Q152 56 168 72 Z"/>
-</symbol>
-<symbol id="icon-endpoint-edr" viewBox="0 0 256 256">
-  <rect x="56" y="72" width="144" height="88" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="96" y1="160" x2="160" y2="160" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="176" cy="88" r="16" fill="none" stroke="currentColor" stroke-width="7"/>
-  <path fill="none" stroke="currentColor" stroke-width="6" d="M168 88 L176 96 L188 80"/>
-</symbol>
-<symbol id="icon-nac-policy" viewBox="0 0 256 256">
-  <circle cx="88" cy="128" r="32" fill="none" stroke="currentColor" stroke-width="9"/>
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M112 104 L168 72"/>
-  <rect x="152" y="120" width="56" height="56" rx="6" fill="none" stroke="currentColor" stroke-width="8"/>
-</symbol>
-<symbol id="icon-threat-intel" viewBox="0 0 256 256">
-  <ellipse cx="128" cy="128" rx="72" ry="40" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="128" cy="128" r="16" fill="currentColor"/>
-  <circle cx="88" cy="120" r="8" fill="currentColor"/><circle cx="168" cy="120" r="8" fill="currentColor"/>
-</symbol>
-<symbol id="icon-xdr-unify" viewBox="0 0 256 256">
-  <circle cx="128" cy="128" r="56" fill="none" stroke="currentColor" stroke-width="8"/>
-  <line x1="128" y1="72" x2="128" y2="48" stroke="currentColor" stroke-width="7"/><line x1="128" y1="184" x2="128" y2="208" stroke="currentColor" stroke-width="7"/>
-  <line x1="72" y1="128" x2="48" y2="128" stroke="currentColor" stroke-width="7"/><line x1="184" y1="128" x2="208" y2="128" stroke="currentColor" stroke-width="7"/>
-  <circle cx="128" cy="128" r="10" fill="currentColor"/>
-</symbol>
-<symbol id="icon-ot-vision" viewBox="0 0 256 256">
-  <rect x="48" y="152" width="160" height="40" fill="none" stroke="currentColor" stroke-width="9"/>
-  <ellipse cx="128" cy="112" rx="48" ry="28" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="128" cy="112" r="12" fill="currentColor"/>
-</symbol>
-<symbol id="icon-secure-client-vpn" viewBox="0 0 256 256">
-  <rect x="72" y="56" width="112" height="72" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linejoin="round" d="M128 128 L128 152 Q128 200 88 200 Q48 200 48 160 V128"/>
-  <line x1="48" y1="128" x2="208" y2="128" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
-</symbol>
-<symbol id="icon-workload-seg" viewBox="0 0 256 256">
-  <rect x="56" y="56" width="64" height="64" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="136" y="56" width="64" height="64" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="56" y="136" width="64" height="64" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="136" y="136" width="64" height="64" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <line x1="120" y1="88" x2="136" y2="88" stroke="currentColor" stroke-width="6" stroke-dasharray="8 6"/>
-</symbol>
-<symbol id="icon-net-analytics" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" d="M48 160 Q96 120 128 136 Q160 152 208 112"/>
-  <circle cx="48" cy="160" r="8" fill="currentColor"/><circle cx="128" cy="136" r="8" fill="currentColor"/><circle cx="208" cy="112" r="8" fill="currentColor"/>
-</symbol>
-<symbol id="icon-web-gateway" viewBox="0 0 256 256">
-  <circle cx="128" cy="88" r="40" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="108" y1="88" x2="148" y2="88" stroke="currentColor" stroke-width="7"/><line x1="128" y1="68" x2="128" y2="108" stroke="currentColor" stroke-width="7"/>
-  <rect x="72" y="152" width="112" height="48" rx="6" fill="none" stroke="currentColor" stroke-width="9"/>
-</symbol>
-<symbol id="icon-cloud-fw" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M64 104 Q88 72 128 80 Q168 72 192 104"/>
-  <rect x="96" y="112" width="64" height="48" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <path fill="none" stroke="currentColor" stroke-width="7" d="M112 128 h32 M112 144 h24"/>
-</symbol>
-<symbol id="icon-vuln-risk" viewBox="0 0 256 256">
-  <ellipse cx="128" cy="140" rx="56" ry="32" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="128" y1="108" x2="128" y2="72" stroke="currentColor" stroke-width="8"/><circle cx="128" cy="64" r="8" fill="currentColor"/>
-  <line x1="96" y1="152" x2="72" y2="168" stroke="currentColor" stroke-width="7"/><line x1="160" y1="152" x2="184" y2="168" stroke="currentColor" stroke-width="7"/>
-</symbol>
-<symbol id="icon-ot-access" viewBox="0 0 256 256">
-  <rect x="64" y="120" width="80" height="56" rx="4" fill="none" stroke="currentColor" stroke-width="9"/>
-  <path fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" d="M168 88 L200 120 L168 152"/>
-  <line x1="144" y1="120" x2="168" y2="120" stroke="currentColor" stroke-width="7"/>
-</symbol>
-<symbol id="icon-identity-itdr" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" d="M88 72 Q128 48 168 72 Q192 128 128 160 Q64 128 88 72"/>
-  <circle cx="128" cy="96" r="12" fill="currentColor"/>
-</symbol>
-<symbol id="icon-webex-chat" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linejoin="round" d="M56 72 H200 V152 H128 L96 184 V152 H56 Z"/>
-  <line x1="88" y1="104" x2="168" y2="104" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
-  <line x1="88" y1="128" x2="144" y2="128" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
-</symbol>
-<symbol id="icon-meetings-grid" viewBox="0 0 256 256">
-  <rect x="48" y="64" width="64" height="48" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="144" y="64" width="64" height="48" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="48" y="144" width="64" height="48" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="144" y="144" width="64" height="48" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-</symbol>
-<symbol id="icon-cloud-calling" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M80 96 Q128 56 176 96"/>
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M96 168 C96 168 112 144 128 144 C144 144 160 168 160 168"/>
-  <line x1="128" y1="144" x2="128" y2="120" stroke="currentColor" stroke-width="8"/>
-</symbol>
-<symbol id="icon-contact-center" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M72 160 C72 128 96 104 128 104 C160 104 184 128 184 160"/>
-  <rect x="88" y="168" width="80" height="24" rx="8" fill="none" stroke="currentColor" stroke-width="8"/>
-  <path fill="none" stroke="currentColor" stroke-width="7" d="M48 120 Q72 88 96 104"/><path fill="none" stroke="currentColor" stroke-width="7" d="M208 120 Q184 88 160 104"/>
-</symbol>
-<symbol id="icon-room-bar" viewBox="0 0 256 256">
-  <rect x="48" y="120" width="160" height="32" rx="8" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="128" cy="136" r="10" fill="none" stroke="currentColor" stroke-width="7"/>
-  <line x1="128" y1="152" x2="128" y2="200" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
-  <line x1="96" y1="200" x2="160" y2="200" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
-</symbol>
-<symbol id="icon-desk-device" viewBox="0 0 256 256">
-  <rect x="72" y="56" width="112" height="80" rx="8" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="128" cy="96" r="12" fill="none" stroke="currentColor" stroke-width="6"/>
-  <line x1="128" y1="136" x2="128" y2="168" stroke="currentColor" stroke-width="9"/>
-  <line x1="96" y1="168" x2="160" y2="168" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
-  <rect x="88" y="176" width="80" height="24" rx="4" fill="none" stroke="currentColor" stroke-width="7"/>
-</symbol>
-<symbol id="icon-headset-pro" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M88 128 C88 88 168 88 168 128"/>
-  <rect x="64" y="128" width="32" height="48" rx="10" fill="none" stroke="currentColor" stroke-width="9"/>
-  <rect x="160" y="128" width="32" height="48" rx="10" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="128" y1="88" x2="128" y2="72" stroke="currentColor" stroke-width="7"/>
-</symbol>
-<symbol id="icon-cpaas-connect" viewBox="0 0 256 256">
-  <circle cx="88" cy="128" r="32" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="168" cy="128" r="32" fill="none" stroke="currentColor" stroke-width="9"/>
-  <line x1="120" y1="128" x2="136" y2="128" stroke="currentColor" stroke-width="8"/>
-  <path fill="none" stroke="currentColor" stroke-width="7" d="M80 104 L96 88 M176 104 L160 88"/>
-</symbol>
-<symbol id="icon-ucs-server" viewBox="0 0 256 256">
-  <rect x="72" y="48" width="112" height="40" rx="4" fill="none" stroke="currentColor" stroke-width="9"/>
-  <rect x="72" y="96" width="112" height="40" rx="4" fill="none" stroke="currentColor" stroke-width="9"/>
-  <rect x="72" y="144" width="112" height="40" rx="4" fill="none" stroke="currentColor" stroke-width="9"/>
-  <circle cx="96" cy="68" r="5" fill="currentColor"/><circle cx="96" cy="116" r="5" fill="currentColor"/><circle cx="96" cy="164" r="5" fill="currentColor"/>
-</symbol>
-<symbol id="icon-hci-hyperflex" viewBox="0 0 256 256">
-  <rect x="56" y="72" width="56" height="112" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="144" y="72" width="56" height="112" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <line x1="112" y1="128" x2="144" y2="128" stroke="currentColor" stroke-width="8"/>
-  <circle cx="84" cy="128" r="12" fill="none" stroke="currentColor" stroke-width="6"/>
-  <circle cx="172" cy="128" r="12" fill="none" stroke="currentColor" stroke-width="6"/>
-</symbol>
-<symbol id="icon-intersight-cloud" viewBox="0 0 256 256">
-  <path fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" d="M64 112 Q96 80 128 88 Q160 80 192 112"/>
-  <circle cx="128" cy="144" r="28" fill="none" stroke="currentColor" stroke-width="8"/>
-  <path fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" d="M128 124 v8 M118 134 h20"/>
-</symbol>
-<symbol id="icon-te-probes" viewBox="0 0 256 256">
-  <circle cx="128" cy="128" r="64" fill="none" stroke="currentColor" stroke-width="9"/>
-  <ellipse cx="128" cy="128" rx="64" ry="24" fill="none" stroke="currentColor" stroke-width="7"/>
-  <line x1="64" y1="128" x2="192" y2="128" stroke="currentColor" stroke-width="7"/>
-  <circle cx="176" cy="88" r="8" fill="currentColor"/>
-</symbol>
-<symbol id="icon-apm-stack" viewBox="0 0 256 256">
-  <rect x="56" y="160" width="144" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="72" y="112" width="112" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="88" y="64" width="80" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="8"/>
-</symbol>
-<symbol id="icon-splunk-logs" viewBox="0 0 256 256">
-  <line x1="64" y1="192" x2="64" y2="120" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
-  <line x1="104" y1="192" x2="104" y2="88" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
-  <line x1="144" y1="192" x2="144" y2="104" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
-  <line x1="184" y1="192" x2="184" y2="72" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
-</symbol>
-<symbol id="icon-fullstack-obs" viewBox="0 0 256 256">
-  <rect x="48" y="56" width="72" height="56" rx="6" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="136" y="56" width="72" height="56" rx="6" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="48" y="144" width="72" height="56" rx="6" fill="none" stroke="currentColor" stroke-width="8"/>
-  <rect x="136" y="144" width="72" height="56" rx="6" fill="none" stroke="currentColor" stroke-width="8"/>
-  <circle cx="128" cy="128" r="10" fill="currentColor"/>
 </symbol>
 <symbol id="icon-deck-dc" viewBox="0 0 256 256">
   <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"
@@ -3767,74 +3459,8 @@ let MATRIX_BRIDGE = {
     "headset-320": { matrixId: "headset-320", hash: "25c4f2bbed" },
     "headset-532": { matrixId: "headset-520", hash: "5ada38fb4a" },
     "headset-720": { matrixId: "headset-730", hash: "8cb7938ed5" },
-    "headset-730": { matrixId: "headset-730", hash: "8cb7938ed5" },
-    "desk-phone-9841": { matrixId: "desk-phone-9841", hash: "8610de7dca" },
-    "conference-8832": { matrixId: "conference-8832", hash: "68cffcece7" }
+    "headset-730": { matrixId: "headset-730", hash: "8cb7938ed5" }
   }
-};
-const FAMILY_MATRIX_HERO = {
-  "ip-phones": "desk-phone-9841",
-  "conf-phones": "conference-8832",
-  "desk-devices": "desk-pro-g2",
-  "cisco-headsets": "headset-730",
-  "room-systems": "room-bar-pro"
-};
-/** Per-family stroke icon — one distinctive glyph per portfolio family. */
-const FAMILY_ICON = {
-  "catalyst-center": "cat-center",
-  "catalyst-access": "switch-access",
-  "catalyst-core": "switch-core",
-  "catalyst-wireless": "wifi-ap",
-  "meraki-mx": "mx-gateway",
-  "meraki-switches": "switch-meraki",
-  "meraki-wireless": "wifi-ap",
-  "sdwan": "sdwan",
-  "isr-routers": "router-branch",
-  "wan-routers": "router-spine",
-  "secure-routers": "router-secure",
-  "nexus": "switch-spine",
-  "aci": "aci-fabric",
-  "nexus-one": "nexus-one",
-  "industrial-eth": "industrial",
-  "silicon-one": "silicon",
-  "sf-branch": "fw-branch",
-  "sf-enterprise": "fw-enterprise",
-  "hypershield": "hypershield",
-  "ai-defense": "shield-ai",
-  "secure-access": "sse-cloud",
-  "duo": "duo-mfa",
-  "umbrella": "umbrella-dns",
-  "secure-email": "mail-secure",
-  "secure-endpoint": "endpoint-edr",
-  "ise": "nac-policy",
-  "talos": "threat-intel",
-  "xdr": "xdr-unify",
-  "cyber-vision": "ot-vision",
-  "secure-client": "secure-client-vpn",
-  "secure-workload": "workload-seg",
-  "stealthwatch": "net-analytics",
-  "secure-web": "web-gateway",
-  "multicloud-defense": "cloud-fw",
-  "vuln-mgmt": "vuln-risk",
-  "secure-equipment": "ot-access",
-  "identity-intel": "identity-itdr",
-  "webex-app": "webex-chat",
-  "webex-meetings": "meetings-grid",
-  "webex-calling": "cloud-calling",
-  "webex-cc": "contact-center",
-  "room-systems": "room-bar",
-  "desk-devices": "desk-device",
-  "ip-phones": "deskphone",
-  "conf-phones": "confphone",
-  "cisco-headsets": "headset-pro",
-  "webex-connect": "cpaas-connect",
-  "ucs": "ucs-server",
-  "hyperflex": "hci-hyperflex",
-  "intersight": "intersight-cloud",
-  "thousandeyes": "te-probes",
-  "appdynamics": "apm-stack",
-  "splunk": "splunk-logs",
-  "fso": "fullstack-obs"
 };
 function matrixBridgeEntry(id){ return id ? (MATRIX_BRIDGE.products?.[id] || null) : null; }
 function matrixImageUrl(id){
@@ -3843,26 +3469,13 @@ function matrixImageUrl(id){
   const base = MATRIX_BRIDGE.imageBase || MATRIX_IMG_BASE;
   return e.hash ? `${base}img-${e.hash}.webp` : null;
 }
-function nodeImageSourceId(d){
-  if (d._kind === "product") return d.id;
-  if (viewMode === "families" && FAMILY_MATRIX_HERO[d.id] && matrixImageUrl(FAMILY_MATRIX_HERO[d.id]))
-    return FAMILY_MATRIX_HERO[d.id];
-  return null;
-}
-function nodeImageUrl(d){
-  const src = nodeImageSourceId(d);
-  return src ? matrixImageUrl(src) : null;
-}
-function nodeHasMatrixImage(d){
-  return !!nodeImageUrl(d);
-}
-function hydrateNodeVisuals(nodes){
-  for (const n of nodes) n._hasImage = nodeHasMatrixImage(n);
-}
 function matrixDeviceUrl(id){
   const e = matrixBridgeEntry(id); if (!e?.matrixId) return null;
   const base = MATRIX_BRIDGE.matrixBase || MATRIX_SITE;
   return `${base}?vendor=cisco&device=${encodeURIComponent(e.matrixId)}`;
+}
+function nodeHasMatrixImage(d){
+  return d._kind === "product" && !!matrixImageUrl(d.id);
 }
 async function loadMatrixBridge(){
   try {
@@ -3874,10 +3487,14 @@ async function loadMatrixBridge(){
   } catch (_) { /* offline — inline defaults above */ }
 }
 function refreshMatrixVisuals(){
-  if (viewNodes.length){
-    hydrateNodeVisuals(viewNodes);
+  if (viewMode === "composition" && viewNodes.length){
+    viewNodes.forEach(n => {
+      if (n._kind !== "product") return;
+      n._hasImage = nodeHasMatrixImage(n);
+      if (n._hasImage) n._r = n._status === "current" ? 20 : 15;
+    });
     if (typeof rebindGraph === "function") rebindGraph({ restart: false });
-    if (viewMode === "composition") applyCompositionNodeStyles();
+    applyCompositionNodeStyles();
   }
   const pb = document.getElementById("pbody");
   if (pb?.dataset.lastKind === "product" && pb.dataset.lastId && typeof window.insertProductHero === "function"){
@@ -3913,6 +3530,7 @@ function productIconKey(p){
 }
 
 function iconKey(n) {
+  // Synthetic node overrides used in Overview / Composition view modes.
   if (n._iconKey) return n._iconKey;
   if (n._kind === "product"){
     if (n._productRef) return productIconKey(n._productRef);
@@ -3920,7 +3538,50 @@ function iconKey(n) {
     if (p) return productIconKey(p);
     return "product";
   }
-  if (FAMILY_ICON[n.id]) return FAMILY_ICON[n.id];
+  const id = n.id;
+  // Networking
+  if (/^(catalyst-access|catalyst-core|meraki-switches|nexus|nexus-one)$/.test(id)) return "switch";
+  if (/wireless/.test(id))                                       return "wifi";
+  if (/^(isr-routers|wan-routers|secure-routers)$/.test(id))     return "router";
+  if (/^(sdwan|meraki-mx)$/.test(id))                            return "globe";
+  if (id === "silicon-one")                                      return "chip";
+  if (/^(catalyst-center|intersight)$/.test(id))                 return "gear";
+  if (id === "aci")                                              return "fabric";
+  if (id === "industrial-eth")                                   return "factory";
+  // Security
+  if (/^sf-/.test(id))                                           return "shield";
+  if (id === "hypershield")                                      return "shield-bolt";
+  if (id === "ai-defense")                                       return "shield-bolt";
+  if (/^(duo|secure-access|umbrella)$/.test(id))                 return "lock";
+  if (id === "ise")                                              return "key";
+  if (id === "secure-email")                                     return "email";
+  if (id === "secure-endpoint")                                  return "endpoint";
+  if (/^(talos|cyber-vision)$/.test(id))                         return "eye";
+  if (id === "xdr")                                              return "radar";
+  if (id === "secure-client")                                    return "shield-network";
+  if (id === "secure-workload")                                  return "cube";
+  if (id === "stealthwatch")                                     return "flow";
+  if (id === "secure-web")                                       return "globe-lock";
+  if (id === "multicloud-defense")                               return "cloud";
+  if (id === "vuln-mgmt")                                        return "bug";
+  if (id === "secure-equipment")                                 return "wrench";
+  if (id === "identity-intel")                                   return "fingerprint";
+  // Collaboration
+  if (/^(webex-app|webex-connect)$/.test(id))                    return "chat";
+  if (/^(webex-meetings|room-systems)$/.test(id))                return "video";
+  if (id === "desk-devices")                                     return "monitor";
+  if (id === "ip-phones")                                        return "deskphone";
+  if (id === "conf-phones")                                      return "confphone";
+  if (id === "webex-calling")                                    return "phone";
+  if (/^(webex-cc|cisco-headsets)$/.test(id))                    return "headset";
+  // Computing
+  if (/^(ucs|hyperflex)$/.test(id))                              return "server";
+  // Observability
+  if (id === "thousandeyes")                                     return "radar";
+  if (id === "appdynamics")                                      return "chart-line";
+  if (id === "splunk")                                           return "chart-bars";
+  if (id === "fso")                                              return "dashboard";
+  // Fallback by category
   return ({networking:"fabric", security:"shield", collaboration:"video",
            computing:"chip", observability:"chart-line"})[n.category] || "product";
 }
@@ -3997,12 +3658,12 @@ function buildNodeGroup(sel){
     })
     .attr("stroke-width", d => d._hasImage ? 1.2 : 0)
     .style("pointer-events", "none");
-  inner.filter(d => d._hasImage && nodeImageUrl(d)).each(function(d){
+  inner.filter(d => d._hasImage && matrixImageUrl(d.id)).each(function(d){
     const g = d3.select(this);
     const cid = ensureProductClip(d.id, d._r);
     const pad = d._r * MATRIX_IMG_INSET;
     g.append("image").attr("class", "pimg")
-      .attr("href", nodeImageUrl(d))
+      .attr("href", matrixImageUrl(d.id))
       .attr("width", pad * 2).attr("height", pad * 2)
       .attr("x", -pad).attr("y", -pad)
       .attr("clip-path", `url(#${cid})`)
@@ -4585,13 +4246,6 @@ function updateOverviewDeck(){
 //    Called by applyViewLevel() and any other code that mutates the view set.
 function rebindGraph(opts){
   const restart = !opts || opts.restart !== false;
-  hydrateNodeVisuals(viewNodes);
-  if (viewMode === "composition"){
-    viewNodes.forEach(n => {
-      if (n._kind !== "product") return;
-      if (n._hasImage) n._r = n._status === "current" ? 20 : 15;
-    });
-  }
 
   lhit = lyr.selectAll("line.lh").data(viewLinks, linkKey)
     .join(
@@ -4716,29 +4370,14 @@ function rebindGraph(opts){
   ndEl.select("use.icn").attr("href", d => "#icon-" + iconKey(d))
     .style("display", d => d._hasImage ? "none" : null);
   ndEl.select("image.pimg").each(function(d){
-    if (!d._hasImage) { d3.select(this).remove(); return; }
+    if (!d._hasImage) return;
     ensureProductClip(d.id, d._r);
     const pad = d._r * MATRIX_IMG_INSET;
-    const url = nodeImageUrl(d);
     d3.select(this)
-      .attr("href", url)
+      .attr("href", matrixImageUrl(d.id))
       .attr("width", pad * 2).attr("height", pad * 2)
       .attr("x", -pad).attr("y", -pad)
       .attr("clip-path", `url(#clip-prod-${String(d.id).replace(/[^a-z0-9_-]/gi, "_")})`);
-  });
-  ndEl.each(function(d){
-    if (!d._hasImage) return;
-    const inner = d3.select(this).select(".node-scaler");
-    if (!inner.select("image.pimg").size()){
-      const cid = ensureProductClip(d.id, d._r);
-      const pad = d._r * MATRIX_IMG_INSET;
-      inner.append("image").attr("class", "pimg")
-        .attr("href", nodeImageUrl(d))
-        .attr("width", pad * 2).attr("height", pad * 2)
-        .attr("x", -pad).attr("y", -pad)
-        .attr("clip-path", `url(#${cid})`)
-        .style("pointer-events", "none");
-    }
   });
   ndEl.select("text.nl").text(d => d._shortName || d.name);
   const pillarMode = viewMode === "families" && usePillarLayout();
@@ -4754,15 +4393,10 @@ function rebindGraph(opts){
     if (!nodeById[d.id]) return;
     const el = d3.select(this);
     if (pillarMode){
-      if (d._hasImage){
-        el.attr("fill", MATRIX_NODE_FILL).attr("fill-opacity", 1)
-          .attr("stroke", MATRIX_NODE_RING).attr("stroke-width", 1.4).attr("stroke-opacity", 0.95);
-      } else {
-        const fill = pillarColorForFamily(d.id);
-        el.attr("fill", fill).attr("fill-opacity", 0.88)
-          .attr("stroke", fill)
-          .attr("stroke-width", 2.2).attr("stroke-opacity", 0.95);
-      }
+      const fill = pillarColorForFamily(d.id);
+      el.attr("fill", fill).attr("fill-opacity", 0.88)
+        .attr("stroke", fill)
+        .attr("stroke-width", 2.2).attr("stroke-opacity", 0.95);
     } else {
       el.attr("stroke", d._hasImage ? MATRIX_NODE_RING : "transparent")
         .attr("stroke-width", d._hasImage ? 1.4 : 2.5).attr("stroke-opacity", 1);
@@ -6970,7 +6604,7 @@ document.addEventListener("keydown",ev=>{
 
     // ── AI Assistant ─────────────────────────────────────────────────────────
     {
-      target: "#ai-btn", place: "bottom",
+      target: "#ai-fab", place: "left",
       title: "AI Assistant — BYOK",
       body: `Generate stacks from a scenario (<em>"Hospital with 800 beds replacing
              Zoom"</em>), justify recommendations, or compare options.
@@ -7226,7 +6860,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.23.0";
+const APP_VERSION   = "2.22.5";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -7517,11 +7151,6 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
-  {ver:"2.23.0", date:"2026-06-20", items:[
-    "Families — custom stroke icon per family (54 families): switches, firewalls, Webex, observability, and more — no more generic shared glyphs.",
-    "Families — product hero photos on collaboration families with matrix-bridge images (9841, 8832, Desk Pro G2, headsets, Room Bar Pro).",
-    "Ask AI moved to the action bar; panel docks top-right below the chrome."
-  ]},
   {ver:"2.22.5", date:"2026-06-20", items:[
     "Families — icon and label packed as one cluster from the cell bottom with a fixed gap, eliminating the large dead space above labels."
   ]},
@@ -8318,8 +7947,7 @@ STYLE.textContent = `
     cursor:pointer;font-weight:600;margin-top:4px}
 
   /* AI assistant panel */
-  #ai-panel{position:fixed;top:calc(var(--topbar-h) + 10px);right:14px;bottom:36px;width:380px;
-    max-height:calc(100vh - var(--topbar-h) - 50px);
+  #ai-panel{position:fixed;right:14px;bottom:74px;width:340px;height:480px;
     background:var(--surface);border:1px solid var(--border);border-radius:11px;
     display:none;flex-direction:column;z-index:80;
     box-shadow:0 10px 30px rgba(0,0,0,.55)}
@@ -8373,6 +8001,12 @@ STYLE.textContent = `
     transition:border-color .12s,background .12s}
   .ai-cfg-fix:hover{border-color:var(--accent);background:var(--surface3)}
   .ai-cfg-box details summary::marker{color:var(--subtle)}
+  #ai-fab{position:fixed;right:74px;bottom:20px;min-width:42px;height:36px;padding:0 11px;border-radius:18px;
+    background:linear-gradient(135deg,#0A60FF,#02C8FF);color:#fff;border:none;
+    cursor:pointer;z-index:60;box-shadow:0 4px 14px rgba(168,85,247,.4);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s;font-weight:700}
+  #ai-fab:hover{transform:scale(1.08)}
+  #ai-fab::after{content:"Ask AI";font-size:10px;letter-spacing:.02em;white-space:nowrap}
 
   /* Bottom footer */
   #v2-footer{position:fixed;bottom:0;left:0;right:0;
@@ -11279,12 +10913,12 @@ function applyFacets(){ applyFilters(); }
    [12] AI ASSISTANT (bring-your-own-key)
    ════════════════════════════════════════════════════════════════════════*/
 function buildAiAssistant(){
-  const fab = document.getElementById("ai-btn");
-  if (!fab) return;
+  const fab = document.createElement("button");
+  fab.id = "ai-fab"; fab.title = "Ask AI — generate stacks, justify recs (BYOK)";
+  document.body.appendChild(fab);
 
   const p = document.createElement("div");
   p.id = "ai-panel";
-  const syncAiBtn = () => fab.classList.toggle("active", p.classList.contains("show"));
   p.innerHTML = `
     <div class="ai-h">
       <div class="t">Ask AI <span style="font-weight:400;color:var(--muted);font-size:10px;margin-left:6px">BYOK</span></div>
@@ -11432,10 +11066,9 @@ function buildAiAssistant(){
 
   fab.addEventListener("click", () => {
     p.classList.toggle("show");
-    syncAiBtn();
     if (p.classList.contains("show") && !$("#ai-msgs").children.length) renderAiWelcome();
   });
-  $("#ai-x").addEventListener("click", () => { p.classList.remove("show"); syncAiBtn(); });
+  $("#ai-x").addEventListener("click", () => p.classList.remove("show"));
   $("#ai-clr").addEventListener("click", () => { $("#ai-msgs").innerHTML = ""; renderAiWelcome(); });
   $("#ai-cfg").addEventListener("click", () => openAiCfg());
   $("#ai-cfg-cancel").addEventListener("click", () => m.classList.remove("show"));
@@ -11728,7 +11361,6 @@ function openAiWithPrompt(prompt, opts = {}) {
   const panel = $("#ai-panel");
   if (!panel) { showToast("AI Assistant not ready"); return; }
   panel.classList.add("show");
-  document.getElementById("ai-btn")?.classList.add("active");
   const inp = $("#ai-input");
   if (inp) inp.value = prompt;
   inp?.focus();
@@ -11749,7 +11381,7 @@ function wireKeyboardA11y(){
     else if (ev.key.toLowerCase() === "p"){ $("#planner-btn").click(); }
     else if (ev.key.toLowerCase() === "g"){ openGuidedWizard(); }
     else if (ev.key.toLowerCase() === "t"){ $("#tl-wrap")?.classList.contains("show") ? closeTimelineView() : openTimelineView(); }
-    else if (ev.key.toLowerCase() === "a"){ document.getElementById("ai-btn")?.click(); }
+    else if (ev.key.toLowerCase() === "a"){ document.getElementById("ai-fab")?.click(); }
     else if (ev.key === "?"){ window.startTour && window.startTour(); }
     else if (selected && ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(ev.key)){
       ev.preventDefault();
