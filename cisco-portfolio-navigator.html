@@ -14,22 +14,22 @@
       --border:rgba(214,214,214,.14);--text:#ffffff;--muted:#b4b9c0;--subtle:#525e6c;
       --accent:#02c8ff;--green:#02c8ff;--orange:#ff9000;--red:#ff007f;
       --net:#02c8ff;--sec:#ff9000;--col:#02c8ff;--com:#0a60ff;--obs:#ff9000;
-      --topbar-h:58px;
+      --topbar-h:102px;
     }
-    /* Below this breakpoint the topbar wraps search onto its own row,
-       so the canvas / panels / timeline / breadcrumb need to slide down. */
-    @media (max-width: 1100px){
-      :root{--topbar-h:104px}
-    }
+    /* topbar-h is synced from #app-chrome via ResizeObserver (main bar + action bar) */
     html,body{height:100%;width:100%;overflow:hidden;
       font-family:"CiscoSansTT","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;
       background:var(--bg);color:var(--text)}
 
-    /* TOP BAR */
-    #topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);
+    /* TOP BAR + ACTION BAR */
+    #app-chrome{position:fixed;top:0;left:0;right:0;z-index:100}
+    #topbar{position:relative;min-height:58px;height:auto;
       background:var(--surface);border-bottom:1px solid var(--border);
       display:flex;align-items:center;flex-wrap:wrap;
-      gap:10px;padding:0 14px;z-index:100}
+      gap:10px;padding:8px 14px}
+    #actionbar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:7px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
+    .actionbar-end{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
     .logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;
       color:var(--accent);white-space:nowrap;flex-shrink:0}
     .logo svg{width:28px;height:28px}
@@ -86,7 +86,7 @@
       color:var(--muted);font-size:12px;padding:5px 9px;cursor:pointer;
       transition:all .15s;white-space:nowrap;flex-shrink:0}
     #rst:hover{border-color:var(--accent);color:var(--accent)}
-    #guided-btn{margin-left:auto;flex-shrink:0;display:flex;align-items:center;gap:6px;
+    #guided-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
       background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:7px;
       font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:all .15s;white-space:nowrap}
     #guided-btn:hover{background:rgba(2,200,255,.12)}
@@ -167,13 +167,20 @@
     .pillar-guides .zone-label{font-size:12px;font-weight:600;fill:#e2e8f0;text-anchor:middle;letter-spacing:.02em}
     .pillar-guides .zone-count{font-size:10px;font-weight:500;fill:#94a3b8;text-anchor:middle}
     .pillar-guides .zone-spine{stroke-dasharray:6 5;opacity:.55}
-    #pillar-legend{position:fixed;top:70px;left:16px;z-index:50;display:none;max-width:300px;
+    .pillar-guides .zone-hit{cursor:pointer}
+    .pillar-guides .zone-dim .zone-fill{fill-opacity:.02}
+    .pillar-guides .zone-dim .zone-border{stroke-opacity:.16}
+    #pillar-legend{position:fixed;top:calc(var(--topbar-h) + 12px);left:16px;z-index:50;display:none;max-width:300px;
       padding:9px 11px;background:rgba(7,24,45,.94);border:1px solid rgba(2,200,255,.28);
       border-radius:10px;backdrop-filter:blur(10px);box-shadow:0 10px 36px rgba(0,0,0,.4)}
     #pillar-legend.show{display:block}
     #pillar-legend .pl-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#02C8FF;margin-bottom:8px}
     #pillar-legend .pl-row{display:flex;flex-direction:column;gap:7px}
-    #pillar-legend .pl-item{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;font-size:11px;line-height:1.3}
+    #pillar-legend .pl-item{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;font-size:11px;line-height:1.3;
+      cursor:pointer;border-radius:6px;padding:4px 6px;margin:0 -6px;transition:background .15s}
+    #pillar-legend .pl-item:hover{background:rgba(255,255,255,.06)}
+    #pillar-legend .pl-item.active{background:rgba(2,200,255,.12);outline:1px solid rgba(2,200,255,.35)}
+    #pillar-legend .pl-item.active .pl-name{color:#fff}
     #pillar-legend .pl-dot{width:10px;height:10px;border-radius:2px;margin-top:3px}
     #pillar-legend .pl-name{color:#f1f5f9;font-weight:600}
     #pillar-legend .pl-desc{color:#94a3b8;font-size:10px;margin-top:1px}
@@ -486,7 +493,7 @@
       background:var(--surface);border:1px solid var(--border);border-radius:20px;
       padding:5px 14px;font-size:11px;color:var(--subtle);z-index:50;
       white-space:nowrap;pointer-events:none}
-    #fbadge{position:fixed;top:70px;left:50%;transform:translateX(-50%);
+    #fbadge{position:fixed;top:calc(var(--topbar-h) + 12px);left:50%;transform:translateX(-50%);
       background:var(--surface);border:1px solid var(--accent);border-radius:20px;
       padding:4px 14px;font-size:11px;color:var(--accent);z-index:50;display:none;pointer-events:none}
 
@@ -589,6 +596,7 @@
 </head>
 <body>
 
+<div id="app-chrome">
 <div id="topbar">
   <div class="logo">
     <svg viewBox="0 0 32 32" fill="none">
@@ -627,7 +635,10 @@
   <div class="dv"></div>
   <select class="tbs" id="ucs"><option value="">All Use Cases</option></select>
   <select class="tbs" id="inds"><option value="">All Industries</option></select>
+</div>
+<div id="actionbar">
   <button id="rst">Reset</button>
+  <div class="actionbar-end">
   <button id="guided-btn" type="button" title="Step-by-step guided account plan">
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
@@ -643,6 +654,8 @@
     </svg>
     Account Planner
   </button>
+  </div>
+</div>
 </div>
 
 <div id="gw"><svg id="gs"></svg></div>
@@ -791,14 +804,14 @@ const DECK_ICON_URI = {"ai-dc": "data:image/svg+xml,%3Csvg%20width%3D%2281%22%20
 
 // Families-view zone map — 3 outcome pillars (connectivity is decorative spine only)
 const PILLAR_LAYOUT = {
-  spineY: 24,
+  spineY: 10,
   zones: [
     { id: "ai-dc", label: "AI-ready data centers", shortLabel: "AI-ready DC",
-      color: "#0A60FF", cx: -188, cy: -82, w: 360, h: 172 },
+      color: "#0A60FF", cx: -205, cy: -108, w: 390, h: 198 },
     { id: "workplaces", label: "Future-proofed workplaces", shortLabel: "Workplaces",
-      color: "#2dce5c", cx: 188, cy: -82, w: 360, h: 172 },
+      color: "#2dce5c", cx: 205, cy: -108, w: 390, h: 198 },
     { id: "resilience", label: "Digital resilience", shortLabel: "Resilience",
-      color: "#FF9000", cx: 0, cy: 122, w: 736, h: 172, gradient: true }
+      color: "#FF9000", cx: 0, cy: 148, w: 800, h: 198, gradient: true }
   ]
 };
 const PILLAR_ZONE_BY_ID = Object.fromEntries(PILLAR_LAYOUT.zones.map(z => [z.id, z]));
@@ -2544,25 +2557,38 @@ function pillarColorForFamily(familyId){
   const m = pillarMeta(familyPillar(familyId));
   return m ? m.color : catColor(nodeById[familyId]?.category);
 }
-function pillarAnchorForFamily(familyId){
+function pillarShortName(name){
+  let n = (name || "").replace(/^Cisco\s+/i, "");
+  n = n.replace(/^Meraki\s+/i, "Meraki ");
+  if (n.length > 24) n = n.slice(0, 22) + "…";
+  return n;
+}
+function pillarAnchorForFamily(familyId, visibleIds){
   const pid = familyPillar(familyId);
   const zone = PILLAR_ZONE_BY_ID[pid];
   if (!zone) return { x: 0, y: 0 };
-  const bucket = NODES.filter(n => familyPillar(n.id) === pid);
+  const bucket = NODES.filter(n => familyPillar(n.id) === pid && (!visibleIds || visibleIds.has(n.id)));
   const idx = Math.max(0, bucket.findIndex(n => n.id === familyId));
   const n = bucket.length || 1;
-  const cols = Math.ceil(Math.sqrt(n * (zone.w / Math.max(zone.h, 1))));
-  const rows = Math.ceil(n / cols);
+  const innerW = zone.w - 48;
+  const innerH = zone.h - 40;
+  const minCellW = activePillar ? 88 : (pid === "resilience" ? 72 : 78);
+  const minCellH = activePillar ? 62 : 52;
+  let cols = Math.max(1, Math.floor(innerW / minCellW));
+  let rows = Math.ceil(n / cols);
+  while (rows * minCellH > innerH && cols < n){
+    cols++;
+    rows = Math.ceil(n / cols);
+  }
+  cols = Math.min(cols, n);
+  rows = Math.ceil(n / cols);
   const col = idx % cols;
   const row = Math.floor(idx / cols);
-  const padX = 40, padY = 28;
-  const innerW = zone.w - padX * 2;
-  const innerH = zone.h - padY * 2;
-  const cellW = innerW / Math.max(cols, 1);
-  const cellH = innerH / Math.max(rows, 1);
+  const cellW = innerW / cols;
+  const cellH = innerH / rows;
   return {
-    x: zone.cx - zone.w / 2 + padX + cellW * (col + 0.5),
-    y: zone.cy - zone.h / 2 + padY + cellH * (row + 0.5)
+    x: zone.cx - zone.w / 2 + 24 + cellW * (col + 0.5),
+    y: zone.cy - zone.h / 2 + 20 + cellH * (row + 0.5)
   };
 }
 function familiesInPillar(pillarId){
@@ -2635,6 +2661,7 @@ const allInds  = [...new Set(NODES.flatMap(n => n.industries))].sort();
 
 let activeCats  = new Set(Object.keys(CATS));
 let activeUC    = "", activeInd = "";
+let activePillar = null;
 let selected    = null;
 let connectionHighlightDepth = 1;
 let plannerOpen = false;
@@ -2675,23 +2702,43 @@ let viewNodes = NODES.slice();
 let viewLinks = LINKS.slice();
 
 function usePillarLayout(){
-  return viewMode === "families"
-    && activeCats.size === Object.keys(CATS).length
-    && !activeUC && !activeInd;
+  if (viewMode !== "families") return false;
+  if (activeUC || activeInd) return false;
+  if (activePillar) return true;
+  return activeCats.size === Object.keys(CATS).length;
 }
-function seedPillarLayout(nodes){
-  if (!usePillarLayout()) return;
+function togglePillarFilter(pillarId){
+  activePillar = activePillar === pillarId ? null : pillarId;
+  applyFilters();
+  if (viewMode === "families") scheduleGraphFit("families");
+}
+function pinPillarNodes(nodes, visibleIds){
   nodes.forEach(n => {
     if (!nodeById[n.id]) return;
-    const a = pillarAnchorForFamily(n.id);
-    n.x = a.x + (Math.random() - 0.5) * 18;
-    n.y = a.y + (Math.random() - 0.5) * 18;
-    n.fx = null; n.fy = null;
+    const a = pillarAnchorForFamily(n.id, visibleIds);
+    n.x = a.x;
+    n.y = a.y;
+    n.fx = a.x;
+    n.fy = a.y;
+    n._shortName = pillarShortName(n.name);
   });
+}
+function unpinPillarNodes(nodes){
+  nodes.forEach(n => {
+    if (!nodeById[n.id]) return;
+    if (n._pinned) return;
+    n.fx = null;
+    n.fy = null;
+    n._shortName = null;
+  });
+}
+function seedPillarLayout(nodes, visibleIds){
+  if (!usePillarLayout()) return;
+  pinPillarNodes(nodes, visibleIds);
 }
 function forcePillar(alpha){
   if (!usePillarLayout()) return;
-  const k = 0.12;
+  const k = activePillar ? 0.2 : 0.08;
   for (const node of viewNodes){
     if (node.fx != null || node.fy != null) continue;
     if (!nodeById[node.id]) continue;
@@ -2699,6 +2746,25 @@ function forcePillar(alpha){
     node.vx += (a.x - node.x) * k * alpha;
     node.vy += (a.y - node.y) * k * alpha;
   }
+}
+function applyPillarLabelStyles(selectedNode){
+  if (!ndEl || !usePillarLayout()) return;
+  const showAll = !!activePillar;
+  const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
+  ndEl.select("text.nl")
+    .text(d => d._shortName || d.name)
+    .style("opacity", d => {
+      if (showAll) return 1;
+      if (selectedNode && (d.id === selectedNode.id || conn?.has(d.id))) return 1;
+      return 0;
+    })
+    .style("font-size", showAll ? "11px" : "10px");
+}
+function pillarLinkOpacity(l){
+  if (!activePillar) return 0;
+  const sp = familyPillar(sid(l)), tp = familyPillar(tid(l));
+  if (sp !== tp || sp !== activePillar) return 0;
+  return l.type === "direct" ? 0.32 : 0.16;
 }
 
 // D3 Graph
@@ -3172,6 +3238,7 @@ function compositionLabelStyle(d){
 
 function resetStandardLabelStyles(){
   if (!ndEl) return;
+  if (usePillarLayout()){ applyPillarLabelStyles(selected); return; }
   ndEl.selectAll("text.nl")
     .attr("y", d => d._r + 14)
     .attr("transform", null)
@@ -3259,9 +3326,11 @@ function fitOverviewDeckView(){
 }
 
 function fitPillarLayoutView(){
-  const pad = 52;
+  const pad = activePillar ? 40 : 52;
+  let zones = PILLAR_LAYOUT.zones;
+  if (activePillar) zones = zones.filter(z => z.id === activePillar);
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  PILLAR_LAYOUT.zones.forEach(z => {
+  zones.forEach(z => {
     minX = Math.min(minX, z.cx - z.w / 2 - pad);
     maxX = Math.max(maxX, z.cx + z.w / 2 + pad);
     minY = Math.min(minY, z.cy - z.h / 2 - pad);
@@ -3270,7 +3339,7 @@ function fitPillarLayoutView(){
   const { w, h } = getDims();
   const pw = panelOffsetW();
   const bw = maxX - minX, bh = maxY - minY;
-  const k = Math.min(1.05, Math.max(0.45, Math.min((w - pw - 56) / bw, (h - 108) / bh)));
+  const k = Math.min(activePillar ? 1.15 : 1.05, Math.max(0.45, Math.min((w - pw - 56) / bw, (h - 108) / bh)));
   applyGraphTransform(0, (minY + maxY) / 2, k);
 }
 
@@ -3448,28 +3517,40 @@ function updatePillarGuides(){
     lg.append("stop").attr("offset", "50%").attr("stop-color", "#d946ef");
     lg.append("stop").attr("offset", "100%").attr("stop-color", "#FF9000");
   }
-  const g = lyr.insert("g", ":first-child").attr("class", "pillar-guides").style("pointer-events", "none");
+  const g = lyr.insert("g", ":first-child").attr("class", "pillar-guides");
   const spineY = PILLAR_LAYOUT.spineY;
-  const span = 736 / 2;
-  g.append("line").attr("class", "zone-spine-line")
-    .attr("x1", -span).attr("y1", spineY)
-    .attr("x2", span).attr("y2", spineY)
-    .attr("stroke", "#02C8FF").attr("stroke-opacity", 0.35)
-    .attr("stroke-width", 1).attr("stroke-dasharray", "6 5");
+  const span = 400;
+  if (!activePillar){
+    g.append("line").attr("class", "zone-spine-line")
+      .attr("x1", -span).attr("y1", spineY)
+      .attr("x2", span).attr("y2", spineY)
+      .attr("stroke", "#02C8FF").attr("stroke-opacity", 0.35)
+      .attr("stroke-width", 1).attr("stroke-dasharray", "6 5")
+      .style("pointer-events", "none");
+  }
   PILLAR_LAYOUT.zones.forEach(z => {
-    const zg = g.append("g").attr("class", "zone zone-" + z.id);
+    const dim = activePillar && z.id !== activePillar;
+    const hot = activePillar === z.id;
+    const zg = g.append("g").attr("class", "zone zone-" + z.id + (dim ? " zone-dim" : ""));
     const x = z.cx - z.w / 2, y = z.cy - z.h / 2;
     zg.append("rect").attr("class", "zone-rect zone-fill")
       .attr("x", x).attr("y", y).attr("width", z.w).attr("height", z.h)
       .attr("rx", z.gradient ? 8 : 6)
-      .attr("fill", z.color).attr("fill-opacity", 0.045)
-      .attr("stroke", "none");
+      .attr("fill", z.color).attr("fill-opacity", hot ? 0.07 : 0.045)
+      .attr("stroke", "none")
+      .style("pointer-events", "none");
     zg.append("rect").attr("class", "zone-rect zone-border")
       .attr("x", x).attr("y", y).attr("width", z.w).attr("height", z.h)
       .attr("rx", z.gradient ? 8 : 6)
       .attr("fill", "none")
       .attr("stroke", z.gradient ? "url(#pillar-resilience-grad)" : z.color)
-      .attr("stroke-opacity", 0.42);
+      .attr("stroke-opacity", hot ? 0.78 : 0.42)
+      .style("pointer-events", "none");
+    zg.append("rect").attr("class", "zone-hit")
+      .attr("x", x).attr("y", y).attr("width", z.w).attr("height", z.h)
+      .attr("rx", z.gradient ? 8 : 6)
+      .attr("fill", "transparent")
+      .on("click", ev => { ev.stopPropagation(); togglePillarFilter(z.id); });
   });
 }
 
@@ -3479,13 +3560,21 @@ function updatePillarLegend(show){
   if (!show){ el.classList.remove("show"); el.setAttribute("aria-hidden", "true"); return; }
   const rows = [...PILLAR_LAYOUT.zones].map(z => {
     const cnt = familiesInPillar(z.id);
-    return `<div class="pl-item">
+    const active = activePillar === z.id ? " active" : "";
+    return `<div class="pl-item${active}" data-pillar="${z.id}" role="button" tabindex="0">
       <span class="pl-dot" style="background:${z.color}"></span>
       <div class="pl-name">${z.label}</div>
       <span class="pl-count">${cnt}</span>
     </div>`;
   }).join("");
   el.innerHTML = `<div class="pl-row">${rows}</div>`;
+  el.querySelectorAll(".pl-item").forEach(row => {
+    const pid = row.dataset.pillar;
+    row.addEventListener("click", ev => { ev.stopPropagation(); togglePillarFilter(pid); });
+    row.addEventListener("keydown", ev => {
+      if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); togglePillarFilter(pid); }
+    });
+  });
   el.classList.add("show");
   el.setAttribute("aria-hidden", "false");
 }
@@ -3575,9 +3664,10 @@ function updateOverviewDeck(){
     const p = PILLAR_BY_ID[pillarId];
     card.on("click", ev => {
       ev.stopPropagation();
+      activePillar = pillarId;
       applyViewLevel("families");
     });
-    card.on("dblclick", ev => { ev.stopPropagation(); applyViewLevel("families"); });
+    card.on("dblclick", ev => { ev.stopPropagation(); activePillar = pillarId; applyViewLevel("families"); });
     card.on("mouseover", ev => {
       border.attr("stroke-width", gradient ? 2.5 : 2).attr("stroke-opacity", 1);
       document.getElementById("tn").textContent = label;
@@ -3650,7 +3740,10 @@ function rebindGraph(opts){
           .attr("stroke-dasharray", d => d.type==="adjacent" || d.type==="succession" ? "5 4" : null)
           .style("pointer-events","none");
         sel.transition().duration(280)
-          .attr("stroke-opacity", d => d.type==="direct" ? 0.75 : 0.45);
+          .attr("stroke-opacity", d => {
+            const pm = viewMode === "families" && usePillarLayout();
+            return pm ? pillarLinkOpacity(d) : (d.type === "direct" ? 0.75 : 0.45);
+          });
         return sel;
       },
       update => update.attr("class", d => `lv ${d.type||""}`),
@@ -3668,6 +3761,12 @@ function rebindGraph(opts){
               if(!ev.active) sim.alphaTarget(0);
               if (d._pinned) { d.fx = 0; d.fy = 0; }
               else if (d._orbitFixed && viewMode === "composition") { d.fx = d._ox; d.fy = d._oy; d.x = d._ox; d.y = d._oy; }
+              else if (usePillarLayout() && nodeById[d.id]){
+                const vis = new Set();
+                NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
+                const a = pillarAnchorForFamily(d.id, vis);
+                d.fx = a.x; d.fy = a.y; d.x = a.x; d.y = a.y;
+              }
               else { d.fx = d.fy = null; }
             }))
           .on("click",(ev,d)=>{
@@ -3753,10 +3852,10 @@ function rebindGraph(opts){
       return sp !== tp ? 1.2 : (l.type === "direct" ? 1.2 : 0.8);
     }).attr("stroke-opacity", l => {
       if (!pillarMode) return l.type === "direct" ? 0.75 : 0.45;
-      const sp = familyPillar(sid(l)), tp = familyPillar(tid(l));
-      return sp !== tp ? 0.22 : (l.type === "direct" ? 0.28 : 0.14);
+      return pillarLinkOpacity(l);
     });
   }
+  applyPillarLabelStyles(selected);
   if (viewMode === "composition") applyCompositionNodeStyles();
   else resetStandardLabelStyles();
   updateCompositionHint();
@@ -4221,6 +4320,7 @@ function familyPassesTierFilter(n){
 }
 
 function familyNodeVisible(n){
+  if (activePillar && familyPillar(n.id) !== activePillar) return false;
   if (!activeCats.has(n.category)) return false;
   if (activeUC && !(n.useCases || []).includes(activeUC)) return false;
   if (activeInd && !(n.industries || []).includes(activeInd)) return false;
@@ -4470,6 +4570,7 @@ function applyViewLevel(mode, opts){
 
   // Build the data set for the new mode.
   if (mode === "overview"){
+    activePillar = null;
     const v = buildOverviewView();
     viewNodes = v.nodes; viewLinks = v.links;
   } else if (mode === "composition"){
@@ -4480,13 +4581,13 @@ function applyViewLevel(mode, opts){
     viewNodes = v.nodes; viewLinks = v.links;
   } else {
     // Families mode = the full graph; optionally focus a category by activating it.
+    if (opts.focusPillar) activePillar = opts.focusPillar;
     viewNodes = NODES.slice(); viewLinks = LINKS.slice();
     // Annotate each family with the count of its specific products so the
     // node renders a "+N" badge in this mode.
     const counts = {};
     PRODUCTS.forEach(p => { if (productMatchesFilters(p)) counts[p.family] = (counts[p.family]||0) + 1; });
     viewNodes.forEach(n => { n._badge = counts[n.id] && counts[n.id] > 1 ? "+"+counts[n.id] : null; });
-    seedPillarLayout(viewNodes);
     if (opts.focusCategory){
       activeCats = new Set([opts.focusCategory]);
       document.querySelectorAll(".cp").forEach(b => {
@@ -4547,24 +4648,25 @@ function configureForcesForMode(mode){
     sim.force("pillar", null);
   } else {
     const pillarLayout = usePillarLayout();
-    sim.force("charge",  d3.forceManyBody().strength(pillarLayout ? -400 : -560));
-    sim.force("collide", d3.forceCollide(d => d._r + (pillarLayout ? 22 : 30)).strength(0.85));
-    sim.force("link")
-      .distance(d => {
-        if (pillarLayout){
+    if (pillarLayout){
+      sim.force("charge", d3.forceManyBody().strength(0));
+      sim.force("collide", null);
+      sim.force("link")
+        .distance(d => d.type === "direct" ? 95 : 130)
+        .strength(d => {
+          if (!activePillar) return 0;
           const sp = familyPillar(sid(d)), tp = familyPillar(tid(d));
-          if (sp !== tp) return d.type === "direct" ? 115 : 165;
-        }
-        return d.type === "direct" ? 150 : 230;
-      })
-      .strength(d => {
-        if (pillarLayout){
-          const sp = familyPillar(sid(d)), tp = familyPillar(tid(d));
-          if (sp !== tp) return d.type === "direct" ? 0.62 : 0.32;
-        }
-        return d.type === "direct" ? 0.55 : 0.25;
-      });
-    sim.force("pillar", pillarLayout ? forcePillar : null);
+          return sp === tp && sp === activePillar ? (d.type === "direct" ? 0.12 : 0.06) : 0;
+        });
+      sim.force("pillar", null);
+    } else {
+      sim.force("charge",  d3.forceManyBody().strength(-560));
+      sim.force("collide", d3.forceCollide(d => d._r + 30).strength(0.85));
+      sim.force("link")
+        .distance(d => d.type === "direct" ? 150 : 230)
+        .strength(d => d.type === "direct" ? 0.55 : 0.25);
+      sim.force("pillar", null);
+    }
   }
 }
 
@@ -4724,6 +4826,7 @@ function selectNode(d, opts = {}) {
   if (opts.connectionDepth) connectionHighlightDepth = opts.connectionDepth;
   selected = d; hideTip();
   applyConnectionHighlight(d, connectionHighlightDepth);
+  if (usePillarLayout()) applyPillarLabelStyles(d);
   showDetailPanel(d);
   if (viewMode === "spatial"){
     focusSpatialNode(d.id, 700);
@@ -4746,6 +4849,18 @@ function resetHL() {
   if (viewMode === "composition"){
     compositionHoverId = null;
     applyCompositionNodeStyles();
+    return;
+  }
+  if (usePillarLayout()){
+    ndEl.each(function(nd){
+      const inStk=stack.has(nd.id);
+      d3.select(this).select(".gr").attr("fill-opacity",inStk?.25:0);
+      d3.select(this).select(".mc").attr("fill-opacity",inStk?1:.88)
+        .attr("stroke", pillarColorForFamily(nd.id)).attr("stroke-opacity", 0.92);
+      d3.select(this).select(".icn").attr("opacity",1);
+    });
+    if (lviz && activePillar) lviz.attr("stroke-opacity", pillarLinkOpacity);
+    applyPillarLabelStyles(null);
     return;
   }
   ndEl.each(function(nd){
@@ -5025,21 +5140,39 @@ function applyFilters() {
   if (lviz) lviz.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
   if (lhit) lhit.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
   const badge=document.getElementById("fbadge");
-  const f=activeUC||activeInd||activeCats.size<Object.keys(CATS).length
+  const f=activePillar||activeUC||activeInd||activeCats.size<Object.keys(CATS).length
     || facetState.status.size !== 1 || !facetState.status.has("current") || facetState.tier.size > 0;
   if(f){
     const total = viewMode === "all-products" ? (NODES.length + PRODUCTS.length) : NODES.length;
     const label = viewMode === "all-products" ? "items" : "portfolio families";
-    badge.textContent=`Showing ${vis.size} of ${total} ${label}`;
+    if (activePillar && viewMode === "families"){
+      const p = PILLAR_BY_ID[activePillar];
+      badge.textContent = `${p?.label || "Pillar"} · ${vis.size} families · Click pillar again to show all`;
+    } else {
+      badge.textContent=`Showing ${vis.size} of ${total} ${label}`;
+    }
     badge.style.display="block";
   }
   else badge.style.display="none";
   if (viewMode === "families"){
-    configureForcesForMode("families");
-    if (usePillarLayout() && vis.size === NODES.length){
-      seedPillarLayout(viewNodes);
+    if (activePillar && !usePillarLayout()) activePillar = null;
+    if (usePillarLayout()){
+      seedPillarLayout(viewNodes.filter(n => vis.has(n.id)), vis);
+      configureForcesForMode("families");
+      sim.alpha(0);
+      if (lviz){
+        lviz.style("display", l => vis.has(sid(l)) && vis.has(tid(l)) && pillarLinkOpacity(l) > 0 ? null : "none");
+        lviz.attr("stroke-opacity", pillarLinkOpacity);
+      }
+      if (lhit) lhit.style("display", l => vis.has(sid(l)) && vis.has(tid(l)) && pillarLinkOpacity(l) > 0 ? null : "none");
+    } else {
+      viewNodes.forEach(n => { if (!n._pinned){ n.fx = null; n.fy = null; n._shortName = null; } });
+      configureForcesForMode("families");
       sim.alpha(0.55).restart();
+      if (lviz) lviz.style("display", null);
+      if (lhit) lhit.style("display", null);
     }
+    applyPillarLabelStyles(selected);
     updatePillarGuides();
   }
   refreshTimelineIfOpen();
@@ -5047,7 +5180,7 @@ function applyFilters() {
 }
 
 function resetAll() {
-  activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd="";
+  activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd=""; activePillar=null;
   ucEl.value=""; indEl.value="";
   facetState.status = new Set(["current"]);
   facetState.tier.clear();
@@ -6153,7 +6286,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.13.0";
+const APP_VERSION   = "2.14.1";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6444,6 +6577,14 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.14.1", date:"2026-06-20", items:[
+    "Chrome — Reset, Guided Plan, and Account Planner moved to a dedicated action bar below the main top bar so they no longer wrap or overlap filters."
+  ]},
+  {ver:"2.14.0", date:"2026-06-20", items:[
+    "Families — pinned grid layout removes overlap; icons-only in the 3-zone view, labels when a pillar is selected.",
+    "Pillar filter — click a legend row or zone panel to focus one outcome pillar; click again or Reset to show all.",
+    "Overview — pillar cards jump into Families with that pillar pre-filtered."
+  ]},
   {ver:"2.13.0", date:"2026-06-20", items:[
     "Families — 3-pillar layout only (no connectivity zone); branch/WAN families fold into Workplaces, identity/SASE into Resilience; quieter links and no duplicate zone labels.",
     "Overview — exact slide 12 deck icons extracted from One Cisco Deck.PPTX (bracketed rack, collaboration ring, resilience spring).",
@@ -9449,9 +9590,9 @@ function wireSearchPulse(){
 /* ════════════════════════════════════════════════════════════════════════
    [15a] ADAPTIVE SEARCH PLACEHOLDER
 
-   The search input shares a single 58px topbar row with logo, view-mode
-   segmented control, category pills, two dropdowns, Reset, and the
-   Account Planner button — every sibling has flex-shrink:0, so the
+   The search input shares the main topbar row with logo, view-mode
+   segmented control, category pills, and two dropdowns — Reset, Guided
+   Plan, and Account Planner live on a separate action bar below. The
    search box ends up with whatever's left (often ~260–340 px on 1280–
    1440 px windows). The full "Search products, models, use cases…"
    placeholder doesn't fit and gets clipped without an ellipsis (CSS
@@ -9486,6 +9627,20 @@ function wireAdaptivePlaceholder(){
   apply(sw.getBoundingClientRect().width);
   const ro = new ResizeObserver(([entry]) => apply(entry.contentRect.width));
   ro.observe(sw);
+}
+
+function syncTopbarHeight(){
+  const chrome = document.getElementById("app-chrome");
+  if (!chrome) return;
+  document.documentElement.style.setProperty("--topbar-h", chrome.offsetHeight + "px");
+}
+function wireTopbarHeightSync(){
+  const chrome = document.getElementById("app-chrome");
+  if (!chrome || typeof ResizeObserver === "undefined") return;
+  syncTopbarHeight();
+  const ro = new ResizeObserver(() => syncTopbarHeight());
+  ro.observe(chrome);
+  window.addEventListener("resize", syncTopbarHeight);
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -10685,6 +10840,7 @@ function boot(){
   wireRefArchToUC();
   wireSearchPulse();
   wireAdaptivePlaceholder();
+  wireTopbarHeightSync();
   wireKeyboardA11y();
   watchStackForAutoSave();
   watchAnalysisResults();
