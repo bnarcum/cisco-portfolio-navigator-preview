@@ -7696,6 +7696,62 @@ function renderBreadcrumbs(){
 }
 
 /* ════════════════════════════════════════════════════════════════════════
+   dCloud demo links (dcloud-links.json)
+   ════════════════════════════════════════════════════════════════════════*/
+let DCLOUD_LINKS = [];
+
+async function loadDcloudLinks(){
+  try {
+    const res = await fetch("dcloud-links.json", { cache: "no-cache" });
+    if (res.ok) DCLOUD_LINKS = await res.json();
+  } catch (_) { /* file:// or offline */ }
+}
+
+function dcloudLinksFor({ familyId, productId } = {}){
+  const seen = new Set();
+  return DCLOUD_LINKS.filter(e => {
+    const productMatch = productId && e.products?.includes(productId);
+    const familyMatch = familyId && e.families?.includes(familyId);
+    if (!productMatch && !familyMatch) return false;
+    if (seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  }).sort((a, b) => (b.primary ? 1 : 0) - (a.primary ? 1 : 0));
+}
+
+function insertDcloudLinks(id, kind){
+  const pb = $("#pbody"); if (!pb || pb.querySelector(".p-dcloud")) return;
+  const product = kind === "product" ? prodById[id] : null;
+  const entries = dcloudLinksFor(
+    kind === "product"
+      ? { productId: id, familyId: product?.family }
+      : { familyId: id }
+  );
+  if (!entries.length) return;
+
+  const sec = document.createElement("div");
+  sec.className = "p-sec p-dcloud";
+  sec.innerHTML = `
+    <div class="p-sec-t">dCloud proof</div>
+    <div class="lb">${entries.map(e => {
+      const dc = e.datacenter ? ` <span style="font-size:10px;color:var(--subtle)">(${escapeHtml(e.datacenter)})</span>` : "";
+      return `<a class="la" href="${escapeHtml(e.catalogUrl)}" target="_blank" rel="noopener">${escapeHtml(e.name)}${dc} <span>dCloud ↗</span></a>`;
+    }).join("")}</div>`;
+
+  const anchor = pb.querySelector(".add-stack-btn");
+  if (anchor) pb.insertBefore(sec, anchor);
+  else pb.appendChild(sec);
+}
+
+function refreshDcloudPanelIfOpen(){
+  const pb = $("#pbody");
+  const panel = $("#panel");
+  if (!pb || !panel?.classList.contains("open") || !pb.dataset.lastId) return;
+  pb.querySelector(".p-dcloud")?.remove();
+  insertDcloudLinks(pb.dataset.lastId, pb.dataset.lastKind || "node");
+}
+
+/* ════════════════════════════════════════════════════════════════════════
    [10] TIER badges + [21] photo placeholder + [23] field notices
    ════════════════════════════════════════════════════════════════════════*/
 function enhanceNodePanel(id){
@@ -7704,6 +7760,7 @@ function enhanceNodePanel(id){
     renderBreadcrumbs();
     insertPhotoPlaceholder(id, "node");
     insertTierBadge(id);
+    insertDcloudLinks(id, "node");
     insertPinAndCompareBtns(id, "node");
   }, 0);
 }
@@ -7715,6 +7772,7 @@ function enhanceProductPanel(id){
     const p = prodById[id];
     if (p) insertTierBadge(p.family);
     insertFieldNotice(id);
+    insertDcloudLinks(id, "product");
     insertPinAndCompareBtns(id, "product");
   }, 0);
 }
@@ -9255,6 +9313,7 @@ function openShortcuts(){
    BOOT — assemble everything
    ════════════════════════════════════════════════════════════════════════*/
 function boot(){
+  loadDcloudLinks().then(refreshDcloudPanelIfOpen);
   buildPlansMenu();
   buildExportMenu();
   buildProfileBox();
