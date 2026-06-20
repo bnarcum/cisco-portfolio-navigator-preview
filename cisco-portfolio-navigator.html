@@ -2766,6 +2766,75 @@ function compositionShortName(p){
   return n;
 }
 
+const MATRIX_SITE = "https://bnarcum.github.io/collaboration-device-matrix/";
+const MATRIX_IMG_BASE = MATRIX_SITE + "devices/";
+let MATRIX_BRIDGE = {
+  matrixBase: MATRIX_SITE,
+  imageBase: MATRIX_IMG_BASE,
+  products: {
+    "room-bar": { matrixId: "room-bar", hash: "5930e7bad9" },
+    "room-bar-pro": { matrixId: "room-bar-pro", hash: "985d42e216" },
+    "board-pro-55": { matrixId: "board-pro-g2-55", hash: "7a4fbdb9f3" },
+    "board-pro-75": { matrixId: "board-pro-g2-75", hash: "7a4fbdb9f3" },
+    "board-pro-g2": { matrixId: "board-pro-g2-55", hash: "7a4fbdb9f3" },
+    "room-kit-mini": { matrixId: "room-bar", hash: "5930e7bad9" },
+    "room-kit-eq": { matrixId: "room-kit-eq", hash: "5dffa60f11" },
+    "room-kit-pro": { matrixId: "room-kit-pro-g2", hash: "d451a37ab5" },
+    "codec-plus": { matrixId: "room-kit-eq", hash: "5dffa60f11" },
+    "codec-pro": { matrixId: "room-kit-pro-g2", hash: "d451a37ab5" },
+    "quad-camera": { matrixId: "quad-camera", hash: "12b412d18f" },
+    "ptz-4k": { matrixId: "ptz-4k-camera", hash: "167ce81553" },
+    "room-navigator": { matrixId: "room-navigator-table", hash: "4b0fa15cf0" },
+    "desk-mini": { matrixId: "desk-mini", hash: "6b3e2bab98" },
+    "desk-pro": { matrixId: "desk", hash: "6717ba491e" },
+    "desk-pro-g2": { matrixId: "desk-pro-g2", hash: "1dc86014d2" },
+    "wireless-9821": { matrixId: "wireless-9821", hash: "31dabe8c8e" },
+    "headset-320": { matrixId: "headset-320", hash: "25c4f2bbed" },
+    "headset-532": { matrixId: "headset-520", hash: "5ada38fb4a" },
+    "headset-720": { matrixId: "headset-730", hash: "8cb7938ed5" },
+    "headset-730": { matrixId: "headset-730", hash: "8cb7938ed5" }
+  }
+};
+function matrixBridgeEntry(id){ return id ? (MATRIX_BRIDGE.products?.[id] || null) : null; }
+function matrixImageUrl(id){
+  const e = matrixBridgeEntry(id); if (!e) return null;
+  if (e.image) return e.image;
+  const base = MATRIX_BRIDGE.imageBase || MATRIX_IMG_BASE;
+  return e.hash ? `${base}img-${e.hash}.webp` : null;
+}
+function matrixDeviceUrl(id){
+  const e = matrixBridgeEntry(id); if (!e?.matrixId) return null;
+  const base = MATRIX_BRIDGE.matrixBase || MATRIX_SITE;
+  return `${base}?vendor=cisco&device=${encodeURIComponent(e.matrixId)}`;
+}
+function nodeHasMatrixImage(d){
+  return d._kind === "product" && !!matrixImageUrl(d.id);
+}
+async function loadMatrixBridge(){
+  try {
+    const res = await fetch("matrix-bridge.json", { cache: "no-cache" });
+    if (!res.ok) return;
+    const data = await res.json();
+    MATRIX_BRIDGE = Object.assign({ products: {} }, data);
+    refreshMatrixVisuals();
+  } catch (_) { /* offline — inline defaults above */ }
+}
+function refreshMatrixVisuals(){
+  if (viewMode === "composition" && viewNodes.length){
+    viewNodes.forEach(n => {
+      if (n._kind !== "product") return;
+      n._hasImage = nodeHasMatrixImage(n);
+      if (n._hasImage) n._r = n._status === "current" ? 20 : 15;
+    });
+    if (typeof rebindGraph === "function") rebindGraph({ restart: false });
+    applyCompositionNodeStyles();
+  }
+  const pb = document.getElementById("pbody");
+  if (pb?.dataset.lastKind === "product" && pb.dataset.lastId && typeof window.insertProductHero === "function"){
+    window.insertProductHero(pb.dataset.lastId, "product");
+  }
+}
+
 function productIconKey(p){
   const id = (p?.id || "").toLowerCase();
   const name = (p?.name || "").toLowerCase();
@@ -2854,6 +2923,18 @@ const root = svg.append("g");
 const zoom = d3.zoom().scaleExtent([0.2,4]).on("zoom", ev => root.attr("transform", ev.transform));
 svg.call(zoom);
 
+const clipDefHost = svg.select("defs").append("g").attr("class", "product-clip-defs");
+function ensureProductClip(id, r){
+  const cid = "clip-prod-" + String(id).replace(/[^a-z0-9_-]/gi, "_");
+  let cp = clipDefHost.select("#" + cid);
+  if (cp.empty()){
+    cp = clipDefHost.append("clipPath").attr("id", cid);
+    cp.append("circle").attr("cx", 0).attr("cy", 0);
+  }
+  cp.select("circle").attr("r", Math.max(1, r * 0.94));
+  return cid;
+}
+
 const degree = {};
 NODES.forEach(n => degree[n.id] = 0);
 LINKS.forEach(l => { degree[l.source]++; degree[l.target]++; });
@@ -2889,10 +2970,31 @@ function buildNodeGroup(sel){
     .attr("r", d => d._r + 9).attr("fill", d => catColor(d.category))
     .attr("fill-opacity", 0).attr("filter","url(#glow)");
   sel.append("circle").attr("class","mc")
-    .attr("r", d => d._r).attr("fill", d => catColor(d.category))
-    .attr("fill-opacity", 0.88).attr("stroke","transparent").attr("stroke-width", 2.5);
-  // White icon overlay — symbol library is defined in <defs>. Icon size is ~75% of
-  // the node diameter so it reads clearly without crowding the circle edge.
+    .attr("r", d => d._r)
+    .attr("fill", d => d._hasImage ? "#0a1018" : catColor(d.category))
+    .attr("fill-opacity", d => d._hasImage ? 0.98 : 0.88)
+    .attr("stroke","transparent").attr("stroke-width", 2.5);
+  sel.append("circle").attr("class","mring")
+    .attr("r", d => d._r + 1.4).attr("fill", "none")
+    .attr("stroke", d => {
+      if (d._status === "eol") return "#ef4444";
+      if (d._status === "eos") return "#FF9000";
+      if (d._hasImage) return "rgba(45,206,92,0.55)";
+      return "transparent";
+    })
+    .attr("stroke-width", d => d._hasImage ? 1.6 : 0)
+    .style("pointer-events", "none");
+  sel.filter(d => d._hasImage && matrixImageUrl(d.id)).each(function(d){
+    const g = d3.select(this);
+    const cid = ensureProductClip(d.id, d._r);
+    const pad = d._r * 0.98;
+    g.append("image").attr("class", "pimg")
+      .attr("href", matrixImageUrl(d.id))
+      .attr("width", pad * 2).attr("height", pad * 2)
+      .attr("x", -pad).attr("y", -pad)
+      .attr("clip-path", `url(#${cid})`)
+      .style("pointer-events", "none");
+  });
   sel.append("use").attr("class","icn")
     .attr("href",   d => "#icon-" + iconKey(d))
     .attr("width",  d => d._r * 1.5)
@@ -2901,41 +3003,66 @@ function buildNodeGroup(sel){
     .attr("y",      d => -d._r * 0.75)
     .attr("fill",   "#ffffff")
     .style("color", "#ffffff")
-    .style("pointer-events", "none");
+    .style("pointer-events", "none")
+    .style("display", d => d._hasImage ? "none" : null);
   sel.append("text").attr("class","nl")
     .attr("y", d => d._r + 14).text(d => d._shortName || d.name)
     .style("font-size","10px").style("fill","#525E6C")
     .style("text-anchor","middle").style("pointer-events","none");
 }
 
+function compositionLabelStyle(d){
+  if (d._kind === "family") return { fill: "#ffffff", stroke: "rgba(8,14,24,0.9)", weight: "700", size: "11px" };
+  if (d._status === "eol") return { fill: "#f0b4bc", stroke: "rgba(8,14,24,0.92)", weight: "500", size: "9.5px" };
+  if (d._status === "eos") return { fill: "#f0c878", stroke: "rgba(8,14,24,0.92)", weight: "500", size: "9.5px" };
+  return { fill: "#eef2f6", stroke: "rgba(8,14,24,0.88)", weight: "600", size: "9.5px" };
+}
+
 function applyCompositionNodeStyles(){
   if (viewMode !== "composition" || !ndEl) return;
   ndEl.select(".mc")
+    .attr("fill", d => d._hasImage ? "#0a1018" : catColor(d.category))
     .attr("fill-opacity", d => {
+      if (d._hasImage) return d._status === "eol" ? 0.5 : d._status === "eos" ? 0.68 : 0.98;
       if (d._kind === "family") return 0.95;
       if (d._status === "eol") return 0.42;
       if (d._status === "eos") return 0.62;
       return 0.92;
     })
     .attr("stroke", d => {
+      if (d._hasImage) return "transparent";
       if (d._status === "eol") return "#ef4444";
       if (d._status === "eos") return "#FF9000";
       if (d._kind === "family") return "#ffffff";
       return "transparent";
     })
-    .attr("stroke-width", d => (d._status && d._status !== "current") || d._kind === "family" ? 2 : 0);
+    .attr("stroke-width", d => (!d._hasImage && ((d._status && d._status !== "current") || d._kind === "family")) ? 2 : 0);
+  ndEl.select(".mring")
+    .attr("stroke", d => {
+      if (d._status === "eol") return "#ef4444";
+      if (d._status === "eos") return "#FF9000";
+      if (d._kind === "family") return "rgba(255,255,255,0.85)";
+      if (d._hasImage) return "rgba(45,206,92,0.6)";
+      return "transparent";
+    })
+    .attr("stroke-width", d => (d._hasImage || d._kind === "family" || (d._status && d._status !== "current")) ? 1.6 : 0);
+  ndEl.select("image.pimg").attr("opacity", d => d._status === "eol" ? 0.42 : d._status === "eos" ? 0.62 : 1);
+  ndEl.select("use.icn").style("display", d => d._hasImage ? "none" : null);
   ndEl.select(".gr")
     .attr("fill-opacity", d => d._kind === "family" ? 0.28 : d._status === "eol" ? 0.08 : 0.12);
   ndEl.select("text.nl")
     .text(d => d._shortName || d.name)
     .attr("y", d => d._r + (d._kind === "family" ? 16 : 13))
-    .style("font-size", d => d._kind === "family" ? "11px" : "9.5px")
-    .style("font-weight", d => d._kind === "family" ? "700" : "500")
-    .style("fill", d => {
-      if (d._kind === "family") return "#ffffff";
-      if (d._status === "eol") return "#b89098";
-      if (d._status === "eos") return "#c9a060";
-      return "#c8d2dc";
+    .each(function(d){
+      const s = compositionLabelStyle(d);
+      d3.select(this)
+        .style("font-size", s.size)
+        .style("font-weight", s.weight)
+        .style("fill", s.fill)
+        .style("paint-order", "stroke fill")
+        .style("stroke", s.stroke)
+        .style("stroke-width", "4px")
+        .style("stroke-linejoin", "round");
     });
   if (lviz){
     lviz.attr("stroke", d => d.type === "succession" ? "#a855f7" : "#4a5568")
@@ -3045,7 +3172,18 @@ function rebindGraph(opts){
 
   // Refresh dynamic attributes on update — needed when a node's role
   // changes between modes (e.g. family in Families vs Composition).
-  ndEl.select("use.icn").attr("href", d => "#icon-" + iconKey(d));
+  ndEl.select("use.icn").attr("href", d => "#icon-" + iconKey(d))
+    .style("display", d => d._hasImage ? "none" : null);
+  ndEl.select("image.pimg").each(function(d){
+    if (!d._hasImage) return;
+    ensureProductClip(d.id, d._r);
+    const pad = d._r * 0.98;
+    d3.select(this)
+      .attr("href", matrixImageUrl(d.id))
+      .attr("width", pad * 2).attr("height", pad * 2)
+      .attr("x", -pad).attr("y", -pad)
+      .attr("clip-path", `url(#clip-prod-${String(d.id).replace(/[^a-z0-9_-]/gi, "_")})`);
+  });
   ndEl.select("text.nl").text(d => d._shortName || d.name);
   applyCompositionNodeStyles();
   updateCompositionHint();
@@ -3308,17 +3446,19 @@ function buildCompositionView(familyId){
       const fx = Math.cos(angle) * radius;
       const fy = Math.sin(angle) * radius;
       const isLegacy = p.status !== "current";
+      const hasImg = nodeHasMatrixImage({ _kind: "product", id: p.id });
       nodes.push({
         id: p.id,
         name: p.name,
         category: p.category,
         _kind: "product",
-        _r: isLegacy ? 11 : 15,
+        _r: hasImg ? (isLegacy ? 15 : 20) : (isLegacy ? 11 : 15),
         _productRef: p,
         _family: p.family,
         _iconKey: productIconKey(p),
         _shortName: compositionShortName(p),
         _status: p.status,
+        _hasImage: hasImg,
         _orbitFixed: true,
         _ox: fx, _oy: fy,
         fx, fy, x: fx, y: fy
@@ -3327,8 +3467,8 @@ function buildCompositionView(familyId){
   };
 
   if (legacy.length && current.length){
-    placeOnRing(current, Math.max(145, 80 + current.length * 7));
-    placeOnRing(legacy, Math.max(78, 48 + legacy.length * 5));
+    placeOnRing(current, Math.max(155, 88 + current.length * 8));
+    placeOnRing(legacy, Math.max(82, 50 + legacy.length * 5));
   } else {
     const all = [...current, ...legacy];
     const radius = Math.max(125, Math.min(215, 82 + all.length * 8.5));
@@ -3989,6 +4129,18 @@ window.getViewFocus   = () => viewFocus;
 })();
 
 function applyConnectionHighlight(d, depth = connectionHighlightDepth){
+  if (viewMode === "composition"){
+    ndEl.each(function(nd){
+      const isSel = nd.id === d.id;
+      d3.select(this).select(".gr").attr("fill-opacity", isSel ? 0.32 : (nd._kind === "family" ? 0.28 : 0.1));
+      d3.select(this).select(".mc").attr("fill-opacity", isSel ? 1 : (nd._hasImage ? 0.88 : 0.75));
+    });
+    applyCompositionNodeStyles();
+    lviz.attr("stroke", l => l.type === "succession" ? "#a855f7" : "#4a5568")
+      .attr("stroke-opacity", l => l.type === "succession" ? 0.55 : 0.45)
+      .attr("stroke-width", l => l.type === "succession" ? 1.4 : 1);
+    return;
+  }
   const conn = connectionNodeSet(d.id, depth);
   ndEl.each(function(nd){
     const isSel = nd.id === d.id, isC = conn.has(nd.id);
@@ -4030,6 +4182,23 @@ function resetHL() {
     refreshSpatialLabelStyles();
     return;
   }
+  if (viewMode === "composition"){
+    ndEl.each(function(nd){
+      const inStk = stack.has(nd.id);
+      d3.select(this).select(".gr").attr("fill-opacity", inStk ? 0.22 : (nd._kind === "family" ? 0.28 : 0.12));
+      d3.select(this).select(".mc").attr("fill-opacity", nd._hasImage
+        ? (nd._status === "eol" ? 0.5 : nd._status === "eos" ? 0.68 : (inStk ? 1 : 0.98))
+        : (inStk ? 1 : (nd._status === "eol" ? 0.42 : nd._status === "eos" ? 0.62 : 0.92)));
+      d3.select(this).select(".icn").attr("opacity", nd._hasImage ? 0 : 1);
+      d3.select(this).select("image.pimg").attr("opacity", nd._status === "eol" ? 0.42 : nd._status === "eos" ? 0.62 : 1);
+    });
+    applyCompositionNodeStyles();
+    lviz.attr("stroke", d => d.type === "succession" ? "#a855f7" : "#4a5568")
+      .attr("stroke-opacity", d => d.type === "succession" ? 0.42 : 0.5)
+      .attr("stroke-width", d => d.type === "succession" ? 1.3 : 1)
+      .attr("stroke-dasharray", d => d.type === "succession" ? "4 4" : null);
+    return;
+  }
   ndEl.each(function(nd){
     const inStk=stack.has(nd.id);
     d3.select(this).select(".gr").attr("fill-opacity",inStk?.25:0);
@@ -4046,6 +4215,11 @@ function highlightStack() {
   if (viewMode === "spatial"){
     if (spatialState.graph) spatialState.graph.nodeColor(spatialNodeColor);
     refreshSpatialLabelStyles();
+    return;
+  }
+  if (viewMode === "composition"){
+    if (selected) return;
+    resetHL();
     return;
   }
   if(selected) return; if(!stack.size){ resetHL(); return; }
@@ -5360,7 +5534,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.8.0";
+const APP_VERSION   = "2.9.0";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5651,6 +5825,11 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.9.0", date:"2026-06-20", items:[
+    "Collaboration Device Matrix integration — product heroes and composition thumbnails use brochure WebP photos via matrix-bridge.json.",
+    "Product panels — View in Collaboration Device Matrix deep-links to the 3D showroom (?vendor=cisco&device=…).",
+    "Composition labels — fixed resetHL wiping light text; stroke halo for readable names on dark canvas."
+  ]},
   {ver:"2.8.0", date:"2026-06-17", items:[
     "Composition view — fixed orbit layout (current outer ring, legacy inner), product-specific icons, short readable labels, and status styling for EOL/EOS.",
     "All-products mode — product nodes use descriptive icons by form factor and category."
@@ -5959,6 +6138,21 @@ STYLE.textContent = `
   .p-photo{width:100%;height:120px;background:linear-gradient(135deg,var(--surface2),var(--surface3));
     border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;
     border:1px solid var(--border);overflow:hidden;position:relative}
+  .p-hero{width:100%;height:200px;margin-bottom:14px;border-radius:10px;overflow:hidden;position:relative;
+    background:radial-gradient(ellipse 75% 65% at 50% 52%, rgba(45,206,92,0.1), rgba(8,14,24,0.96) 72%),
+               linear-gradient(165deg, #141c28 0%, #0a1018 100%);
+    border:1px solid rgba(45,206,92,0.2);box-shadow:0 6px 24px rgba(0,0,0,0.35)}
+  .p-hero img{width:100%;height:100%;object-fit:contain;padding:16px 20px 24px;box-sizing:border-box;
+    filter:drop-shadow(0 8px 18px rgba(0,0,0,0.5));position:relative;z-index:1}
+  .p-hero-fallback{display:flex;align-items:center;justify-content:center;height:100%;position:absolute;inset:0;z-index:0}
+  .p-hero-fallback svg{width:68px;height:68px;color:var(--accent);opacity:.65}
+  .p-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.5) 100%);
+    pointer-events:none;z-index:2}
+  .p-hero-meta{position:absolute;left:10px;right:10px;bottom:8px;display:flex;justify-content:space-between;
+    align-items:center;gap:8px;z-index:3;pointer-events:none}
+  .p-hero-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.55)}
+  .p-matrix-link{margin:-2px 0 12px}
+  .p-matrix-link .la{display:flex;align-items:center;gap:6px}
   .p-photo svg{width:60px;height:60px;color:var(--accent);opacity:.65}
   .p-photo .p-photo-cat{position:absolute;bottom:6px;left:8px;font-size:9px;color:var(--subtle);
     text-transform:uppercase;letter-spacing:.1em;font-weight:700}
@@ -8231,7 +8425,8 @@ function enhanceProductPanel(id){
   setTimeout(() => {
     const pb = $("#pbody"); if (!pb) return;
     renderBreadcrumbs();
-    insertPhotoPlaceholder(id, "product");
+    insertProductHero(id, "product");
+    insertMatrixLink(id, "product");
     const p = prodById[id];
     if (p) insertTierBadge(p.family);
     insertFieldNotice(id);
@@ -8239,24 +8434,51 @@ function enhanceProductPanel(id){
     insertPinAndCompareBtns(id, "product");
   }, 0);
 }
-function insertPhotoPlaceholder(id, kind){
+function insertProductHero(id, kind){
   const pb = $("#pbody"); if (!pb) return;
-  if (pb.querySelector(".p-photo")) return;
+  pb.querySelector(".p-hero")?.remove();
+  pb.querySelector(".p-photo")?.remove();
   const n = (kind === "product") ? prodById[id] : nodeById[id];
   if (!n) return;
   const cat = catOf(id);
+  const imgUrl = (kind === "product") ? matrixImageUrl(id) : null;
   const symId = "#icon-" + (kind === "node" ? iconKey(nodeById[id]) :
-    iconKey(nodeById[prodById[id].family] || {category: prodById[id].category}));
-  const photo = document.createElement("div");
-  photo.className = "p-photo";
-  photo.innerHTML = `
-    <svg viewBox="0 0 24 24" style="color:${cat?CATS[cat].color:"#fff"}"><use href="${symId}"/></svg>
-    <div class="p-photo-cat">${cat?CATS[cat].label:""}</div>
-  `;
-  // Insert before .p-name
+    iconKey({ _kind: "product", _productRef: prodById[id], id }));
+  const hero = document.createElement("div");
+  hero.className = "p-hero";
+  if (imgUrl){
+    hero.innerHTML = `
+      <div class="p-hero-fallback" aria-hidden="true"><svg viewBox="0 0 24 24" style="color:${cat ? CATS[cat].color : "#fff"}"><use href="${symId}"/></svg></div>
+      <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(n.name)}" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="p-hero-scrim"></div>
+      <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
+  } else {
+    hero.innerHTML = `
+      <div class="p-hero-fallback"><svg viewBox="0 0 24 24" style="color:${cat ? CATS[cat].color : "#fff"}"><use href="${symId}"/></svg></div>
+      <div class="p-hero-scrim"></div>
+      <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
+  }
   const nameEl = pb.querySelector(".p-name");
-  if (nameEl) pb.insertBefore(photo, nameEl);
+  if (nameEl) pb.insertBefore(hero, nameEl);
+  else pb.prepend(hero);
 }
+function insertMatrixLink(id, kind){
+  if (kind !== "product") return;
+  const pb = $("#pbody"); if (!pb) return;
+  pb.querySelector(".p-matrix-link")?.remove();
+  const url = matrixDeviceUrl(id);
+  if (!url) return;
+  const sec = document.createElement("div");
+  sec.className = "p-sec p-matrix-link";
+  sec.innerHTML = `<div class="p-sec-t">Device Matrix</div><div class="lb">
+    <a class="la" href="${escapeHtml(url)}" target="_blank" rel="noopener">View in Collaboration Device Matrix <span>3D showroom ↗</span></a>
+  </div>`;
+  const hero = pb.querySelector(".p-hero") || pb.querySelector(".p-name");
+  if (hero?.nextSibling) hero.parentNode.insertBefore(sec, hero.nextSibling);
+  else pb.appendChild(sec);
+}
+function insertPhotoPlaceholder(id, kind){ insertProductHero(id, kind); }
+window.insertProductHero = insertProductHero;
 function insertTierBadge(nodeId){
   const t = TIERS[nodeId]; if (!t) return;
   const pb = $("#pbody"); if (!pb || pb.querySelector(".p-tier")) return;
@@ -9777,6 +9999,7 @@ function openShortcuts(){
    ════════════════════════════════════════════════════════════════════════*/
 function boot(){
   loadDcloudLinks().then(refreshDcloudPanelIfOpen);
+  loadMatrixBridge();
   buildPlansMenu();
   buildExportMenu();
   buildProfileBox();

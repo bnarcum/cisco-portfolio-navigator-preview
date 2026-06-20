@@ -1,0 +1,27 @@
+{
+  "matrixBase": "https://bnarcum.github.io/collaboration-device-matrix/",
+  "imageBase": "https://bnarcum.github.io/collaboration-device-matrix/devices/",
+  "products": {
+    "room-bar": { "matrixId": "room-bar", "hash": "5930e7bad9" },
+    "room-bar-pro": { "matrixId": "room-bar-pro", "hash": "985d42e216" },
+    "board-pro-55": { "matrixId": "board-pro-g2-55", "hash": "7a4fbdb9f3" },
+    "board-pro-75": { "matrixId": "board-pro-g2-75", "hash": "7a4fbdb9f3" },
+    "board-pro-g2": { "matrixId": "board-pro-g2-55", "hash": "7a4fbdb9f3" },
+    "room-kit-mini": { "matrixId": "room-bar", "hash": "5930e7bad9", "note": "Similar all-in-one bar form factor" },
+    "room-kit-eq": { "matrixId": "room-kit-eq", "hash": "5dffa60f11" },
+    "room-kit-pro": { "matrixId": "room-kit-pro-g2", "hash": "d451a37ab5" },
+    "codec-plus": { "matrixId": "room-kit-eq", "hash": "5dffa60f11", "note": "Codec shown via Room Kit EQ kit photo" },
+    "codec-pro": { "matrixId": "room-kit-pro-g2", "hash": "d451a37ab5", "note": "Codec shown via Room Kit Pro G2 kit photo" },
+    "quad-camera": { "matrixId": "quad-camera", "hash": "12b412d18f" },
+    "ptz-4k": { "matrixId": "ptz-4k-camera", "hash": "167ce81553" },
+    "room-navigator": { "matrixId": "room-navigator-table", "hash": "4b0fa15cf0" },
+    "desk-mini": { "matrixId": "desk-mini", "hash": "6b3e2bab98" },
+    "desk-pro": { "matrixId": "desk", "hash": "6717ba491e" },
+    "desk-pro-g2": { "matrixId": "desk-pro-g2", "hash": "1dc86014d2" },
+    "wireless-9821": { "matrixId": "wireless-9821", "hash": "31dabe8c8e" },
+    "headset-320": { "matrixId": "headset-320", "hash": "25c4f2bbed" },
+    "headset-532": { "matrixId": "headset-520", "hash": "5ada38fb4a" },
+    "headset-720": { "matrixId": "headset-730", "hash": "8cb7938ed5" },
+    "headset-730": { "matrixId": "headset-730", "hash": "8cb7938ed5" }
+  }
+}
