@@ -7458,12 +7458,12 @@ document.addEventListener("keydown",ev=>{
       title: "Bottom-left toolbar",
       body: `Three quick utilities sit here, replacing the old legend panel:<br><br>
              <strong>★ Recent / Pinned</strong> — items you've viewed or starred<br>
-             <strong>⏱ Timeline view</strong> — full-screen EOS/EOL gantt across the portfolio<br>
+             <strong>⏱ Refresh timeline</strong> — full-screen EOS/EOL gantt across the portfolio<br>
              <strong>⌕ Filters</strong> — filter by status (Current / EOS / EOL) or licensing tier`,
     },
     {
       target: "#tools-timeline", place: "top",
-      title: "EOS / EOL Timeline",
+      title: "Refresh timeline",
       body: `Opens a Gantt-style view of every product's lifecycle. Each product
              gets its own track per family. Use <code>+</code> / <code>−</code> /
              <code>0</code> or <code>⌘/Ctrl + scroll</code> to zoom in &amp; out
@@ -7493,7 +7493,7 @@ document.addEventListener("keydown",ev=>{
              (changelog) and the keyboard shortcuts cheat-sheet.<br><br>
              Try <code>?</code> any time to relaunch this tour, <code>G</code> for Guided Plan,
              <code>/</code> to focus search, <code>a</code> to open the AI assistant,
-             <code>t</code> to toggle the timeline. In Spatial view, <code>Esc</code> steps
+             <code>t</code> to toggle Refresh timeline. In Spatial view, <code>Esc</code> steps
              back one level at a time.`,
     },
 
@@ -7729,7 +7729,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.22.6";
+const APP_VERSION   = "2.22.8";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8020,6 +8020,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.22.8", date:"2026-06-20", items:[
+    "Refresh timeline — renamed from Timeline view (toolbar, panel title, tour, keyboard help); still shows EOS/EOL Gantt by family."
+  ]},
   {ver:"2.28.0", date:"2026-06-20", items:[
     "Family product drawer — single-click any family (including Composition hub) opens a scrollable product list in the side panel; drawer auto-opens when drilling into Composition or Spatial orbit.",
     "Composition hub — panel resolves full family metadata from portfolio data (fixes blank/broken drawer when clicking Room Systems center node)."
@@ -11414,7 +11417,7 @@ function buildTimelineView(){
   tl.innerHTML = `
     <div id="tl-head">
       <div>
-        <div class="tl-title">EOS / EOL Timeline</div>
+        <div class="tl-title">Refresh timeline</div>
         <div class="tl-sub">Tracks lay out side-by-side per family. Scroll horizontally to pan years · hover narrow blocks for names · ⌘/Ctrl + scroll to zoom.</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
@@ -11490,8 +11493,8 @@ function buildTimelineView(){
   const tBtn = document.createElement("button");
   tBtn.className = "tools-btn";
   tBtn.id = "tools-timeline";
-  tBtn.innerHTML = `<span class="ti">⏱</span><span>Timeline view</span>`;
-  tBtn.title = "Open EOS/EOL timeline view (T)";
+  tBtn.innerHTML = `<span class="ti">⏱</span><span>Refresh timeline</span>`;
+  tBtn.title = "Open refresh timeline — EOS/EOL dates across the portfolio (T)";
   tBtn.addEventListener("click", () => {
     const open = $("#tl-wrap").classList.contains("show");
     if (open) { closeTimelineView(); tBtn.classList.remove("active"); }
@@ -12493,7 +12496,7 @@ function openShortcuts(){
     ["/", "Focus search"],
     ["P", "Toggle account planner"],
     ["G", "Open Guided Plan wizard"],
-    ["T", "Toggle timeline view"],
+    ["T", "Toggle refresh timeline"],
     ["A", "Toggle AI assistant"],
     ["?", "Re-launch guided tour"],
     ["Dbl-click family", "Drill into Composition view (graph)"],
