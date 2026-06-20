@@ -2774,6 +2774,7 @@ let MATRIX_BRIDGE = {
   products: {
     "room-bar": { matrixId: "room-bar", hash: "5930e7bad9" },
     "room-bar-pro": { matrixId: "room-bar-pro", hash: "985d42e216" },
+    "room-bar-pro-g2": { matrixId: "room-bar-pro", hash: "985d42e216" },
     "board-pro-55": { matrixId: "board-pro-g2-55", hash: "7a4fbdb9f3" },
     "board-pro-75": { matrixId: "board-pro-g2-75", hash: "7a4fbdb9f3" },
     "board-pro-g2": { matrixId: "board-pro-g2-55", hash: "7a4fbdb9f3" },
@@ -3079,10 +3080,10 @@ function updateCompositionHint(){
     hint.textContent = "Scroll to zoom · Drag to pan · Click node for details";
     return;
   }
-  const prods = PRODUCTS.filter(p => p.family === viewFocus);
+  const prods = PRODUCTS.filter(p => p.family === viewFocus && productMatchesFilters(p));
   const cur = prods.filter(p => p.status === "current").length;
-  const leg = prods.length - cur;
-  hint.textContent = `${cur} current${leg ? ` · ${leg} legacy` : ""} · Click a product for details · Purple dashed = upgrade path · Esc to go back`;
+  const leg = prods.filter(p => p.status === "eol").length;
+  hint.textContent = `${cur} current${leg ? ` · ${leg} EoL` : ""} · Click a product for details · Purple dashed = upgrade path · Esc to go back`;
 }
 
 // ── Rebind selections to current viewNodes / viewLinks and restart simulation.
@@ -3423,10 +3424,9 @@ function buildAllProductsView(){
 function buildCompositionView(familyId){
   const fam = nodeById[familyId];
   if (!fam) return { nodes:[], links:[] };
-  const products = PRODUCTS.filter(p => p.family === familyId);
+  const products = PRODUCTS.filter(p => p.family === familyId && productMatchesFilters(p));
   const current = products.filter(p => p.status === "current");
-  const legacy = products.filter(p => p.status !== "current")
-    .sort((a, b) => (a.status === "eos" ? 0 : 1) - (b.status === "eos" ? 0 : 1));
+  const legacy = products.filter(p => p.status === "eol");
 
   const center = Object.assign({}, fam, {
     _kind: "family",
@@ -3658,11 +3658,29 @@ function getSpatialDims(){
 function getFilteredFamilyIds(){
   const vis = new Set();
   NODES.forEach(n => {
-    if (activeCats.has(n.category)
-      && (!activeUC || n.useCases.includes(activeUC))
-      && (!activeInd || n.industries.includes(activeInd))) vis.add(n.id);
+    if (familyNodeVisible(n)) vis.add(n.id);
   });
   return vis;
+}
+
+function familyPassesTierFilter(n){
+  if (facetState.tier.size === 0) return true;
+  const tiers = window.__cpnV2?.TIERS;
+  const tier = tiers?.[n.id]?.tier || "";
+  return [...facetState.tier].some(label => tier.toLowerCase().includes(label.toLowerCase()));
+}
+
+function familyNodeVisible(n){
+  if (!activeCats.has(n.category)) return false;
+  if (activeUC && !(n.useCases || []).includes(activeUC)) return false;
+  if (activeInd && !(n.industries || []).includes(activeInd)) return false;
+  if (!familyPassesTierFilter(n)) return false;
+  const fProds = PRODUCTS.filter(p => p.family === n.id);
+  if (fProds.length === 0){
+    const active = facetState.status.size > 0 ? facetState.status : new Set(["current"]);
+    return active.has("current");
+  }
+  return fProds.some(p => productMatchesFilters(p));
 }
 
 function buildSpatialGraphData(){
@@ -3889,7 +3907,7 @@ function applyViewLevel(mode, opts){
 
   if (mode === "composition"){
     const family = opts.focusFamily || viewFocus;
-    if (!family || !nodeById[family] || PRODUCTS.filter(p => p.family === family).length === 0){
+    if (!family || !nodeById[family] || PRODUCTS.filter(p => p.family === family && productMatchesFilters(p)).length === 0){
       // No valid focus — fall back to families.
       mode = "families";
     } else {
@@ -3915,7 +3933,7 @@ function applyViewLevel(mode, opts){
     // Annotate each family with the count of its specific products so the
     // node renders a "+N" badge in this mode.
     const counts = {};
-    PRODUCTS.forEach(p => { counts[p.family] = (counts[p.family]||0) + 1; });
+    PRODUCTS.forEach(p => { if (productMatchesFilters(p)) counts[p.family] = (counts[p.family]||0) + 1; });
     viewNodes.forEach(n => { n._badge = counts[n.id] && counts[n.id] > 1 ? "+"+counts[n.id] : null; });
     if (opts.focusCategory){
       activeCats = new Set([opts.focusCategory]);
@@ -3941,15 +3959,7 @@ function applyViewLevel(mode, opts){
   updateCompositionHint();
 
   // Run the appropriate post-mode filter pass.
-  if (mode === "families" || mode === "all-products") applyFilters();
-  else if (mode !== "spatial") {
-    // Hide filter badge in other modes.
-    const badge=document.getElementById("fbadge"); if (badge) badge.style.display="none";
-    // Ensure everything is visible (no display:none leftovers).
-    if (ndEl) ndEl.style("display", null);
-    if (lviz) lviz.style("display", null);
-    if (lhit) lhit.style("display", null);
-  }
+  if (mode !== "spatial") applyFilters();
 
   // Persist user preference (skip on the initial boot load so we don't clobber).
   if (!opts.initial){
@@ -4242,10 +4252,10 @@ function showDetailPanel(d) {
   const cat=CATS[d.category];
   const inStk=stack.has(d.id);
 
-  // Find specific products that belong to this family
-  const famProds=PRODUCTS.filter(p=>p.family===d.id);
+  // Find specific products that belong to this family (respect status/tier facets)
+  const famProds=PRODUCTS.filter(p=>p.family===d.id && productMatchesFilters(p));
   const curProds=famProds.filter(p=>p.status==="current");
-  const eolProds=famProds.filter(p=>p.status!=="current");
+  const eolProds=famProds.filter(p=>p.status==="eol");
 
   let prodsHtml="";
   if(curProds.length){
@@ -4255,7 +4265,7 @@ function showDetailPanel(d) {
       </div></div>`;
   }
   if(eolProds.length){
-    prodsHtml+=`<div class="p-sec"><div class="p-sec-t" style="color:#FF9000">EOL / EOS Products (${eolProds.length})</div>
+    prodsHtml+=`<div class="p-sec"><div class="p-sec-t" style="color:#FF9000">End of Life Products (${eolProds.length})</div>
       <div style="display:flex;flex-direction:column;gap:5px">
       ${eolProds.map(p=>`<div onclick="showProductDetail('${p.id}')" style="padding:7px 10px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.25);border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted)" onmouseover="this.style.borderColor='#ef4444'" onmouseout="this.style.borderColor='rgba(239,68,68,.25)'">${p.name} <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,.15);color:#ef4444;margin-left:5px">${p.status.toUpperCase()}</span></div>`).join("")}
       </div></div>`;
@@ -4374,18 +4384,34 @@ window.filterTagUC  = uc  => { activeUC=uc;   ucEl.value=uc;   applyFilters(); }
 window.filterTagInd = ind => { activeInd=ind; indEl.value=ind; applyFilters(); };
 
 // ── Filtering
+/* Facet state — default shows Current products only; EoS is always hidden. */
+let facetState = { status: new Set(["current"]), tier: new Set() };
+
+function productStatusVisible(p){
+  if (!p) return false;
+  if (p.status === "eos") return false;
+  const active = facetState.status.size > 0 ? facetState.status : new Set(["current"]);
+  return active.has(p.status);
+}
+
 /* Single source of truth for "does this product pass the current filters?".
    Mirrors the all-products branch of applyFilters() below — product category
    must be active, and the product's FAMILY must include the active use-case
    and industry (products don't carry useCases/industries directly; they
-   inherit them from their family node). This predicate is reused by the
-   timeline renderer so timeline + graph never disagree on what's visible. */
+   inherit them from their family node). Status/tier facets apply here too.
+   Reused by timeline, composition, search, and panels. */
 function productMatchesFilters(p){
   if (!p) return false;
   if (!activeCats.has(p.category)) return false;
   const fam = nodeById[p.family];
   if (activeUC  && !((fam?.useCases  || []).includes(activeUC )))  return false;
   if (activeInd && !((fam?.industries|| []).includes(activeInd)))  return false;
+  if (!productStatusVisible(p)) return false;
+  if (facetState.tier.size > 0){
+    const tiers = window.__cpnV2?.TIERS;
+    const tier = tiers?.[p.family]?.tier || "";
+    if (![...facetState.tier].some(label => tier.toLowerCase().includes(label.toLowerCase()))) return false;
+  }
   return true;
 }
 /* Refresh the Timeline view if it's open. renderTimeline lives inside the
@@ -4398,21 +4424,25 @@ function refreshTimelineIfOpen(){
   window.__cpnV2?.phases?.renderTimeline?.();
 }
 function applyFilters() {
-  // Category / use-case / industry filters apply in Families and All-Products
-  // modes. Overview and Composition short-circuit: they always show their
-  // synthesized node set.
-  if (viewMode === "overview" || viewMode === "composition"){
+  if (viewMode === "composition" && viewFocus){
+    const v = buildCompositionView(viewFocus);
+    viewNodes = v.nodes;
+    viewLinks = v.links;
+    rebindGraph();
+    updateCompositionHint();
+    refreshTimelineIfOpen();
+    return;
+  }
+  if (viewMode === "overview"){
     const badge = document.getElementById("fbadge"); if (badge) badge.style.display = "none";
-    if (ndEl) ndEl.style("display", null);
-    if (lviz) lviz.style("display", null);
-    if (lhit) lhit.style("display", null);
     refreshTimelineIfOpen();
     return;
   }
   if (viewMode === "spatial"){
     const vis = getFilteredFamilyIds();
     const badge = document.getElementById("fbadge");
-    const f = activeUC || activeInd || activeCats.size < Object.keys(CATS).length;
+    const f = activeUC || activeInd || activeCats.size < Object.keys(CATS).length
+      || facetState.status.size !== 1 || !facetState.status.has("current") || facetState.tier.size > 0;
     if (f && badge){
       badge.textContent = `Showing ${vis.size} of ${NODES.length} portfolio families`;
       badge.style.display = "block";
@@ -4423,22 +4453,17 @@ function applyFilters() {
   }
   const vis=new Set();
   if (viewMode === "all-products"){
-    // Both family + product nodes need to satisfy the filter set.
-    NODES.forEach(n=>{ if(activeCats.has(n.category)&&(!activeUC||n.useCases.includes(activeUC))&&(!activeInd||n.industries.includes(activeInd))) vis.add(n.id); });
-    PRODUCTS.forEach(p=>{
-      const fam = nodeById[p.family];
-      if (!fam) return;
-      if (activeCats.has(p.category)
-        && (!activeUC  || (fam.useCases  || []).includes(activeUC))
-        && (!activeInd || (fam.industries|| []).includes(activeInd))) vis.add(p.id);
-    });
+    NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
+    PRODUCTS.forEach(p => { if (productMatchesFilters(p)) vis.add(p.id); });
   } else {
-    NODES.forEach(n=>{ if(activeCats.has(n.category)&&(!activeUC||n.useCases.includes(activeUC))&&(!activeInd||n.industries.includes(activeInd))) vis.add(n.id); });
+    NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
   }
   if (ndEl) ndEl.style("display",d=>vis.has(d.id)?null:"none");
   if (lviz) lviz.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
   if (lhit) lhit.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
-  const badge=document.getElementById("fbadge"),f=activeUC||activeInd||activeCats.size<Object.keys(CATS).length;
+  const badge=document.getElementById("fbadge");
+  const f=activeUC||activeInd||activeCats.size<Object.keys(CATS).length
+    || facetState.status.size !== 1 || !facetState.status.has("current") || facetState.tier.size > 0;
   if(f){
     const total = viewMode === "all-products" ? (NODES.length + PRODUCTS.length) : NODES.length;
     const label = viewMode === "all-products" ? "items" : "portfolio families";
@@ -4452,6 +4477,8 @@ function applyFilters() {
 function resetAll() {
   activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd="";
   ucEl.value=""; indEl.value="";
+  facetState.status = new Set(["current"]);
+  facetState.tier.clear();
   document.querySelectorAll(".cp").forEach(b=>b.classList.remove("off"));
   selected=null; resetHL(); closePanel();
   // Reset also returns the user to the Families view so the graph state matches
@@ -4484,8 +4511,9 @@ searchEl.addEventListener("input",()=>{
     CATS[n.category].label.toLowerCase().includes(q)).slice(0,5);
 
   const pMatch=PRODUCTS.filter(p=>
+    productMatchesFilters(p) && (
     p.name.toLowerCase().includes(q)||(p.desc||"").toLowerCase().includes(q)||
-    (p.successor&&(prodById[p.successor]||nodeById[p.successor])?.name.toLowerCase().includes(q))).slice(0,8);
+    (p.successor&&(prodById[p.successor]||nodeById[p.successor])?.name.toLowerCase().includes(q)))).slice(0,8);
 
   if(!nMatch.length&&!pMatch.length){srEl.style.display="none";return;}
 
@@ -4616,7 +4644,7 @@ piEl.addEventListener("input",()=>{
   const q=piEl.value.trim().toLowerCase();
   if(!q){pdEl.style.display="none";return;}
   const nMatch=NODES.filter(n=>!stack.has(n.id)&&(n.name.toLowerCase().includes(q)||CATS[n.category].label.toLowerCase().includes(q))).slice(0,4);
-  const pMatch=PRODUCTS.filter(p=>!stack.has(p.id)&&(p.name.toLowerCase().includes(q)||p.id.includes(q))).slice(0,6);
+  const pMatch=PRODUCTS.filter(p=>!stack.has(p.id)&&productMatchesFilters(p)&&(p.name.toLowerCase().includes(q)||p.id.includes(q))).slice(0,6);
   if(!nMatch.length&&!pMatch.length){pdEl.style.display="none";return;}
   pdEl.innerHTML="";
   pMatch.forEach(p=>{
@@ -5534,7 +5562,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.9.0";
+const APP_VERSION   = "2.9.1";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5825,6 +5853,11 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.9.1", date:"2026-06-20", items:[
+    "Product status filters — Current/EoL facets now apply across Composition, Families, All Products, Timeline, search, and panels; default is Current only.",
+    "End-of-Sale products are permanently hidden from all views (not toggleable).",
+    "Room Bar Pro G2 — matrix-bridge mapping added so composition nodes and panel hero use the Device Matrix photo."
+  ]},
   {ver:"2.9.0", date:"2026-06-20", items:[
     "Collaboration Device Matrix integration — product heroes and composition thumbnails use brochure WebP photos via matrix-bridge.json.",
     "Product panels — View in Collaboration Device Matrix deep-links to the 3D showroom (?vendor=cisco&device=…).",
@@ -9366,12 +9399,14 @@ function buildFacets(){
   });
   $("#tools").appendChild(fBtn);
 }
-const facetState = { status: new Set(), tier: new Set() };
 function renderFacets(){
   const f = $("#facets");
-  // Counts per status
-  const statusCounts = {current:0, eos:0, eol:0};
-  PRODUCTS.forEach(p => statusCounts[p.status] = (statusCounts[p.status]||0) + 1);
+  const statusCounts = {current:0, eol:0};
+  PRODUCTS.forEach(p => {
+    if (p.status === "eos") return;
+    statusCounts[p.status] = (statusCounts[p.status]||0) + 1;
+  });
+  const eosHidden = PRODUCTS.filter(p => p.status === "eos").length;
   const tierLabels = [...new Set(Object.values(TIERS).flatMap(t => t.tier.split("/").map(s => s.trim())))].sort();
   const fnCount = FIELD_NOTICES.length;
   f.innerHTML = `
@@ -9380,9 +9415,10 @@ function renderFacets(){
     </div>
     <div class="fac-sec">
       <div class="fac-st">Product Status</div>
-      ${["current","eos","eol"].map(s => `
+      ${["current","eol"].map(s => `
         <label class="fac-row"><input type="checkbox" data-status="${s}" ${facetState.status.has(s)?"checked":""}>
-          <span>${s.toUpperCase()}</span><span class="cnt">${statusCounts[s]||0}</span></label>`).join("")}
+          <span>${s === "eol" ? "EOL" : s.toUpperCase()}</span><span class="cnt">${statusCounts[s]||0}</span></label>`).join("")}
+      ${eosHidden ? `<div style="font-size:10px;color:var(--muted);margin-top:6px;padding:0 2px">${eosHidden} End-of-Sale products hidden from all views</div>` : ""}
     </div>
     <div class="fac-sec">
       <div class="fac-st">Licensing Tier (contains)</div>
@@ -9399,44 +9435,20 @@ function renderFacets(){
   $("#fac-x").addEventListener("click", () => f.classList.remove("show"));
   f.querySelectorAll("[data-status]").forEach(c => c.addEventListener("change", () => {
     if (c.checked) facetState.status.add(c.dataset.status); else facetState.status.delete(c.dataset.status);
-    applyFacets();
+    applyFilters();
   }));
   f.querySelectorAll("[data-tier]").forEach(c => c.addEventListener("change", () => {
     if (c.checked) facetState.tier.add(c.dataset.tier); else facetState.tier.delete(c.dataset.tier);
-    applyFacets();
+    applyFilters();
   }));
-  $("#fac-clr").addEventListener("click", () => { facetState.status.clear(); facetState.tier.clear(); renderFacets(); applyFacets(); });
-}
-function applyFacets(){
-  // Status: if any selected, hide nodes whose family has NO products matching one of the selected statuses
-  // Tier: if any selected, hide nodes whose tier label doesn't contain any selected tier substring
-  const sActive = facetState.status.size > 0;
-  const tActive = facetState.tier.size > 0;
-  const allow = new Set();
-  NODES.forEach(n => {
-    let s = true, t = true;
-    if (sActive){
-      const fProds = PRODUCTS.filter(p => p.family === n.id);
-      s = fProds.length === 0
-        ? facetState.status.has("current") // family-only nodes count as current
-        : fProds.some(p => facetState.status.has(p.status));
-    }
-    if (tActive){
-      const tier = TIERS[n.id]?.tier || "";
-      t = [...facetState.tier].some(label => tier.toLowerCase().includes(label.toLowerCase()));
-    }
-    if (s && t) allow.add(n.id);
+  $("#fac-clr").addEventListener("click", () => {
+    facetState.status = new Set(["current"]);
+    facetState.tier.clear();
+    renderFacets();
+    applyFilters();
   });
-  ndEl.style("display", d => (activeCats.has(d.category) && allow.has(d.id) && (!activeUC || d.useCases.includes(activeUC)) && (!activeInd || d.industries.includes(activeInd))) ? null : "none");
-  [lviz,lhit].forEach(s => s.style("display", l => {
-    const sid_ = sid(l), tid_ = tid(l);
-    const ok = id => {
-      const n = nodeById[id];
-      return n && activeCats.has(n.category) && allow.has(id) && (!activeUC || n.useCases.includes(activeUC)) && (!activeInd || n.industries.includes(activeInd));
-    };
-    return ok(sid_) && ok(tid_) ? null : "none";
-  }));
 }
+function applyFacets(){ applyFilters(); }
 
 /* ════════════════════════════════════════════════════════════════════════
    [12] AI ASSISTANT (bring-your-own-key)

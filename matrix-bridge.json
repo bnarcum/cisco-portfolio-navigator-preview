@@ -4,6 +4,7 @@
   "products": {
     "room-bar": { "matrixId": "room-bar", "hash": "5930e7bad9" },
     "room-bar-pro": { "matrixId": "room-bar-pro", "hash": "985d42e216" },
+    "room-bar-pro-g2": { "matrixId": "room-bar-pro", "hash": "985d42e216" },
     "board-pro-55": { "matrixId": "board-pro-g2-55", "hash": "7a4fbdb9f3" },
     "board-pro-75": { "matrixId": "board-pro-g2-75", "hash": "7a4fbdb9f3" },
     "board-pro-g2": { "matrixId": "board-pro-g2-55", "hash": "7a4fbdb9f3" },
