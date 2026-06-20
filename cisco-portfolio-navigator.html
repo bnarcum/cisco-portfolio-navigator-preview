@@ -195,6 +195,21 @@
       color:#9db0c4;margin:8px 0 6px}
     .conn-hop{font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px;
       background:rgba(0,212,255,.15);color:#7ee8ff;margin-left:6px;vertical-align:1px}
+    .conn-mode-seg,.conn-depth-seg{display:flex;gap:5px;margin-bottom:8px}
+    .conn-mode-seg button,.conn-depth-seg button{
+      flex:1;padding:6px 8px;font-size:10px;font-weight:700;border-radius:6px;cursor:pointer;
+      border:1px solid var(--border);background:var(--surface2);color:#b8c6d4;font-family:inherit;transition:all .12s}
+    .conn-mode-seg button.sel,.conn-depth-seg button.sel{
+      border-color:rgba(0,212,255,.55);background:rgba(0,212,255,.14);color:#e8f8ff}
+    .conn-platform-hdr{font-size:11px;color:#d8ecfa;line-height:1.45;margin-bottom:8px;padding:8px 10px;
+      border-radius:7px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25)}
+    .conn-platform-hdr strong{color:#fff}
+    .ri-platform{border-color:rgba(0,212,255,.35)}
+    .conn-path-chain{font-size:10px;color:#9fd4ea;margin-top:3px;line-height:1.4}
+    .conn-bundle-line{font-size:10px;color:#b8c6d4;margin-top:5px;line-height:1.4}
+    .conn-onecisco-badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+      padding:2px 7px;border-radius:999px;background:rgba(45,206,92,.18);color:#7ef0a9;
+      border:1px solid rgba(45,206,92,.35);margin-left:6px;vertical-align:1px}
     .rd{width:9px;height:9px;border-radius:50%;flex-shrink:0}
     .rif{flex:1;min-width:0}
     .rn{font-size:12px;font-weight:500}
@@ -2445,6 +2460,7 @@ let activeCats  = new Set(Object.keys(CATS));
 let activeUC    = "", activeInd = "";
 let selected    = null;
 let connectionHighlightDepth = 1;
+let connectionViewMode = "platform";
 let plannerOpen = false;
 let stack       = new Set();   // family node IDs or product IDs
 let legacySel   = new Set();
@@ -2955,104 +2971,276 @@ svg.call(zoom.transform, d3.zoomIdentity.translate(iw/2,ih/2).scale(0.78));
 const sid = l => (typeof l.source==="object" ? l.source.id : l.source);
 const tid = l => (typeof l.target==="object" ? l.target.id : l.target);
 
-function connectionNeighborhood(startId, maxDepth = 2, links = LINKS){
-  const seen = new Map([[startId, { depth: 0 }]]);
-  let frontier = [startId];
+function connectionNeighborhoodWithPaths(startId, maxDepth = 2, links = LINKS){
+  const entries = new Map();
+  let frontier = [{ id: startId, path: [] }];
+  const seen = new Set([startId]);
   for (let d = 1; d <= maxDepth; d++){
     const next = [];
-    for (const id of frontier){
+    for (const { id, path } of frontier){
       links.forEach(l => {
         const s = sid(l), t = tid(l);
         const other = id === s ? t : id === t ? s : null;
-        if (!other || seen.has(other)) return;
-        seen.set(other, { depth: d, viaId: id, type: l.type, label: l.label });
-        next.push(other);
+        if (!other || other === startId || seen.has(other)) return;
+        seen.add(other);
+        const step = { id: other, type: l.type, label: l.label };
+        const newPath = [...path, step];
+        entries.set(other, { depth: d, path: newPath, viaId: id, type: l.type, label: l.label });
+        next.push({ id: other, path: newPath });
       });
     }
     frontier = next;
   }
-  seen.delete(startId);
-  return seen;
+  return entries;
 }
 
-function connectionNodeSet(startId, depth = connectionHighlightDepth){
+function connectionNeighborhood(startId, maxDepth = 2, links = LINKS){
+  return connectionNeighborhoodWithPaths(startId, maxDepth, links);
+}
+
+function resolveRefArchForNode(node){
+  if (!node) return null;
+  if (activeUC && REF_ARCH[activeUC]?.products.includes(node.id)) return activeUC;
+  if (typeof activeRefArch !== "undefined" && activeRefArch && REF_ARCH[activeRefArch]?.products.includes(node.id)) return activeRefArch;
+  for (const uc of node.useCases || []){
+    if (REF_ARCH[uc]?.products.includes(node.id)) return uc;
+  }
+  const hit = Object.entries(REF_ARCH).find(([, a]) => a.products.includes(node.id));
+  return hit ? hit[0] : null;
+}
+
+function scorePlatformPath(startId, path, refName){
+  let score = 0;
+  const ids = [startId, ...path.map(p => p.id)];
+  const cats = new Set(ids.map(id => nodeById[id]?.category).filter(Boolean));
+  if (cats.size >= 2) score += 18;
+  if (cats.size >= 3) score += 12;
+  path.forEach(p => { score += p.type === "direct" ? 10 : 3; });
+  const arch = refName && REF_ARCH[refName];
+  if (arch) ids.forEach(id => { if (arch.products.includes(id)) score += 6; });
+  BUNDLES.forEach(b => {
+    if (!b.products.includes(startId)) return;
+    if (ids.every(id => b.products.includes(id))) score += 14;
+  });
+  score += Math.max(0, 8 - path.length);
+  return score;
+}
+
+function platformPathNarrative(startNode, path){
+  const end = path[path.length - 1];
+  const endNode = nodeById[end?.id];
+  if (!endNode) return "Integrated platform path across Cisco portfolios.";
+  if (end.id === "duo") return "Same MFA and device trust for rooms, apps, and remote users.";
+  if (end.id === "secure-access") return "ZTNA / SSE extends secure access to hybrid workers and room endpoints.";
+  if (end.id === "thousandeyes") return "End-to-end assurance for meeting quality, SaaS, and ISP paths.";
+  if (end.id === "ise") return "Network admission and segmentation aligned with collaboration endpoints.";
+  if (endNode.category === "security") return "Security and identity follow the user from collaboration into policy enforcement.";
+  if (endNode.category === "observability") return "Observability closes the loop on experience and availability.";
+  if (endNode.category === "networking") return "Network fabric and automation underpin the hybrid work experience.";
+  return "Platform-integrated path — one vendor, shared context, fewer integration gaps.";
+}
+
+function findPlatformPaths(startId, maxDepth = 4){
+  const startNode = nodeById[startId];
+  const refName = resolveRefArchForNode(startNode);
+  const archSet = refName ? new Set(REF_ARCH[refName].products) : null;
+  const results = [];
+  let frontier = [{ id: startId, path: [] }];
+  const seen = new Set([startId]);
+  for (let d = 1; d <= maxDepth; d++){
+    const next = [];
+    for (const { id, path } of frontier){
+      LINKS.forEach(l => {
+        const s = sid(l), t = tid(l);
+        const other = id === s ? t : id === t ? s : null;
+        if (!other || other === startId || seen.has(other)) return;
+        const step = { id: other, type: l.type, label: l.label };
+        const newPath = [...path, step];
+        const pathIds = [startId, ...newPath.map(p => p.id)];
+        if (archSet && !pathIds.every(pid => archSet.has(pid))) return;
+        seen.add(other);
+        results.push({
+          node: nodeById[other],
+          endId: other,
+          depth: d,
+          path: newPath,
+          score: scorePlatformPath(startId, newPath, refName),
+          refName
+        });
+        next.push({ id: other, path: newPath });
+      });
+    }
+    frontier = next;
+  }
+  const byEnd = new Map();
+  results.sort((a, b) => b.score - a.score || a.depth - b.depth);
+  results.forEach(r => { if (!byEnd.has(r.endId)) byEnd.set(r.endId, r); });
+  return { refName, paths: [...byEnd.values()].slice(0, 12) };
+}
+
+function formatPathChain(startId, path){
+  const names = [nodeById[startId]?.name, ...path.map(p => nodeById[p.id]?.name)].filter(Boolean);
+  return names.join(" → ");
+}
+
+function stackHasFamily(familyId){
+  if (stack.has(familyId)) return true;
+  return [...stack].some(id => stackItems.get(id) === "product" && prodById[id]?.family === familyId);
+}
+
+function renderBundleSnippet(nodeId){
+  const relevant = BUNDLES.filter(b => b.products.includes(nodeId)).slice(0, 2);
+  if (!relevant.length) return "";
+  return relevant.map(b => {
+    const owned = b.products.filter(p => stackHasFamily(p)).length;
+    return `<div class="conn-bundle-line"><strong>${escapeHtml(b.name)}</strong> — ${owned}/${b.products.length} families in your stack</div>`;
+  }).join("");
+}
+
+function connectionNodeSetForView(startId){
+  if (connectionViewMode === "platform"){
+    const conn = new Set([startId]);
+    findPlatformPaths(startId, 4).paths.forEach(p => {
+      conn.add(p.endId);
+      p.path.forEach(step => conn.add(step.id));
+    });
+    return conn;
+  }
   const conn = new Set([startId]);
-  if (depth <= 1){
+  if (connectionHighlightDepth <= 1){
     LINKS.forEach(l => {
       const s = sid(l), t = tid(l);
       if (s === startId || t === startId){ conn.add(s); conn.add(t); }
     });
   } else {
-    connectionNeighborhood(startId, depth).forEach((_, id) => conn.add(id));
+    connectionNeighborhoodWithPaths(startId, connectionHighlightDepth).forEach((_, id) => conn.add(id));
   }
   return conn;
 }
 
-function buildConnectionRels(startId, maxDepth = connectionHighlightDepth){
-  const direct = LINKS.map(l => {
+function buildDirectRels(startId){
+  return LINKS.map(l => {
     const s = sid(l), t = tid(l);
     if (s !== startId && t !== startId) return null;
     const oid = s === startId ? t : s;
-    return { node: nodeById[oid], depth: 1, type: l.type, label: l.label, via: null };
+    return { node: nodeById[oid], depth: 1, type: l.type, label: l.label, path: [] };
   }).filter(Boolean).sort((a, b) => a.type === b.type ? 0 : a.type === "direct" ? -1 : 1);
-
-  if (maxDepth <= 1){
-    const hood = connectionNeighborhood(startId, 2);
-    const directIds = new Set(direct.map(r => r.node.id));
-    const extTotal = [...hood.entries()].filter(([id, info]) => info.depth === 2 && !directIds.has(id)).length;
-    return { direct, extended: [], extTotal };
-  }
-
-  const hood = connectionNeighborhood(startId, 2);
-  const directIds = new Set(direct.map(r => r.node.id));
-  const extended = [...hood.entries()]
-    .filter(([id, info]) => info.depth === 2 && !directIds.has(id))
-    .map(([id, info]) => ({
-      node: nodeById[id],
-      depth: 2,
-      type: info.type,
-      label: info.label,
-      via: nodeById[info.viaId]
-    }))
-    .sort((a, b) => a.node.name.localeCompare(b.node.name));
-  return { direct, extended, extTotal: extended.length };
 }
 
-function renderConnectionRow(r){
+function buildFullGraphRels(startId, maxDepth){
+  const direct = buildDirectRels(startId);
+  const directIds = new Set(direct.map(r => r.node.id));
+  if (maxDepth <= 1){
+    const hood = connectionNeighborhoodWithPaths(startId, 2);
+    const extTotal = [...hood.entries()].filter(([id, info]) => info.depth === 2 && !directIds.has(id)).length;
+    return { direct, byDepth: {}, extTotal };
+  }
+  const hood = connectionNeighborhoodWithPaths(startId, maxDepth);
+  const byDepth = {};
+  for (let d = 2; d <= maxDepth; d++){
+    byDepth[d] = [...hood.entries()]
+      .filter(([id, info]) => info.depth === d && !directIds.has(id))
+      .map(([id, info]) => ({
+        node: nodeById[id],
+        depth: d,
+        type: info.type,
+        label: info.label,
+        path: info.path,
+        via: nodeById[info.viaId]
+      }))
+      .sort((a, b) => a.node.name.localeCompare(b.node.name));
+  }
+  const extTotal = byDepth[2]?.length || [...hood.entries()].filter(([id, info]) => info.depth === 2 && !directIds.has(id)).length;
+  return { direct, byDepth, extTotal };
+}
+
+function renderConnectionRow(r, opts = {}){
+  const platform = !!opts.platform;
   const sub = r.depth === 1
     ? `${r.type === "direct" ? "Direct integration" : "Adjacent / complementary"} · ${escapeHtml(r.label)}`
-    : `Via ${escapeHtml(r.via?.name || "?")} · ${escapeHtml(r.label)}`;
+    : (r.narrative || `Via ${escapeHtml(r.via?.name || "?")} · ${escapeHtml(r.label)}`);
   const hop = r.depth > 1 ? `<span class="conn-hop">${r.depth} hops</span>` : "";
-  return `<div class="ri${r.depth > 1 ? " ri-ext" : ""}" onclick="jumpTo('${r.node.id}')">
+  const badge = platform ? `<span class="conn-onecisco-badge">One Cisco</span>` : "";
+  const chain = r.path?.length
+    ? `<div class="conn-path-chain">${escapeHtml(formatPathChain(opts.startId || "", r.path))}</div>` : "";
+  return `<div class="ri${r.depth > 1 || platform ? " ri-ext" : ""}${platform ? " ri-platform" : ""}" onclick="jumpTo('${r.node.id}')">
     <div class="rd" style="background:${catColor(r.node.category)}"></div>
-    <div class="rif"><div class="rn">${escapeHtml(r.node.name)}${hop}</div>
-    <div class="rt">${sub}</div></div>
+    <div class="rif"><div class="rn">${escapeHtml(r.node.name)}${badge}${hop}</div>
+    <div class="rt">${sub}</div>${chain}</div>
     <div class="ra">›</div></div>`;
 }
 
 function renderConnectionsSection(d){
+  const modeSeg = `<div class="conn-mode-seg">
+    <button type="button" class="${connectionViewMode === "platform" ? "sel" : ""}" onclick="setConnectionViewMode('platform','${d.id}')">One Cisco platform</button>
+    <button type="button" class="${connectionViewMode === "full" ? "sel" : ""}" onclick="setConnectionViewMode('full','${d.id}')">Full graph</button>
+  </div>`;
+  let body = modeSeg;
+
+  if (connectionViewMode === "platform"){
+    const { refName, paths } = findPlatformPaths(d.id, 4);
+    const arch = refName && REF_ARCH[refName];
+    const hdr = arch
+      ? `<div class="conn-platform-hdr"><strong>${escapeHtml(refName)}</strong> reference architecture — ${escapeHtml(arch.desc)}</div>`
+      : `<div class="conn-platform-hdr"><strong>One Cisco</strong> — curated cross-portfolio paths with direct integrations and shared context (not best-of-breed point products).</div>`;
+    body += hdr + renderBundleSnippet(d.id);
+    const platformRows = paths.filter(p => p.depth > 1);
+    const direct = buildDirectRels(d.id);
+    body += `<div class="conn-sub-t">Direct integrations (${direct.length})</div><div class="rl">${direct.map(r => renderConnectionRow(r, { platform: true, startId: d.id })).join("") || `<div class="rt" style="padding:4px 2px">None mapped.</div>`}</div>`;
+    if (platformRows.length){
+      body += `<div class="conn-sub-t">Platform paths (${platformRows.length})</div><div class="rl">${platformRows.map(p => renderConnectionRow({
+        node: p.node, depth: p.depth, type: p.path[p.path.length - 1]?.type, label: p.path[p.path.length - 1]?.label,
+        path: p.path, narrative: platformPathNarrative(d, p.path)
+      }, { platform: true, startId: d.id })).join("")}</div>`;
+    } else {
+      body += `<div class="rt" style="padding:8px 2px 0">No multi-hop platform paths in the active reference architecture. Try <strong>Full graph</strong> or select a use case filter.</div>`;
+    }
+    return `<div class="p-sec"><div class="p-sec-t">Connected Technologies — One Cisco</div>${body}</div>`;
+  }
+
   const depth = connectionHighlightDepth;
-  const { direct, extended, extTotal } = buildConnectionRels(d.id, depth);
-  const total = direct.length + extended.length;
-  const toggleLabel = depth >= 2
-    ? "Show direct connections only"
-    : `Show extended ecosystem${extTotal ? ` (+${extTotal} at 2 hops)` : ""}`;
-  let body = `<button type="button" class="conn-depth-btn" onclick="toggleConnectionDepth('${d.id}')">${toggleLabel}</button>`;
-  body += `<div class="conn-sub-t">Direct (${direct.length})</div><div class="rl">${direct.map(renderConnectionRow).join("") || `<div class="rt" style="padding:4px 2px">None mapped.</div>`}</div>`;
-  if (depth >= 2 && extended.length){
-    body += `<div class="conn-sub-t">Extended — 2 hops (${extended.length})</div><div class="rl">${extended.map(renderConnectionRow).join("")}</div>`;
+  const depthSeg = `<div class="conn-depth-seg">${[1, 2, 3, 4].map(n =>
+    `<button type="button" class="${depth === n ? "sel" : ""}" onclick="setConnectionDepth(${n},'${d.id}')">${n}-hop</button>`).join("")}</div>`;
+  const { direct, byDepth, extTotal } = buildFullGraphRels(d.id, depth);
+  let total = direct.length;
+  Object.values(byDepth).forEach(arr => { total += arr.length; });
+  body += depthSeg;
+  body += `<div class="conn-sub-t">Direct (${direct.length})</div><div class="rl">${direct.map(r => renderConnectionRow(r, { startId: d.id })).join("") || `<div class="rt" style="padding:4px 2px">None mapped.</div>`}</div>`;
+  for (let hop = 2; hop <= depth; hop++){
+    const rows = byDepth[hop] || [];
+    if (!rows.length) continue;
+    body += `<div class="conn-sub-t">${hop} hops (${rows.length})</div><div class="rl">${rows.map(r => renderConnectionRow({ ...r, via: nodeById[r.path?.[r.path.length - 1]?.id] || r.via }, { startId: d.id })).join("")}</div>`;
+  }
+  if (depth < 2 && extTotal){
+    body += `<div class="rt" style="padding:6px 2px 0;color:#9fd4ea">${extTotal} more families at 2 hops — switch to <strong>2-hop</strong> or <strong>One Cisco platform</strong>.</div>`;
   }
   return `<div class="p-sec"><div class="p-sec-t">Connected Technologies (${total})</div>${body}</div>`;
 }
 
-window.toggleConnectionDepth = function(nodeId){
-  connectionHighlightDepth = connectionHighlightDepth >= 2 ? 1 : 2;
+window.setConnectionViewMode = function(mode, nodeId){
+  connectionViewMode = mode;
   const d = nodeById[nodeId];
   if (!d) return;
   if (selected?.id === nodeId){
-    applyConnectionHighlight(d, connectionHighlightDepth);
+    applyConnectionHighlight(d);
     showDetailPanel(d);
-  } else selectNode(d, { connectionDepth: connectionHighlightDepth });
+  } else selectNode(d, { connectionViewMode: mode });
+};
+
+window.setConnectionDepth = function(depth, nodeId){
+  connectionViewMode = "full";
+  connectionHighlightDepth = Math.max(1, Math.min(4, depth));
+  const d = nodeById[nodeId];
+  if (!d) return;
+  if (selected?.id === nodeId){
+    applyConnectionHighlight(d);
+    showDetailPanel(d);
+  } else selectNode(d, { connectionViewMode: "full", connectionDepth: connectionHighlightDepth });
+};
+
+window.toggleConnectionDepth = function(nodeId){
+  setConnectionViewMode(connectionViewMode === "platform" ? "full" : "platform", nodeId);
+  if (connectionViewMode === "full" && connectionHighlightDepth < 2) setConnectionDepth(2, nodeId);
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -3830,8 +4018,8 @@ window.getViewFocus   = () => viewFocus;
   applyViewLevel("families", { initial: true });
 })();
 
-function applyConnectionHighlight(d, depth = connectionHighlightDepth){
-  const conn = connectionNodeSet(d.id, depth);
+function applyConnectionHighlight(d){
+  const conn = connectionNodeSetForView(d.id);
   ndEl.each(function(nd){
     const isSel = nd.id === d.id, isC = conn.has(nd.id);
     d3.select(this).select(".gr").attr("fill-opacity", isSel ? .3 : 0);
@@ -3850,9 +4038,10 @@ function applyConnectionHighlight(d, depth = connectionHighlightDepth){
 }
 
 function selectNode(d, opts = {}) {
+  if (opts.connectionViewMode) connectionViewMode = opts.connectionViewMode;
   if (opts.connectionDepth) connectionHighlightDepth = opts.connectionDepth;
   selected = d; hideTip();
-  applyConnectionHighlight(d, connectionHighlightDepth);
+  applyConnectionHighlight(d);
   showDetailPanel(d);
   if (viewMode === "spatial"){
     focusSpatialNode(d.id, 700);
@@ -3995,9 +4184,9 @@ window.showProductDetail = function(id) {
     <div class="p-name">${p.name}</div>
     <p class="p-desc">${p.desc}</p>
     ${node?`<div class="p-sec"><div class="p-sec-t">Part of Portfolio Family</div>
-      <div class="ri" onclick="jumpTo('${node.id}', {connectionDepth: 2}); closePanel()">
+      <div class="ri" onclick="jumpTo('${node.id}', {connectionViewMode: 'platform', closePanel: true})">
         <div class="rd" style="background:${catColor(node.category)}"></div>
-        <div class="rif"><div class="rn">${node.name}</div><div class="rt">View extended ecosystem in graph (2 hops)</div></div>
+        <div class="rif"><div class="rn">${node.name}</div><div class="rt">View One Cisco platform paths in graph</div></div>
         <div class="ra">›</div></div></div>`:""}
     <div class="p-sec"><div class="p-sec-t">Product Resources</div><div class="lb">
       <a class="la" href="${p.url}" target="_blank" rel="noopener">Product Page / EOL Notice <span>cisco.com ↗</span></a>
@@ -4019,6 +4208,7 @@ document.getElementById("pcl").addEventListener("click",()=>{ selected=null; res
 window.jumpTo = (id, opts = {}) => {
   const d=nodeById[id]; if(!d) return;
   if (opts.connectionDepth) connectionHighlightDepth = opts.connectionDepth;
+  if (opts.connectionViewMode) connectionViewMode = opts.connectionViewMode;
   if (opts.closePanel) closePanel();
   activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd="";
   ucEl.value=""; indEl.value="";
@@ -5202,7 +5392,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.7.8";
+const APP_VERSION   = "2.7.9";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5493,6 +5683,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.7.9", date:"2026-06-17", items:[
+    "One Cisco platform paths — connected technologies scored by reference architecture, bundles, and direct cross-portfolio integrations (default view).",
+    "Full graph mode — 1–4 hop explorer for power users; platform mode highlights curated Platform Advantage paths on the canvas."
+  ]},
   {ver:"2.7.8", date:"2026-06-17", items:[
     "Connected Technologies — toggle extended ecosystem (2-hop) in family detail panels; graph highlight and product-panel jump show the wider neighborhood.",
     "Context menu Connections filter now includes families within 2 hops."
@@ -8428,11 +8622,11 @@ function buildContextMenu(){
       else if (a === "cmp")    addToCompare(d.id, "node");
       else if (a === "pin")    togglePin(d.id);
       else if (a === "connections"){
-        const depth = 2;
-        const cons = connectionNodeSet(d.id, depth);
+        connectionViewMode = "platform";
+        const cons = connectionNodeSetForView(d.id);
         ndEl.style("display", n => cons.has(n.id) ? null : "none");
         [lviz,lhit].forEach(s => s.style("display", l => cons.has(sid(l)) && cons.has(tid(l)) ? null : "none"));
-        $("#fbadge").textContent = `Showing ${cons.size} families within ${depth} hops of ${d.name}`;
+        $("#fbadge").textContent = `One Cisco platform paths — ${cons.size} families around ${d.name}`;
         $("#fbadge").style.display = "block";
       }
       else if (a === "cat"){
