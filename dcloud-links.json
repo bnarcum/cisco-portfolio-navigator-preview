@@ -1,0 +1,12 @@
+[
+  {
+    "id": "workspace-advisor-room-kit-pro-g2",
+    "name": "Discover Workspace Advisor with Cisco Room Kit Pro G2",
+    "catalogUrl": "https://dcloud2-rtp.cisco.com/content/profile/discover-cisco-room-kit-pro-g2",
+    "datacenter": "RTP",
+    "families": ["room-systems"],
+    "products": ["room-kit-pro"],
+    "useCases": ["Hybrid Work"],
+    "primary": true
+  }
+]
