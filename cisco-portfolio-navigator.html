@@ -181,8 +181,9 @@
 
     /* GRAPH */
     #gs{position:relative;z-index:1;width:100%;height:100%;display:block;background:transparent}
-    #spatial-wrap{position:absolute;inset:0;display:none;z-index:2}
-    #spatial-graph{width:100%;height:100%}
+    #spatial-wrap{position:absolute;inset:0;display:none;z-index:2;background:transparent}
+    #spatial-graph{width:100%;height:100%;background:transparent}
+    #spatial-graph canvas{display:block;background:transparent!important}
     #spatial-hud{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);
       background:rgba(22,27,34,.92);border:1px solid var(--border);border-radius:20px;
       padding:6px 14px;font-size:11px;color:var(--muted);z-index:3;pointer-events:none;
@@ -5661,13 +5662,27 @@ function spatialNodeColor(n){
   return n.color;
 }
 
+function configureSpatialBackground(){
+  if (!spatialState.graph) return;
+  spatialState.graph.backgroundColor("rgba(0,0,0,0)");
+  try {
+    const ren = spatialState.graph.renderer();
+    if (ren){
+      ren.setClearColor(0x000000, 0);
+      ren.domElement.style.background = "transparent";
+    }
+    const scene = spatialState.graph.scene();
+    if (scene) scene.background = null;
+  } catch (e) { /* renderer not ready yet */ }
+}
+
 function initSpatialGraph(){
   const el = document.getElementById("spatial-graph");
   if (!el || spatialState.graph) return;
   const { w, h } = getSpatialDims();
   spatialState.graph = ForceGraph3D()(el)
     .width(w).height(h)
-    .backgroundColor("#07182D")
+    .backgroundColor("rgba(0,0,0,0)")
     .showNavInfo(false)
     .nodeVal("val")
     .linkColor(spatialLinkColor)
@@ -5714,6 +5729,7 @@ function initSpatialGraph(){
       }
     });
   spatialState.graph.graphData({ nodes: [{ id: "__three_probe__", val: 1 }], links: [] });
+  configureSpatialBackground();
   configureSpatialForces();
   ensureSpatialLights();
 
@@ -5795,6 +5811,7 @@ function enterSpatialView(){
     .then(() => {
       if (!spatialState.active) return;
       initSpatialGraph();
+      configureSpatialBackground();
       refreshSpatialGraph();
       const dims = getSpatialDims();
       if (spatialState.graph) spatialState.graph.width(dims.w).height(dims.h);
@@ -7782,7 +7799,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.29.0";
+const APP_VERSION   = "2.29.1";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8073,6 +8090,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.29.1", date:"2026-06-20", items:[
+    "Spatial — transparent WebGL canvas so the ambient glow/grid/mesh shows through behind 3D family map and product orbit."
+  ]},
   {ver:"2.29.0", date:"2026-06-20", items:[
     "Ambient background — stronger Cisco-blue glow, grid, and network mesh; moved inside graph canvas so it is visible behind Overview and Families (still respects prefers-reduced-motion)."
   ]},
