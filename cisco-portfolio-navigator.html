@@ -2789,9 +2789,34 @@ function compositionShortName(p){
   return n;
 }
 
+function compositionMatrixKey(p){
+  const e = matrixBridgeEntry(p?.id);
+  return e ? (e.matrixId || e.hash || p.id) : p?.id;
+}
+
+function compositionProductBadge(p, dupes){
+  if (!p || dupes < 2) return null;
+  const id = p.id || "";
+  const name = p.name || "";
+  if (/g2/i.test(id) || /\bG2\b/i.test(name)) return "G2";
+  if (/75/.test(id)) return '75″';
+  if (/55/.test(id)) return '55″';
+  if (/mini/i.test(id)) return "Mini";
+  if (/quad/i.test(id)) return "Quad";
+  if (/ptz|4k/i.test(id)) return "4K";
+  if (/plus/i.test(id)) return "Plus";
+  if (/eq/i.test(id)) return "EQ";
+  if (/pro/i.test(id)) return "Pro";
+  return null;
+}
+
+const MATRIX_IMG_INSET = 0.72;
+let compositionHoverId = null;
+let compositionOrbitR = 0;
+
 const MATRIX_SITE = "https://bnarcum.github.io/collaboration-device-matrix/";
 const MATRIX_NODE_FILL = "#ffffff";
-const MATRIX_NODE_RING = "rgba(100,116,139,0.45)";
+const MATRIX_NODE_RING = "#cbd5e1";
 const MATRIX_IMG_BASE = MATRIX_SITE + "devices/";
 let MATRIX_BRIDGE = {
   matrixBase: MATRIX_SITE,
@@ -2946,7 +2971,10 @@ function iconKey(n) {
 }
 
 const root = svg.append("g");
-const zoom = d3.zoom().scaleExtent([0.2,4]).on("zoom", ev => root.attr("transform", ev.transform));
+const zoom = d3.zoom().scaleExtent([0.2,4]).on("zoom", ev => {
+  root.attr("transform", ev.transform);
+  if (viewMode === "composition") updateCompositionLabelVisibility(ev.transform.k);
+});
 svg.call(zoom);
 
 const clipDefHost = svg.select("defs").append("g").attr("class", "product-clip-defs");
@@ -2992,29 +3020,30 @@ function linkKey(l){
 
 // ── Build the inner elements of a node group (called for enter selection).
 function buildNodeGroup(sel){
-  sel.append("circle").attr("class","gr")
+  const inner = sel.append("g").attr("class", "node-scaler");
+  inner.append("circle").attr("class","gr")
     .attr("r", d => d._r + 9).attr("fill", d => catColor(d.category))
     .attr("fill-opacity", 0).attr("filter","url(#glow)");
-  sel.append("circle").attr("class","mc")
+  inner.append("circle").attr("class","mc")
     .attr("r", d => d._r)
     .attr("fill", d => d._hasImage ? MATRIX_NODE_FILL : catColor(d.category))
     .attr("fill-opacity", d => d._hasImage ? 1 : 0.88)
     .attr("stroke", d => d._hasImage ? MATRIX_NODE_RING : "transparent")
-    .attr("stroke-width", d => d._hasImage ? 1.2 : 2.5);
-  sel.append("circle").attr("class","mring")
+    .attr("stroke-width", d => d._hasImage ? 1.4 : 2.5);
+  inner.append("circle").attr("class","mring")
     .attr("r", d => d._r + 1.4).attr("fill", "none")
     .attr("stroke", d => {
       if (d._status === "eol") return "#ef4444";
       if (d._status === "eos") return "#FF9000";
-      if (d._hasImage) return "rgba(45,206,92,0.65)";
+      if (d._hasImage) return "rgba(148,163,184,0.55)";
       return "transparent";
     })
-    .attr("stroke-width", d => d._hasImage ? 1.6 : 0)
+    .attr("stroke-width", d => d._hasImage ? 1.2 : 0)
     .style("pointer-events", "none");
-  sel.filter(d => d._hasImage && matrixImageUrl(d.id)).each(function(d){
+  inner.filter(d => d._hasImage && matrixImageUrl(d.id)).each(function(d){
     const g = d3.select(this);
     const cid = ensureProductClip(d.id, d._r);
-    const pad = d._r * 0.86;
+    const pad = d._r * MATRIX_IMG_INSET;
     g.append("image").attr("class", "pimg")
       .attr("href", matrixImageUrl(d.id))
       .attr("width", pad * 2).attr("height", pad * 2)
@@ -3022,7 +3051,7 @@ function buildNodeGroup(sel){
       .attr("clip-path", `url(#${cid})`)
       .style("pointer-events", "none");
   });
-  sel.append("use").attr("class","icn")
+  inner.append("use").attr("class","icn")
     .attr("href",   d => "#icon-" + iconKey(d))
     .attr("width",  d => d._r * 1.5)
     .attr("height", d => d._r * 1.5)
@@ -3032,75 +3061,185 @@ function buildNodeGroup(sel){
     .style("color", "#ffffff")
     .style("pointer-events", "none")
     .style("display", d => d._hasImage ? "none" : null);
-  sel.append("text").attr("class","nl")
+  inner.append("text").attr("class","nbadge")
+    .attr("y", d => -d._r + 6)
+    .attr("text-anchor", "middle")
+    .text(d => d._nodeBadge || "")
+    .style("font-size", "7px")
+    .style("font-weight", "800")
+    .style("fill", "#0f172a")
+    .style("pointer-events", "none")
+    .style("display", d => d._nodeBadge ? null : "none");
+  inner.append("text").attr("class","nl")
     .attr("y", d => d._r + 14).text(d => d._shortName || d.name)
     .style("font-size","10px").style("fill","#525E6C")
     .style("text-anchor","middle").style("pointer-events","none");
 }
 
 function compositionLabelStyle(d){
-  if (d._kind === "family") return { fill: "#ffffff", stroke: "rgba(8,14,24,0.9)", weight: "700", size: "11px" };
-  if (d._status === "eol") return { fill: "#f0b4bc", stroke: "rgba(8,14,24,0.92)", weight: "500", size: "9.5px" };
-  if (d._status === "eos") return { fill: "#f0c878", stroke: "rgba(8,14,24,0.92)", weight: "500", size: "9.5px" };
-  return { fill: "#eef2f6", stroke: "rgba(8,14,24,0.88)", weight: "600", size: "9.5px" };
+  if (d._kind === "family") return { fill: "#ffffff", stroke: "rgba(8,14,24,0.92)", weight: "700", size: "11.5px" };
+  if (d._status === "eol") return { fill: "#f0b4bc", stroke: "rgba(8,14,24,0.92)", weight: "500", size: "10px" };
+  if (d._status === "eos") return { fill: "#f0c878", stroke: "rgba(8,14,24,0.92)", weight: "500", size: "10px" };
+  return { fill: "#f1f5f9", stroke: "rgba(8,14,24,0.9)", weight: "600", size: "10.75px" };
+}
+
+function compositionLabelTransform(d){
+  if (d._kind === "family" || d._ox == null) return null;
+  if (d._oy > 28){
+    const ang = Math.atan2(d._oy, d._ox) * 180 / Math.PI;
+    let rot = ang + 90;
+    if (rot > 90 && rot < 270) rot += 180;
+    return `rotate(${rot})`;
+  }
+  return null;
+}
+
+function compositionInteractionSet(selectedNode){
+  const related = new Set();
+  if (!selectedNode) return related;
+  related.add(selectedNode.id);
+  if (selectedNode._kind === "family" && viewFocus){
+    viewNodes.forEach(n => { if (n._kind === "product") related.add(n.id); });
+  } else if (viewFocus){
+    related.add(viewFocus);
+    viewLinks.forEach(l => {
+      const s = sid(l), t = tid(l);
+      if (s === selectedNode.id || t === selectedNode.id){ related.add(s); related.add(t); }
+    });
+  }
+  return related;
+}
+
+function updateCompositionLabelVisibility(k){
+  if (viewMode !== "composition" || !ndEl) return;
+  const show = k >= 0.62;
+  ndEl.select("text.nl").style("opacity", show ? null : 0);
+  ndEl.select("text.nbadge").style("opacity", show ? null : 0);
+}
+
+function updateCompositionOrbitGuide(){
+  let g = lyr.select("g.comp-orbit");
+  if (viewMode !== "composition" || !compositionOrbitR){
+    if (!g.empty()) g.remove();
+    return;
+  }
+  if (g.empty()) g = lyr.insert("g", ":first-child").attr("class", "comp-orbit").style("pointer-events", "none");
+  g.selectAll("circle").data([compositionOrbitR]).join("circle")
+    .attr("cx", 0).attr("cy", 0).attr("r", d => d)
+    .attr("fill", "none")
+    .attr("stroke", "rgba(148,163,184,0.22)")
+    .attr("stroke-width", 1)
+    .attr("stroke-dasharray", "5 7");
+}
+
+function showCompositionNodeTip(ev, d){
+  const desc = d._productRef?.desc || d.desc || CATS[d.category]?.label || "";
+  document.getElementById("tn").textContent = d.name;
+  document.getElementById("tc").textContent = desc.length > 130 ? desc.slice(0, 128) + "…" : desc;
+  tipEl.style.display = "block";
+  moveTip(ev);
+}
+
+function applyCompositionInteractionStyles(selectedNode){
+  if (viewMode !== "composition" || !ndEl) return;
+  const related = compositionInteractionSet(selectedNode);
+  const selId = selectedNode?.id;
+  ndEl.each(function(nd){
+    const g = d3.select(this);
+    const isSel = nd.id === selId;
+    const isHov = nd.id === compositionHoverId;
+    const hot = isSel || isHov || related.has(nd.id);
+    const dim = selectedNode && !hot;
+    g.classed("nd-dim", dim);
+    g.select(".node-scaler").attr("transform", (isSel || isHov) ? "scale(1.08)" : null);
+    g.select(".gr").attr("fill-opacity", () => {
+      if (nd._kind === "family") return isSel || isHov ? 0.34 : 0.22;
+      if (nd._hasImage) return isSel || isHov ? 0.18 : 0;
+      return isSel || isHov ? 0.14 : 0.06;
+    });
+    g.select(".mc").attr("fill-opacity", dim ? 0.35 : (nd._hasImage ? 1 : (isSel ? 1 : 0.92)));
+    g.select("image.pimg").attr("opacity", dim ? 0.28 : (nd._status === "eol" ? 0.42 : 1));
+    g.select(".mring").attr("stroke", () => {
+      if (nd._status === "eol") return "#ef4444";
+      if (nd._status === "eos") return "#FF9000";
+      if (nd._kind === "family") return "rgba(255,255,255,0.9)";
+      if (nd._hasImage && nd._hasSuccessor && (isSel || isHov)) return "rgba(168,85,247,0.95)";
+      if (nd._hasImage && (isSel || isHov)) return "rgba(45,206,92,0.85)";
+      if (nd._hasImage) return "rgba(148,163,184,0.55)";
+      return "transparent";
+    }).attr("stroke-width", () => {
+      if (nd._kind === "family") return 2.2;
+      if (nd._hasImage && (isSel || isHov)) return 2;
+      if (nd._hasImage) return 1.2;
+      return 0;
+    });
+    g.select("text.nl").style("opacity", dim ? 0.35 : null)
+      .style("fill", isSel ? "#ffffff" : (isHov ? "#e2e8f0" : null));
+  });
+  if (lviz){
+    lviz.attr("stroke-opacity", l => {
+      if (!selectedNode) return l.type === "succession" ? 0.62 : 0.28;
+      const s = sid(l), t = tid(l);
+      const lit = related.has(s) && related.has(t);
+      if (l.type === "succession") return lit ? 0.78 : 0.1;
+      return lit ? 0.42 : 0.08;
+    });
+  }
 }
 
 function applyCompositionNodeStyles(){
   if (viewMode !== "composition" || !ndEl) return;
   ndEl.select(".mc")
     .attr("fill", d => d._hasImage ? MATRIX_NODE_FILL : catColor(d.category))
-    .attr("fill-opacity", d => {
-      if (d._hasImage) return d._status === "eol" ? 0.72 : d._status === "eos" ? 0.85 : 1;
-      if (d._kind === "family") return 0.95;
-      if (d._status === "eol") return 0.42;
-      if (d._status === "eos") return 0.62;
-      return 0.92;
-    })
     .attr("stroke", d => {
       if (d._hasImage) return MATRIX_NODE_RING;
       if (d._status === "eol") return "#ef4444";
       if (d._status === "eos") return "#FF9000";
-      if (d._kind === "family") return "#ffffff";
+      if (d._kind === "family") return "rgba(255,255,255,0.35)";
       return "transparent";
     })
     .attr("stroke-width", d => {
-      if (d._hasImage) return 1.2;
-      if ((d._status && d._status !== "current") || d._kind === "family") return 2;
+      if (d._hasImage) return 1.4;
+      if ((d._status && d._status !== "current") || d._kind === "family") return d._kind === "family" ? 2 : 2;
       return 0;
     });
   ndEl.select(".mring")
     .attr("stroke", d => {
       if (d._status === "eol") return "#ef4444";
       if (d._status === "eos") return "#FF9000";
-      if (d._kind === "family") return "rgba(255,255,255,0.85)";
-      if (d._hasImage) return "rgba(45,206,92,0.6)";
+      if (d._kind === "family") return "rgba(255,255,255,0.88)";
+      if (d._hasImage) return "rgba(148,163,184,0.55)";
       return "transparent";
     })
-    .attr("stroke-width", d => (d._hasImage || d._kind === "family" || (d._status && d._status !== "current")) ? 1.6 : 0);
-  ndEl.select("image.pimg").attr("opacity", d => d._status === "eol" ? 0.42 : d._status === "eos" ? 0.62 : 1);
-  ndEl.select("use.icn").style("display", d => d._hasImage ? "none" : null);
-  ndEl.select(".gr")
-    .attr("fill-opacity", d => d._kind === "family" ? 0.28 : d._status === "eol" ? 0.08 : 0.12);
+    .attr("stroke-width", d => (d._hasImage || d._kind === "family" || (d._status && d._status !== "current")) ? (d._kind === "family" ? 2.2 : 1.2) : 0);
+  ndEl.select("text.nbadge")
+    .text(d => d._nodeBadge || "")
+    .style("display", d => d._nodeBadge ? null : "none");
   ndEl.select("text.nl")
     .text(d => d._shortName || d.name)
-    .attr("y", d => d._r + (d._kind === "family" ? 16 : 13))
+    .attr("y", d => d._r + (d._kind === "family" ? 17 : 13))
+    .attr("transform", compositionLabelTransform)
     .each(function(d){
       const s = compositionLabelStyle(d);
       d3.select(this)
         .style("font-size", s.size)
         .style("font-weight", s.weight)
         .style("fill", s.fill)
+        .style("letter-spacing", d._kind === "family" ? "0.04em" : "0.02em")
         .style("paint-order", "stroke fill")
         .style("stroke", s.stroke)
         .style("stroke-width", "4px")
         .style("stroke-linejoin", "round");
     });
   if (lviz){
-    lviz.attr("stroke", d => d.type === "succession" ? "#a855f7" : "#4a5568")
-      .attr("stroke-opacity", d => d.type === "succession" ? 0.42 : 0.5)
-      .attr("stroke-width", d => d.type === "succession" ? 1.3 : 1)
-      .attr("stroke-dasharray", d => d.type === "succession" ? "4 4" : null);
+    lviz.attr("stroke", d => d.type === "succession" ? "#c084fc" : "#64748b")
+      .attr("stroke-opacity", d => d.type === "succession" ? 0.62 : 0.28)
+      .attr("stroke-width", d => d.type === "succession" ? 1.85 : 0.9)
+      .attr("stroke-dasharray", d => d.type === "succession" ? "5 4" : null);
   }
+  updateCompositionOrbitGuide();
+  applyCompositionInteractionStyles(selected);
+  updateCompositionLabelVisibility(d3.zoomTransform(svgEl).k);
 }
 
 function updateCompositionHint(){
@@ -3190,8 +3329,21 @@ function rebindGraph(opts){
               applyViewLevel("composition", { focusFamily: d.id });
             }
           })
-          .on("mouseover",(ev,d)=>{ if(d!==selected) showNodeTip(ev,d); })
-          .on("mousemove", moveTip).on("mouseout", hideTip);
+          .on("mouseover",(ev,d)=>{
+            if (viewMode === "composition"){
+              compositionHoverId = d.id;
+              applyCompositionInteractionStyles(selected);
+              showCompositionNodeTip(ev, d);
+            } else if (d !== selected) showNodeTip(ev, d);
+          })
+          .on("mousemove", moveTip)
+          .on("mouseout", ()=>{
+            if (viewMode === "composition"){
+              compositionHoverId = null;
+              applyCompositionInteractionStyles(selected);
+            }
+            hideTip();
+          });
         buildNodeGroup(g);
         // Fade-in for new nodes.
         g.style("opacity", 0).transition().duration(320).style("opacity", 1);
@@ -3208,13 +3360,14 @@ function rebindGraph(opts){
   ndEl.select("image.pimg").each(function(d){
     if (!d._hasImage) return;
     ensureProductClip(d.id, d._r);
-    const pad = d._r * 0.86;
+    const pad = d._r * MATRIX_IMG_INSET;
     d3.select(this)
       .attr("href", matrixImageUrl(d.id))
       .attr("width", pad * 2).attr("height", pad * 2)
       .attr("x", -pad).attr("y", -pad)
       .attr("clip-path", `url(#clip-prod-${String(d.id).replace(/[^a-z0-9_-]/gi, "_")})`);
   });
+  ndEl.select("text.nbadge").text(d => d._nodeBadge || "");
   ndEl.select("text.nl").text(d => d._shortName || d.name);
   applyCompositionNodeStyles();
   updateCompositionHint();
@@ -3457,10 +3610,16 @@ function buildCompositionView(familyId){
   const products = PRODUCTS.filter(p => p.family === familyId && productMatchesFilters(p));
   const current = products.filter(p => p.status === "current");
   const legacy = products.filter(p => p.status === "eol");
+  const matrixKeyCounts = {};
+  products.forEach(p => {
+    const k = compositionMatrixKey(p);
+    matrixKeyCounts[k] = (matrixKeyCounts[k] || 0) + 1;
+  });
+  const successorIds = new Set(products.filter(p => p.successor).map(p => p.id));
 
   const center = Object.assign({}, fam, {
     _kind: "family",
-    _r: 42,
+    _r: 46,
     _pinned: true,
     fx: 0, fy: 0, x: 0, y: 0,
     _badge: String(products.length),
@@ -3470,6 +3629,7 @@ function buildCompositionView(familyId){
   const nodes = [center];
   const placeOnRing = (items, radius) => {
     if (!items.length) return;
+    compositionOrbitR = Math.max(compositionOrbitR, radius);
     const offset = -Math.PI / 2;
     items.forEach((p, i) => {
       const angle = offset + (2 * Math.PI * i) / items.length;
@@ -3477,18 +3637,24 @@ function buildCompositionView(familyId){
       const fy = Math.sin(angle) * radius;
       const isLegacy = p.status !== "current";
       const hasImg = nodeHasMatrixImage({ _kind: "product", id: p.id });
+      const mKey = compositionMatrixKey(p);
+      const dupes = matrixKeyCounts[mKey] || 1;
+      let baseR = hasImg ? (isLegacy ? 15 : 20) : (isLegacy ? 11 : 15);
+      if (hasImg && dupes > 1) baseR *= 0.9;
       nodes.push({
         id: p.id,
         name: p.name,
         category: p.category,
         _kind: "product",
-        _r: hasImg ? (isLegacy ? 15 : 20) : (isLegacy ? 11 : 15),
+        _r: baseR,
         _productRef: p,
         _family: p.family,
         _iconKey: productIconKey(p),
         _shortName: compositionShortName(p),
+        _nodeBadge: compositionProductBadge(p, dupes),
         _status: p.status,
         _hasImage: hasImg,
+        _hasSuccessor: successorIds.has(p.id) || !!p.successor,
         _orbitFixed: true,
         _ox: fx, _oy: fy,
         fx, fy, x: fx, y: fy
@@ -3496,12 +3662,13 @@ function buildCompositionView(familyId){
     });
   };
 
+  compositionOrbitR = 0;
   if (legacy.length && current.length){
-    placeOnRing(current, Math.max(155, 88 + current.length * 8));
-    placeOnRing(legacy, Math.max(82, 50 + legacy.length * 5));
+    placeOnRing(current, Math.max(175, 98 + current.length * 10));
+    placeOnRing(legacy, Math.max(95, 58 + legacy.length * 6));
   } else {
     const all = [...current, ...legacy];
-    const radius = Math.max(125, Math.min(215, 82 + all.length * 8.5));
+    const radius = Math.max(140, Math.min(250, 95 + all.length * 10));
     placeOnRing(all, radius);
   }
 
@@ -3946,6 +4113,7 @@ function applyViewLevel(mode, opts){
   }
   if (mode !== "composition") viewFocus = null;
   viewMode = mode;
+  if (mode !== "composition"){ compositionHoverId = null; compositionOrbitR = 0; }
 
   // Build the data set for the new mode.
   if (mode === "overview"){
@@ -4170,15 +4338,7 @@ window.getViewFocus   = () => viewFocus;
 
 function applyConnectionHighlight(d, depth = connectionHighlightDepth){
   if (viewMode === "composition"){
-    ndEl.each(function(nd){
-      const isSel = nd.id === d.id;
-      d3.select(this).select(".gr").attr("fill-opacity", isSel ? 0.32 : (nd._kind === "family" ? 0.28 : 0.1));
-      d3.select(this).select(".mc").attr("fill-opacity", isSel ? 1 : (nd._hasImage ? 0.88 : 0.75));
-    });
     applyCompositionNodeStyles();
-    lviz.attr("stroke", l => l.type === "succession" ? "#a855f7" : "#4a5568")
-      .attr("stroke-opacity", l => l.type === "succession" ? 0.55 : 0.45)
-      .attr("stroke-width", l => l.type === "succession" ? 1.4 : 1);
     return;
   }
   const conn = connectionNodeSet(d.id, depth);
@@ -4223,20 +4383,8 @@ function resetHL() {
     return;
   }
   if (viewMode === "composition"){
-    ndEl.each(function(nd){
-      const inStk = stack.has(nd.id);
-      d3.select(this).select(".gr").attr("fill-opacity", inStk ? 0.22 : (nd._kind === "family" ? 0.28 : 0.12));
-      d3.select(this).select(".mc").attr("fill-opacity", nd._hasImage
-        ? (nd._status === "eol" ? 0.5 : nd._status === "eos" ? 0.68 : (inStk ? 1 : 0.98))
-        : (inStk ? 1 : (nd._status === "eol" ? 0.42 : nd._status === "eos" ? 0.62 : 0.92)));
-      d3.select(this).select(".icn").attr("opacity", nd._hasImage ? 0 : 1);
-      d3.select(this).select("image.pimg").attr("opacity", nd._status === "eol" ? 0.42 : nd._status === "eos" ? 0.62 : 1);
-    });
+    compositionHoverId = null;
     applyCompositionNodeStyles();
-    lviz.attr("stroke", d => d.type === "succession" ? "#a855f7" : "#4a5568")
-      .attr("stroke-opacity", d => d.type === "succession" ? 0.42 : 0.5)
-      .attr("stroke-width", d => d.type === "succession" ? 1.3 : 1)
-      .attr("stroke-dasharray", d => d.type === "succession" ? "4 4" : null);
     return;
   }
   ndEl.each(function(nd){
@@ -5592,7 +5740,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.9.3";
+const APP_VERSION   = "2.9.4";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -5883,6 +6031,12 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.9.4", date:"2026-06-20", items:[
+    "Composition polish — wider orbit for large families, dashed ring guide, softer spokes, stronger succession links.",
+    "Photo nodes — inset thumbnails, neutral rings, green/purple glow on hover/select only, variant badges for shared matrix images.",
+    "Labels — larger type, radial text on lower arc, fade when zoomed out; hub node enlarged with white ring.",
+    "Tooltips — product description on composition node hover."
+  ]},
   {ver:"2.9.3", date:"2026-06-20", items:[
     "Panel product hero — pure white photo backing.",
     "Device Matrix CTA — compact purple card between the original link and the full highlight card."
