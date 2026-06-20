@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:pillar-layout": "node scripts/test-pillar-layout.mjs"
+    "test:pillar-layout": "node scripts/test-pillar-layout.mjs",
+    "test:composition": "node scripts/test-composition-view.mjs",
+    "test": "npm run test:pillar-layout && npm run test:composition"
   },
   "devDependencies": {
     "playwright": "^1.49.0"

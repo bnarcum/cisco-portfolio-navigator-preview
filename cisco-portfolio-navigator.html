@@ -2821,6 +2821,40 @@ function zonesOverlap(a, b){
   const by0 = b.cy - b.h / 2, by1 = b.cy + b.h / 2;
   return ax0 < bx1 && ax1 > bx0 && ay0 < by1 && ay1 > by0;
 }
+function __cpnCompositionSelfTest(familyId = "room-systems"){
+  applyViewLevel("families");
+  focusPillarOnly("workplaces");
+  applyFilters();
+  applyViewLevel("composition", { focusFamily: familyId });
+  applyCompositionLayout();
+  fitCompositionView();
+  const svg = document.getElementById("gs");
+  const t = d3.zoomTransform(svg);
+  const w = svg.clientWidth, h = svg.clientHeight, pw = panelOffsetW();
+  const center = viewNodes.find(n => n._kind === "family");
+  const [sx, sy] = t.apply([center?.x ?? 0, center?.y ?? 0]);
+  const centerError = Math.hypot(sx - (w - pw) / 2, sy - h / 2);
+  const pills = ndEl ? ndEl.selectAll("rect.nl-bg").nodes().filter(r => {
+    const op = parseFloat(r.style.opacity ?? r.getAttribute("opacity") ?? "1");
+    return op > 0.05 && parseFloat(r.getAttribute("width") || "0") > 2;
+  }).length : 0;
+  return {
+    ok: viewMode === "composition"
+      && viewFocus === familyId
+      && (viewNodes.filter(n => n._kind === "product").length >= 8)
+      && Math.abs(center?.x ?? 999) < 1
+      && Math.abs(center?.y ?? 999) < 1
+      && centerError <= 80
+      && compositionOrbitR >= 80
+      && pills === 0,
+    center: center ? { x: center.x, y: center.y, fx: center.fx, fy: center.fy } : null,
+    centerError: Math.round(centerError),
+    productCount: viewNodes.filter(n => n._kind === "product").length,
+    orbitR: compositionOrbitR,
+    visiblePills: pills,
+    transform: { x: t.x, y: t.y, k: t.k }
+  };
+}
 function __cpnPillarLayoutSelfTest(){
   const prev = new Set(activePillars);
   const vis = new Set(NODES.map(n => n.id));
@@ -3763,6 +3797,28 @@ function applyGraphTransform(cx, cy, k, immediate){
   }
 }
 
+function syncCompositionPositions(){
+  if (viewMode !== "composition") return;
+  viewNodes.forEach(n => {
+    if (n.fx != null) n.x = n.fx;
+    if (n.fy != null) n.y = n.fy;
+    n.vx = 0;
+    n.vy = 0;
+  });
+}
+
+function applyCompositionLayout(){
+  syncCompositionPositions();
+  const pos = new Map(viewNodes.map(n => [n.id, n]));
+  const px = id => pos.get(id)?.x ?? 0;
+  const py = id => pos.get(id)?.y ?? 0;
+  if (ndEl) ndEl.attr("transform", d => `translate(${d.x},${d.y})`);
+  if (lviz) lviz.attr("x1", d => px(sid(d))).attr("y1", d => py(sid(d)))
+    .attr("x2", d => px(tid(d))).attr("y2", d => py(tid(d)));
+  if (lhit) lhit.attr("x1", d => px(sid(d))).attr("y1", d => py(sid(d)))
+    .attr("x2", d => px(tid(d))).attr("y2", d => py(tid(d)));
+}
+
 function fitCompositionView(){
   const {w, h} = getDims();
   if (w < 40 || h < 40) return;
@@ -4455,6 +4511,7 @@ function rebindGraph(opts){
     } else if (viewMode === "composition"){
       sim.alpha(0);
       for (let i = 0; i < 3; i++) sim.tick();
+      applyCompositionLayout();
     } else if (usePillarLayout()){
       sim.alpha(0).stop();
     } else sim.alpha(0.85).restart();
@@ -4464,6 +4521,7 @@ function rebindGraph(opts){
 
 svg.on("click",() => { selected=null; resetHL(); closePanel(); });
 sim.on("tick",() => {
+  if (viewMode === "composition") syncCompositionPositions();
   if (lviz) lviz.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y)
     .attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
   if (lhit) lhit.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y)
@@ -4652,21 +4710,18 @@ function buildCompositionView(familyId){
   });
   const successorIds = new Set(products.filter(p => p.successor).map(p => p.id));
 
-  const center = Object.assign({}, fam, {
+  const center = {
+    id: fam.id,
+    name: fam.name,
+    category: fam.category,
     _kind: "family",
     _r: 46,
     _pinned: true,
     fx: 0, fy: 0, x: 0, y: 0,
+    vx: 0, vy: 0,
     _badge: String(products.length),
-    _shortName: fam.name.replace(/^Cisco\s+/i, ""),
-    _pillarLabelRelY: undefined,
-    _pillarShowLabel: undefined,
-    _pillarCellW: undefined,
-    _pillarCellH: undefined,
-    _pillarCellTop: undefined,
-    _pillarCellBottom: undefined,
-    _pillarPinned: undefined
-  });
+    _shortName: fam.name.replace(/^Cisco\s+/i, "")
+  };
 
   const nodes = [center];
   const placeOnRing = (items, radius) => {
@@ -6905,7 +6960,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.22.8";
+const APP_VERSION   = "2.22.9";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -7196,6 +7251,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.22.9", date:"2026-06-20", items:[
+    "Composition — pin family hub at graph origin after drill-in (fixes off-center orbit from stale pillar sim coords); Playwright regression test added."
+  ]},
   {ver:"2.22.8", date:"2026-06-20", items:[
     "Composition — stop sim end handler from resetting zoom after drill-in; fit orbit synchronously on filter pass and on family click."
   ]},
@@ -11583,7 +11641,8 @@ window.__cpnV2 = {
     addPlannerTabs, refreshPlansBtn, applyRefArch, clearRefArch, renderTimeline,
     openTimelineView, closeTimelineView, setTimelineZoom,
     showStackDiff, sendAi, openAiWithPrompt, buildPlanContext, openChangelog, boot, savePlan, loadPlan, deletePlan,
-    listPlans, planSummary, pillarLayoutSelfTest: __cpnPillarLayoutSelfTest }
+    listPlans, planSummary, pillarLayoutSelfTest: __cpnPillarLayoutSelfTest,
+    compositionSelfTest: __cpnCompositionSelfTest }
 };
 })();
 </script>
