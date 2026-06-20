@@ -816,6 +816,13 @@ const PILLAR_LAYOUT = {
 };
 const PILLAR_ZONE_BY_ID = Object.fromEntries(PILLAR_LAYOUT.zones.map(z => [z.id, z]));
 const PILLAR_BY_ID = Object.fromEntries(ONE_CISCO.pillars.map(p => [p.id, p]));
+const PILLAR_IDS = PILLAR_LAYOUT.zones.map(z => z.id);
+const PILLAR_NODE_R = 17;
+const PILLAR_GLOW_PAD = 4;
+const PILLAR_MIN_CELL_W = 64;
+const PILLAR_MIN_CELL_H = 58;
+const PILLAR_LABEL_MIN_CELL_W = 74;
+const PILLAR_LABEL_MIN_CELL_H = 72;
 
 const CONNECTIVITY_SET = new Set(ONE_CISCO.connectivity.families);
 const AI_DC_SET = new Set([
@@ -2560,23 +2567,37 @@ function pillarColorForFamily(familyId){
 function pillarShortName(name, maxLen){
   let n = (name || "").replace(/^Cisco\s+/i, "");
   n = n.replace(/^Meraki\s+/i, "Meraki ");
-  const cap = maxLen || (activePillar ? 18 : 24);
+  const cap = maxLen || (singlePillarFocused() ? 18 : 22);
   if (n.length > cap) n = n.slice(0, cap - 1) + "…";
   return n;
 }
+function allPillarsSelected(){ return activePillars.size === 0; }
+function pillarIsVisible(id){ return activePillars.size === 0 || activePillars.has(id); }
+function singlePillarFocused(){ return activePillars.size === 1; }
+function focusedPillarId(){ return singlePillarFocused() ? [...activePillars][0] : null; }
+function clearPillarFilter(){ activePillars.clear(); }
+function focusPillarOnly(id){ activePillars = new Set([id]); }
+function computePillarGridCols(zone, n){
+  if (n <= 1) return 1;
+  if (zone.id === "ai-dc") return Math.min(4, n);
+  if (zone.id === "workplaces") return Math.min(7, Math.max(4, Math.ceil(n / 4)));
+  return Math.min(10, Math.max(5, Math.ceil(n / 3)));
+}
 function layoutZoneForItems(zone, items){
-  if (activePillar !== zone.id) return zone;
   const n = items.length || 1;
-  const minCellW = 76, minCellH = 58;
-  let cols = Math.min(8, Math.max(3, Math.ceil(Math.sqrt(n * 1.5))));
-  while (Math.ceil(n / cols) * minCellH > 280 && cols < n) cols++;
+  let cols = computePillarGridCols(zone, n);
+  cols = Math.max(1, Math.min(cols, n));
   const rows = Math.ceil(n / cols);
+  const innerW = cols * PILLAR_MIN_CELL_W;
+  const innerH = rows * PILLAR_MIN_CELL_H;
+  const padX = 56, padY = 48;
+  const focused = singlePillarFocused() && focusedPillarId() === zone.id;
   return {
     ...zone,
-    cx: 0,
-    cy: 12,
-    w: Math.max(zone.w, cols * minCellW + 56, 760),
-    h: Math.max(zone.h, rows * minCellH + 48, 248)
+    cx: focused ? 0 : zone.cx,
+    cy: focused ? 12 : zone.cy,
+    w: Math.max(zone.w, innerW + padX),
+    h: Math.max(zone.h, innerH + padY)
   };
 }
 function pillarAnchorForFamily(familyId, visibleIds){
@@ -2584,27 +2605,23 @@ function pillarAnchorForFamily(familyId, visibleIds){
   const zone = PILLAR_ZONE_BY_ID[pid];
   if (!zone) return { x: 0, y: 0 };
   const bucket = NODES.filter(n => familyPillar(n.id) === pid && (!visibleIds || visibleIds.has(n.id)));
+  bucket.sort((a, b) => a.name.localeCompare(b.name));
   const idx = Math.max(0, bucket.findIndex(n => n.id === familyId));
   const n = bucket.length || 1;
-  const innerW = zone.w - 48;
-  const innerH = zone.h - 40;
-  const minCellW = activePillar ? 88 : (pid === "resilience" ? 72 : 78);
-  const minCellH = activePillar ? 62 : 52;
-  let cols = Math.max(1, Math.floor(innerW / minCellW));
-  let rows = Math.ceil(n / cols);
-  while (rows * minCellH > innerH && cols < n){
-    cols++;
-    rows = Math.ceil(n / cols);
-  }
-  cols = Math.min(cols, n);
-  rows = Math.ceil(n / cols);
-  const col = idx % cols;
-  const row = Math.floor(idx / cols);
+  const layoutZone = layoutZoneForItems(zone, bucket);
+  const padX = 28, padY = 24;
+  const innerW = layoutZone.w - padX * 2;
+  const innerH = layoutZone.h - padY * 2;
+  let cols = computePillarGridCols(zone, n);
+  cols = Math.max(1, Math.min(cols, n));
+  const rows = Math.ceil(n / cols);
   const cellW = innerW / cols;
   const cellH = innerH / rows;
+  const col = idx % cols;
+  const row = Math.floor(idx / cols);
   return {
-    x: zone.cx - zone.w / 2 + 24 + cellW * (col + 0.5),
-    y: zone.cy - zone.h / 2 + 20 + cellH * (row + 0.5)
+    x: layoutZone.cx - layoutZone.w / 2 + padX + cellW * (col + 0.5),
+    y: layoutZone.cy - layoutZone.h / 2 + padY + cellH * (row + 0.5)
   };
 }
 function familiesInPillar(pillarId){
@@ -2677,8 +2694,9 @@ const allInds  = [...new Set(NODES.flatMap(n => n.industries))].sort();
 
 let activeCats  = new Set(Object.keys(CATS));
 let activeUC    = "", activeInd = "";
-let activePillar = null;
+let activePillars = new Set();
 let pillarHoverId = null;
+let pillarZoneLayout = null;
 let selected    = null;
 let connectionHighlightDepth = 1;
 let plannerOpen = false;
@@ -2721,17 +2739,27 @@ let viewLinks = LINKS.slice();
 function usePillarLayout(){
   if (viewMode !== "families") return false;
   if (activeUC || activeInd) return false;
-  if (activePillar) return true;
+  if (activePillars.size > 0) return true;
   return activeCats.size === Object.keys(CATS).length;
 }
 function togglePillarFilter(pillarId){
-  activePillar = activePillar === pillarId ? null : pillarId;
+  if (activePillars.size === 0) activePillars = new Set([pillarId]);
+  else if (activePillars.has(pillarId)) activePillars.delete(pillarId);
+  else activePillars.add(pillarId);
+  if (activePillars.size >= PILLAR_IDS.length) clearPillarFilter();
   applyFilters();
   if (viewMode === "families") scheduleGraphFit("families");
 }
 function pinPillarNodes(nodes, visibleIds){
   const buckets = pillarLayoutBuckets(visibleIds);
-  PILLAR_LAYOUT.zones.forEach(z => layoutPillarGrid(z, buckets[z.id] || []));
+  pillarZoneLayout = {};
+  PILLAR_LAYOUT.zones.forEach(z => {
+    if (!pillarIsVisible(z.id)) return;
+    const items = buckets[z.id] || [];
+    const lz = layoutZoneForItems(z, items);
+    pillarZoneLayout[z.id] = lz;
+    layoutPillarGrid(lz, items);
+  });
 }
 function pillarLayoutBuckets(visibleIds){
   const buckets = { "ai-dc": [], workplaces: [], resilience: [] };
@@ -2742,28 +2770,18 @@ function pillarLayoutBuckets(visibleIds){
   Object.keys(buckets).forEach(k => buckets[k].sort((a, b) => a.name.localeCompare(b.name)));
   return buckets;
 }
-function layoutPillarGrid(zone, items){
+function layoutPillarGrid(layoutZone, items){
   const n = items.length;
   if (!n) return;
-  const layoutZone = layoutZoneForItems(zone, items);
   const padX = 28, padY = 24;
   const innerW = layoutZone.w - padX * 2;
   const innerH = layoutZone.h - padY * 2;
-  let cols;
-  if (activePillar === zone.id){
-    cols = Math.min(8, Math.max(3, Math.ceil(Math.sqrt(n * 1.5))));
-    while (Math.ceil(n / cols) * 58 > innerH && cols < n) cols++;
-  } else if (zone.id === "ai-dc"){
-    cols = Math.min(4, n);
-  } else if (zone.id === "workplaces"){
-    cols = Math.min(6, Math.max(4, Math.ceil(n / 4)));
-  } else {
-    cols = Math.min(9, Math.max(5, Math.ceil(n / 3)));
-  }
+  let cols = computePillarGridCols(layoutZone, n);
   cols = Math.max(1, Math.min(cols, n));
   const rows = Math.ceil(n / cols);
   const cellW = innerW / cols;
   const cellH = innerH / rows;
+  const showLabel = cellW >= PILLAR_LABEL_MIN_CELL_W && cellH >= PILLAR_LABEL_MIN_CELL_H;
   items.forEach((node, idx) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
@@ -2773,7 +2791,11 @@ function layoutPillarGrid(zone, items){
     node.y = y;
     node.fx = x;
     node.fy = y;
+    node._r = PILLAR_NODE_R;
     node._shortName = pillarShortName(node.name);
+    node._pillarCellW = cellW;
+    node._pillarCellH = cellH;
+    node._pillarShowLabel = showLabel;
     node._pillarPinned = true;
   });
 }
@@ -2815,7 +2837,7 @@ function seedPillarLayout(nodes, visibleIds){
 }
 function forcePillar(alpha){
   if (!usePillarLayout()) return;
-  const k = activePillar ? 0.2 : 0.08;
+  const k = singlePillarFocused() ? 0.2 : 0.08;
   for (const node of viewNodes){
     if (node.fx != null || node.fy != null) continue;
     if (!nodeById[node.id]) continue;
@@ -2829,18 +2851,34 @@ function applyPillarLabelStyles(selectedNode){
   const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
   ndEl.select("text.nl")
     .text(d => d._shortName || d.name)
-    .attr("y", d => d._r + (activePillar ? 12 : 14))
+    .attr("y", d => d._r + 12)
     .style("opacity", d => {
       if (selectedNode && (d.id === selectedNode.id || conn?.has(d.id))) return 1;
       if (d.id === pillarHoverId) return 1;
+      if (d._pillarShowLabel) return 1;
       return 0;
     })
-    .style("font-size", activePillar ? "10px" : "10px");
+    .style("font-size", "10px");
+}
+function applyAllProductsLabelStyles(selectedNode){
+  if (!ndEl || viewMode !== "all-products") return;
+  const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
+  ndEl.select("text.nl")
+    .text(d => d._kind === "family" ? pillarShortName(d.name, 20) : d.name)
+    .attr("y", d => d._r + (d._kind === "family" ? 14 : 11))
+    .style("font-size", d => d._kind === "family" ? "11px" : "9px")
+    .style("opacity", d => {
+      if (d._kind === "family") return 1;
+      if (selectedNode && (d.id === selectedNode.id || conn?.has(d.id))) return 1;
+      if (d.id === pillarHoverId) return 1;
+      return 0;
+    });
 }
 function pillarLinkOpacity(l){
-  if (!activePillar) return 0;
+  const pid = focusedPillarId();
+  if (!pid) return 0;
   const sp = familyPillar(sid(l)), tp = familyPillar(tid(l));
-  if (sp !== tp || sp !== activePillar) return 0;
+  if (sp !== tp || sp !== pid) return 0;
   return l.type === "direct" ? 0.32 : 0.16;
 }
 
@@ -3315,6 +3353,7 @@ function compositionLabelStyle(d){
 
 function resetStandardLabelStyles(){
   if (!ndEl) return;
+  if (viewMode === "all-products"){ applyAllProductsLabelStyles(selected); return; }
   if (usePillarLayout()){ applyPillarLabelStyles(selected); return; }
   ndEl.selectAll("text.nl")
     .attr("y", d => d._r + 14)
@@ -3403,14 +3442,18 @@ function fitOverviewDeckView(){
 }
 
 function fitPillarLayoutView(){
-  const pad = activePillar ? 48 : 52;
-  let zones = PILLAR_LAYOUT.zones;
-  if (activePillar){
-    const z = PILLAR_ZONE_BY_ID[activePillar];
-    const vis = new Set();
-    NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
-    const buckets = pillarLayoutBuckets(vis);
-    zones = [layoutZoneForItems(z, buckets[activePillar] || [])];
+  const pad = singlePillarFocused() ? 48 : 52;
+  const vis = new Set();
+  NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
+  const buckets = pillarLayoutBuckets(vis);
+  let zones;
+  if (singlePillarFocused()){
+    const id = focusedPillarId();
+    zones = [layoutZoneForItems(PILLAR_ZONE_BY_ID[id], buckets[id] || [])];
+  } else {
+    zones = PILLAR_LAYOUT.zones
+      .filter(z => pillarIsVisible(z.id))
+      .map(z => layoutZoneForItems(z, buckets[z.id] || []));
   }
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   zones.forEach(z => {
@@ -3422,7 +3465,7 @@ function fitPillarLayoutView(){
   const { w, h } = getDims();
   const pw = panelOffsetW();
   const bw = maxX - minX, bh = maxY - minY;
-  const k = Math.min(activePillar ? 1.15 : 1.05, Math.max(0.45, Math.min((w - pw - 56) / bw, (h - 108) / bh)));
+  const k = Math.min(singlePillarFocused() ? 1.15 : 1.02, Math.max(0.42, Math.min((w - pw - 56) / bw, (h - 108) / bh)));
   applyGraphTransform(0, (minY + maxY) / 2, k);
 }
 
@@ -3603,7 +3646,7 @@ function updatePillarGuides(){
   const g = lyr.insert("g", ":first-child").attr("class", "pillar-guides");
   const spineY = PILLAR_LAYOUT.spineY;
   const span = 400;
-  if (!activePillar){
+  if (allPillarsSelected()){
     g.append("line").attr("class", "zone-spine-line")
       .attr("x1", -span).attr("y1", spineY)
       .attr("x2", span).attr("y2", spineY)
@@ -3615,10 +3658,11 @@ function updatePillarGuides(){
   NODES.forEach(n => { if (familyNodeVisible(n)) visIds.add(n.id); });
   const buckets = pillarLayoutBuckets(visIds);
   PILLAR_LAYOUT.zones.forEach(z => {
-    const dim = activePillar && z.id !== activePillar;
-    const hot = activePillar === z.id;
-    const lz = hot ? layoutZoneForItems(z, buckets[z.id] || []) : z;
-    const zg = g.append("g").attr("class", "zone zone-" + z.id + (dim ? " zone-dim" : ""));
+    if (!pillarIsVisible(z.id)) return;
+    const dim = activePillars.size > 0 && !activePillars.has(z.id);
+    const hot = activePillars.has(z.id);
+    const lz = layoutZoneForItems(z, buckets[z.id] || []);
+    const zg = g.append("g").attr("class", "zone zone-" + z.id + (dim ? " zone-dim" : "") + (hot ? " zone-hot" : ""));
     const x = lz.cx - lz.w / 2, y = lz.cy - lz.h / 2;
     zg.append("rect").attr("class", "zone-rect zone-fill")
       .attr("x", x).attr("y", y).attr("width", lz.w).attr("height", lz.h)
@@ -3646,10 +3690,10 @@ function updatePillarLegend(show){
   if (!el) return;
   if (!show){ el.classList.remove("show"); el.setAttribute("aria-hidden", "true"); return; }
   const total = NODES.length;
-  const allActive = !activePillar ? " active" : "";
+  const allActive = allPillarsSelected() ? " active" : "";
   const rows = [...PILLAR_LAYOUT.zones].map(z => {
     const cnt = familiesInPillar(z.id);
-    const active = activePillar === z.id ? " active" : "";
+    const active = activePillars.has(z.id) ? " active" : "";
     return `<div class="pl-item${active}" data-pillar="${z.id}" role="button" tabindex="0">
       <span class="pl-dot" style="background:${z.color}"></span>
       <div class="pl-name">${z.label}</div>
@@ -3665,7 +3709,7 @@ function updatePillarLegend(show){
   el.querySelectorAll(".pl-item").forEach(row => {
     const pid = row.dataset.pillar;
     const activate = () => {
-      if (pid === "__all__"){ activePillar = null; applyFilters(); scheduleGraphFit("families"); return; }
+      if (pid === "__all__"){ clearPillarFilter(); applyFilters(); scheduleGraphFit("families"); return; }
       togglePillarFilter(pid);
     };
     row.addEventListener("click", ev => { ev.stopPropagation(); activate(); });
@@ -3896,6 +3940,7 @@ function rebindGraph(opts){
               showCompositionNodeTip(ev, d);
             } else {
               if (usePillarLayout()){ pillarHoverId = d.id; applyPillarLabelStyles(selected); }
+              else if (viewMode === "all-products"){ pillarHoverId = d.id; applyAllProductsLabelStyles(selected); }
               if (d !== selected) showNodeTip(ev, d);
             }
           })
@@ -3907,6 +3952,9 @@ function rebindGraph(opts){
             } else if (usePillarLayout()){
               pillarHoverId = null;
               applyPillarLabelStyles(selected);
+            } else if (viewMode === "all-products"){
+              pillarHoverId = null;
+              applyAllProductsLabelStyles(selected);
             }
             hideTip();
           });
@@ -3935,6 +3983,11 @@ function rebindGraph(opts){
   });
   ndEl.select("text.nl").text(d => d._shortName || d.name);
   const pillarMode = viewMode === "families" && usePillarLayout();
+  ndEl.select("circle.gr").attr("r", d => d._r + (pillarMode ? PILLAR_GLOW_PAD : 9));
+  ndEl.select("circle.mc").attr("r", d => d._r);
+  if (viewMode === "families" && !pillarMode){
+    viewNodes.forEach(n => { if (nodeById[n.id]) n._r = rscale(degree[n.id] || 0); });
+  }
   ndEl.select("circle.mc").each(function(d){
     if (!nodeById[d.id]) return;
     const el = d3.select(this);
@@ -4428,7 +4481,7 @@ function familyPassesTierFilter(n){
 }
 
 function familyNodeVisible(n){
-  if (activePillar && familyPillar(n.id) !== activePillar) return false;
+  if (activePillars.size > 0 && !activePillars.has(familyPillar(n.id))) return false;
   if (!activeCats.has(n.category)) return false;
   if (activeUC && !(n.useCases || []).includes(activeUC)) return false;
   if (activeInd && !(n.industries || []).includes(activeInd)) return false;
@@ -4678,7 +4731,7 @@ function applyViewLevel(mode, opts){
 
   // Build the data set for the new mode.
   if (mode === "overview"){
-    activePillar = null;
+    clearPillarFilter();
     const v = buildOverviewView();
     viewNodes = v.nodes; viewLinks = v.links;
   } else if (mode === "composition"){
@@ -4689,8 +4742,8 @@ function applyViewLevel(mode, opts){
     viewNodes = v.nodes; viewLinks = v.links;
   } else {
     // Families mode = the full graph; optionally focus a category by activating it.
-    if (opts.focusPillar) activePillar = opts.focusPillar;
-    else activePillar = null;
+    if (opts.focusPillar) focusPillarOnly(opts.focusPillar);
+    else clearPillarFilter();
     viewNodes = NODES.slice(); viewLinks = LINKS.slice();
     // Annotate each family with the count of its specific products so the
     // node renders a "+N" badge in this mode.
@@ -4749,7 +4802,7 @@ function configureForcesForMode(mode){
     sim.force("pillar", null);
   } else if (mode === "all-products"){
     sim.force("charge",  d3.forceManyBody().strength(d => d._kind === "family" ? -380 : -45));
-    sim.force("collide", d3.forceCollide(d => d._r + 6).strength(0.9));
+    sim.force("collide", d3.forceCollide(d => d._r + (d._kind === "family" ? 14 : 8)).strength(0.92));
     sim.force("link").distance(d => {
       if (d.type === "composition")  return 32;
       if (d.type === "succession")   return 80;
@@ -4766,9 +4819,10 @@ function configureForcesForMode(mode){
       sim.force("link")
         .distance(d => d.type === "direct" ? 95 : 130)
         .strength(d => {
-          if (!activePillar) return 0;
+          const pid = focusedPillarId();
+          if (!pid) return 0;
           const sp = familyPillar(sid(d)), tp = familyPillar(tid(d));
-          return sp === tp && sp === activePillar ? (d.type === "direct" ? 0.12 : 0.06) : 0;
+          return sp === tp && sp === pid ? (d.type === "direct" ? 0.12 : 0.06) : 0;
         });
       sim.force("pillar", null);
     } else {
@@ -4972,7 +5026,7 @@ function resetHL() {
         .attr("stroke", pillarColorForFamily(nd.id)).attr("stroke-opacity", 0.92);
       d3.select(this).select(".icn").attr("opacity",1);
     });
-    if (lviz && activePillar) lviz.attr("stroke-opacity", pillarLinkOpacity);
+    if (lviz && singlePillarFocused()) lviz.attr("stroke-opacity", pillarLinkOpacity);
     applyPillarLabelStyles(null);
     return;
   }
@@ -5253,14 +5307,16 @@ function applyFilters() {
   if (lviz) lviz.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
   if (lhit) lhit.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
   const badge=document.getElementById("fbadge");
-  const f=activePillar||activeUC||activeInd||activeCats.size<Object.keys(CATS).length
+  const f=activePillars.size>0||activeUC||activeInd||activeCats.size<Object.keys(CATS).length
     || facetState.status.size !== 1 || !facetState.status.has("current") || facetState.tier.size > 0;
   if(f){
     const total = viewMode === "all-products" ? (NODES.length + PRODUCTS.length) : NODES.length;
     const label = viewMode === "all-products" ? "items" : "portfolio families";
-    if (activePillar && viewMode === "families"){
-      const p = PILLAR_BY_ID[activePillar];
-      badge.textContent = `${p?.label || "Pillar"} · ${vis.size} families · Click All pillars or Reset to show all`;
+    if (activePillars.size > 0 && viewMode === "families"){
+      const names = [...activePillars].map(id => PILLAR_ZONE_BY_ID[id]?.shortLabel || id).join(" + ");
+      badge.textContent = `${names} · ${vis.size} families · Click All pillars or Reset to show all`;
+    } else if (viewMode === "all-products"){
+      badge.textContent = `Showing ${vis.size} of ${total} ${label} · Hover products for names · dense power-user view`;
     } else {
       badge.textContent=`Showing ${vis.size} of ${total} ${label}`;
     }
@@ -5268,7 +5324,7 @@ function applyFilters() {
   }
   else badge.style.display="none";
   if (viewMode === "families"){
-    if (activePillar && !usePillarLayout()) activePillar = null;
+    if (activePillars.size > 0 && !usePillarLayout()) clearPillarFilter();
     if (usePillarLayout()){
       applyPillarLayout(vis);
       if (lviz){
@@ -5277,7 +5333,12 @@ function applyFilters() {
       }
       if (lhit) lhit.style("display", l => vis.has(sid(l)) && vis.has(tid(l)) && pillarLinkOpacity(l) > 0 ? null : "none");
     } else {
-      viewNodes.forEach(n => { if (!n._pinned){ n.fx = null; n.fy = null; n._shortName = null; } });
+      viewNodes.forEach(n => {
+        if (!n._pinned){
+          n.fx = null; n.fy = null; n._shortName = null;
+          if (nodeById[n.id]) n._r = rscale(degree[n.id] || 0);
+        }
+      });
       configureForcesForMode("families");
       sim.alpha(0.55).restart();
       if (lviz) lviz.style("display", null);
@@ -5291,7 +5352,7 @@ function applyFilters() {
 }
 
 function resetAll() {
-  activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd=""; activePillar=null;
+  activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd=""; clearPillarFilter();
   ucEl.value=""; indEl.value="";
   facetState.status = new Set(["current"]);
   facetState.tier.clear();
@@ -6397,7 +6458,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.14.3";
+const APP_VERSION   = "2.15.0";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6688,6 +6749,11 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.15.0", date:"2026-06-20", items:[
+    "Families — auto-growing pillar grids with fixed icon size (no overlap in all-pillars view); short labels only when the cell fits, otherwise icon + tooltip.",
+    "Pillar filter — multi-select: toggle any combination in the legend or zone panels; All pillars clears the filter.",
+    "All tab — product labels on hover/select only, stronger collision spacing; families keep short labels (dense power-user view retained)."
+  ]},
   {ver:"2.14.3", date:"2026-06-20", items:[
     "Overview — single click opens Families with all three pillars; double-click a card to focus one pillar.",
     "Families — All pillars row in legend; labels on hover only (fixes overlap when one pillar is focused); expanded grid when filtered."
