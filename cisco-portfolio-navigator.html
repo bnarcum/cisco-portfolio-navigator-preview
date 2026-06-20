@@ -3788,6 +3788,31 @@ function buildNodeGroup(sel){
     .style("text-anchor","middle").style("pointer-events","none");
 }
 
+// Create or refresh matrix photo thumbnails on update — not only on enter.
+// Needed when product nodes are reused from All Products (no _hasImage on first bind).
+function syncNodeProductImages(){
+  if (!ndEl) return;
+  ndEl.each(function(d){
+    const inner = d3.select(this).select(".node-scaler");
+    if (inner.empty()) return;
+    const url = d._hasImage ? matrixImageUrl(d.id) : null;
+    let pimg = inner.select("image.pimg");
+    if (url){
+      const cid = ensureProductClip(d.id, d._r);
+      const pad = d._r * MATRIX_IMG_INSET;
+      if (pimg.empty()) pimg = inner.append("image").attr("class", "pimg");
+      pimg
+        .attr("href", url)
+        .attr("width", pad * 2).attr("height", pad * 2)
+        .attr("x", -pad).attr("y", -pad)
+        .attr("clip-path", `url(#${cid})`)
+        .style("pointer-events", "none");
+    } else if (!pimg.empty()){
+      pimg.remove();
+    }
+  });
+}
+
 const GRAPH_LABEL = { default: "#e2e8f0", muted: "#94a3b8", connected: "#f1f5f9", active: "#ffffff" };
 
 function compositionLabelY(d){
@@ -4508,18 +4533,9 @@ function rebindGraph(opts){
 
   // Refresh dynamic attributes on update — needed when a node's role
   // changes between modes (e.g. family in Families vs Composition).
+  syncNodeProductImages();
   ndEl.select("use.icn").attr("href", d => "#icon-" + iconKey(d))
     .style("display", d => d._hasImage ? "none" : null);
-  ndEl.select("image.pimg").each(function(d){
-    if (!d._hasImage) return;
-    ensureProductClip(d.id, d._r);
-    const pad = d._r * MATRIX_IMG_INSET;
-    d3.select(this)
-      .attr("href", matrixImageUrl(d.id))
-      .attr("width", pad * 2).attr("height", pad * 2)
-      .attr("x", -pad).attr("y", -pad)
-      .attr("clip-path", `url(#clip-prod-${String(d.id).replace(/[^a-z0-9_-]/gi, "_")})`);
-  });
   ndEl.select("text.nl").text(d => d._shortName || d.name);
   const pillarMode = viewMode === "families" && usePillarLayout();
   ndEl.select("circle.gr")
@@ -7605,7 +7621,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.27.2";
+const APP_VERSION   = "2.27.3";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -7896,6 +7912,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.27.3", date:"2026-06-20", items:[
+    "Composition — product photos now appear when drilling in from All Products or after filter changes (syncNodeProductImages on graph update, not just first enter)."
+  ]},
   {ver:"2.27.2", date:"2026-06-20", items:[
     "Spatial — restore Device Matrix product photos in family orbit; fix blank tiles after filtered breadcrumb drill-in by attaching billboards when async loads finish (including after cache clears)."
   ]},

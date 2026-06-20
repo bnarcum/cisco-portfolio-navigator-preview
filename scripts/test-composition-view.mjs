@@ -52,6 +52,13 @@ function diag(page) {
     const orbit = document.querySelector("g.comp-orbit circle");
     const orbitR = orbit ? parseFloat(orbit.getAttribute("r") || "0") : 0;
 
+    const productImgs = productNodes.map((g) => g.querySelector("image.pimg"));
+    const withPhoto = productImgs.filter((img) => img && img.getAttribute("href")).length;
+    const withMatrixPhoto = productImgs.filter((img) => {
+      const href = img?.getAttribute("href") || "";
+      return href.includes("collaboration-device-matrix") || href.includes("img-");
+    }).length;
+
     return {
       viewMode: window.getViewMode?.(),
       viewFocus: window.getViewFocus?.(),
@@ -63,6 +70,8 @@ function diag(page) {
       productNodeCount: productNodes.length,
       orbitR,
       visiblePillCount: visiblePills.length,
+      withPhoto,
+      withMatrixPhoto,
       hint: document.getElementById("hint")?.textContent?.slice(0, 80) || "",
     };
   }, FAMILY);
@@ -77,6 +86,8 @@ function assertComposition(result, label) {
   if (result.orbitR < 80) errors.push(`orbitR=${result.orbitR}`);
   if (result.familyCenterError > 120) errors.push(`family off-center by ${result.familyCenterError}px`);
   if (result.visiblePillCount > 0) errors.push(`${result.visiblePillCount} stale nl-bg pills`);
+  if (result.withPhoto < 8) errors.push(`only ${result.withPhoto} product nodes have pimg href`);
+  if (result.withMatrixPhoto < 8) errors.push(`only ${result.withMatrixPhoto} matrix product photos`);
   if (errors.length) {
     console.error(`FAIL [${label}]:`, errors.join("; "));
     console.error(JSON.stringify(result, null, 2));
@@ -85,6 +96,7 @@ function assertComposition(result, label) {
   console.log(`PASS [${label}]`, {
     familyCenterError: result.familyCenterError,
     productNodeCount: result.productNodeCount,
+    withPhoto: result.withPhoto,
     orbitR: result.orbitR,
     k: result.transform.k.toFixed(3),
   });
@@ -149,6 +161,19 @@ try {
     await page.waitForTimeout(500);
     if (!assertComposition(await diag(page), "dblclick-workplaces")) failed = true;
   }
+
+  // Scenario D: All Products → composition (reused product nodes must gain photos)
+  await page.evaluate(() => {
+    window.applyViewLevel("all-products");
+    document.querySelectorAll(".cp").forEach((b) => {
+      b.classList.toggle("off", b.dataset.cat !== "collaboration");
+    });
+    window.applyFilters?.();
+  });
+  await page.waitForTimeout(500);
+  await page.evaluate((id) => window.applyViewLevel("composition", { focusFamily: id }), FAMILY);
+  await page.waitForTimeout(400);
+  if (!assertComposition(await diag(page), "all-products-drill-in")) failed = true;
 
   process.exit(failed ? 1 : 0);
 } finally {
