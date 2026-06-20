@@ -836,6 +836,7 @@ const PILLAR_LABEL_ZOOM_FADE = 0.28;
 const PILLAR_LABEL_BASE_PX = 11.5;
 const PILLAR_LABEL_CHAR_W = 0.55;
 const PILLAR_LABEL_CELL_FILL = 0.86;
+const PILLAR_LABEL_PILL_PAD_Y = 4;
 
 function pillarLabelFontPx(k){
   const counter = PILLAR_LABEL_BASE_PX / (k || 1);
@@ -2726,7 +2727,7 @@ function pillarGridMinCellH(){
     PILLAR_LABEL_BASE_PX / PILLAR_LABEL_ZOOM_K,
     (PILLAR_LABEL_BAND - 6) / 1.35
   );
-  const labelBlock = maxLabelPx * 1.4 + 6;
+  const labelBlock = maxLabelPx + PILLAR_LABEL_PILL_PAD_Y * 2;
   return PILLAR_CELL_TOP_PAD + PILLAR_NODE_R * 2 + PILLAR_GLOW_PAD + 3
     + PILLAR_LABEL_ICON_GAP + labelBlock;
 }
@@ -2738,8 +2739,11 @@ function pillarLabelY(d){
   if (d._pillarLabelRelY != null) return d._pillarLabelRelY;
   return pillarNodeVisualBottom(d) + PILLAR_LABEL_ICON_GAP;
 }
+function pillarLabelPillH(k){
+  return pillarLabelFontPx(k) + PILLAR_LABEL_PILL_PAD_Y * 2;
+}
 function pillarLabelBlockH(k){
-  return pillarLabelFontPx(k) * 1.4 + 4;
+  return pillarLabelPillH(k);
 }
 function pillarZoomLabelFade(k){
   if (k < PILLAR_LABEL_ZOOM_K) return 0;
@@ -3178,22 +3182,25 @@ function applyPillarLabelStyles(selectedNode){
     const cellW = d._pillarCellW;
     const fontPx = pillarLabelFontPx(k);
     const yOff = pillarLabelY(d);
+    const pillH = pillarLabelPillH(k);
     const label = show ? pillarShortName(d.name, pillarLabelMaxChars(cellW, k)) : "";
     const tw = Math.min(pillarLabelTextLen(cellW), pillarLabelTextWidth(label, fontPx) + 8);
-    const th = fontPx * 1.4;
     let bg = wrap.select("rect.nl-bg");
     if (bg.empty()) bg = wrap.insert("rect", "text.nl").attr("class", "nl-bg");
-    bg.attr("x", -tw / 2).attr("y", yOff + 1)
-      .attr("width", tw).attr("height", th + 4)
+    bg.attr("x", -tw / 2).attr("y", yOff)
+      .attr("width", tw).attr("height", pillH)
       .attr("rx", 4)
       .attr("fill", "rgba(6,11,22,0.94)")
       .style("opacity", show ? (pillarLabelPriority(d, selectedNode, conn) >= 3 ? 1 : zoomFade) : 0);
-    wrap.select("text.nl").text(label);
+    wrap.select("text.nl")
+      .text(label)
+      .attr("y", yOff + pillH / 2)
+      .style("dominant-baseline", "central");
   });
   ndEl.select("text.nl")
-    .attr("y", d => pillarLabelY(d))
+    .attr("y", d => pillarLabelY(d) + pillarLabelPillH(k) / 2)
     .style("text-anchor", "middle")
-    .style("dominant-baseline", "text-before-edge")
+    .style("dominant-baseline", "central")
     .attr("textLength", null)
     .attr("lengthAdjust", null)
     .style("opacity", d => {
@@ -6846,7 +6853,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.22.3";
+const APP_VERSION   = "2.22.4";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -7137,6 +7144,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.22.4", date:"2026-06-20", items:[
+    "Families — pillar zoom label text vertically centered inside the dark pill background."
+  ]},
   {ver:"2.22.3", date:"2026-06-20", items:[
     "Families — labels locked to a bottom cell band; icons shift up in tight cells instead of labels overlapping.",
     "Workplaces panel widened and grid math enforces minimum row height so zoom labels no longer bleed into the next row."
