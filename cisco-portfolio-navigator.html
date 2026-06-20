@@ -2713,14 +2713,49 @@ function togglePillarFilter(pillarId){
   if (viewMode === "families") scheduleGraphFit("families");
 }
 function pinPillarNodes(nodes, visibleIds){
-  nodes.forEach(n => {
-    if (!nodeById[n.id]) return;
-    const a = pillarAnchorForFamily(n.id, visibleIds);
-    n.x = a.x;
-    n.y = a.y;
-    n.fx = a.x;
-    n.fy = a.y;
-    n._shortName = pillarShortName(n.name);
+  const buckets = pillarLayoutBuckets(visibleIds);
+  PILLAR_LAYOUT.zones.forEach(z => layoutPillarGrid(z, buckets[z.id] || []));
+}
+function pillarLayoutBuckets(visibleIds){
+  const buckets = { "ai-dc": [], workplaces: [], resilience: [] };
+  NODES.forEach(n => {
+    if (!visibleIds.has(n.id)) return;
+    buckets[familyPillar(n.id)].push(n);
+  });
+  Object.keys(buckets).forEach(k => buckets[k].sort((a, b) => a.name.localeCompare(b.name)));
+  return buckets;
+}
+function layoutPillarGrid(zone, items){
+  const n = items.length;
+  if (!n) return;
+  const padX = 28, padY = 24;
+  const innerW = zone.w - padX * 2;
+  const innerH = zone.h - padY * 2;
+  let cols;
+  if (activePillar){
+    cols = Math.min(6, Math.max(3, Math.ceil(Math.sqrt(n * 1.35))));
+  } else if (zone.id === "ai-dc"){
+    cols = Math.min(4, n);
+  } else if (zone.id === "workplaces"){
+    cols = Math.min(6, Math.max(4, Math.ceil(n / 4)));
+  } else {
+    cols = Math.min(9, Math.max(5, Math.ceil(n / 3)));
+  }
+  cols = Math.max(1, Math.min(cols, n));
+  const rows = Math.ceil(n / cols);
+  const cellW = innerW / cols;
+  const cellH = innerH / rows;
+  items.forEach((node, idx) => {
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    const x = zone.cx - zone.w / 2 + padX + cellW * (col + 0.5);
+    const y = zone.cy - zone.h / 2 + padY + cellH * (row + 0.5);
+    node.x = x;
+    node.y = y;
+    node.fx = x;
+    node.fy = y;
+    node._shortName = pillarShortName(node.name);
+    node._pillarPinned = true;
   });
 }
 function unpinPillarNodes(nodes){
@@ -2730,11 +2765,34 @@ function unpinPillarNodes(nodes){
     n.fx = null;
     n.fy = null;
     n._shortName = null;
+    n._pillarPinned = false;
   });
 }
+function refreshPillarNodePositions(){
+  if (lviz) lviz
+    .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  if (lhit) lhit
+    .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  if (ndEl) ndEl.attr("transform", d => `translate(${d.x},${d.y})`);
+}
+function applyPillarLayout(visibleIds){
+  if (!usePillarLayout()) return false;
+  pinPillarNodes(viewNodes, visibleIds);
+  NODES.forEach(n => {
+    if (visibleIds.has(n.id) || n._pinned) return;
+    n.fx = null;
+    n.fy = null;
+    n._pillarPinned = false;
+  });
+  configureForcesForMode("families");
+  sim.alpha(0).stop();
+  refreshPillarNodePositions();
+  return true;
+}
 function seedPillarLayout(nodes, visibleIds){
-  if (!usePillarLayout()) return;
-  pinPillarNodes(nodes, visibleIds);
+  applyPillarLayout(visibleIds);
 }
 function forcePillar(alpha){
   if (!usePillarLayout()) return;
@@ -3764,8 +3822,7 @@ function rebindGraph(opts){
               else if (usePillarLayout() && nodeById[d.id]){
                 const vis = new Set();
                 NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
-                const a = pillarAnchorForFamily(d.id, vis);
-                d.fx = a.x; d.fy = a.y; d.x = a.x; d.y = a.y;
+                applyPillarLayout(vis);
               }
               else { d.fx = d.fy = null; }
             }))
@@ -3876,6 +3933,8 @@ function rebindGraph(opts){
     } else if (viewMode === "composition"){
       sim.alpha(0);
       for (let i = 0; i < 3; i++) sim.tick();
+    } else if (usePillarLayout()){
+      sim.alpha(0).stop();
     } else sim.alpha(0.85).restart();
   }
   if (typeof watchDirectNodeClicks === "function") watchDirectNodeClicks();
@@ -3890,6 +3949,7 @@ sim.on("tick",() => {
   if (ndEl) ndEl.attr("transform",d=>`translate(${d.x},${d.y})`);
 });
 sim.on("end",() => {
+  if (usePillarLayout()) return;
   const {w,h}=getDims();
   svg.call(zoom.transform, d3.zoomIdentity.translate(w/2,h/2).scale(0.78));
 });
@@ -4597,11 +4657,13 @@ function applyViewLevel(mode, opts){
   }
 
   // Clear any per-node force fixes that would survive across rebinds.
-  // (Pinned center in Composition is reapplied via _pinned + fx/fy on the node itself.)
-  NODES.forEach(n => { if (n._pinned !== true){ n.fx = null; n.fy = null; } });
+  NODES.forEach(n => {
+    if (n._pinned === true) return;
+    n.fx = null; n.fy = null; n._pillarPinned = false;
+  });
 
-  rebindGraph();
   configureForcesForMode(mode);
+  rebindGraph({ restart: !(mode === "families" && usePillarLayout()) });
 
   // Reset highlight / clear selection on a mode change.
   selected = null; resetHL();
@@ -4648,6 +4710,7 @@ function configureForcesForMode(mode){
     sim.force("pillar", null);
   } else {
     const pillarLayout = usePillarLayout();
+    sim.force("center", pillarLayout ? null : d3.forceCenter(0, 0));
     if (pillarLayout){
       sim.force("charge", d3.forceManyBody().strength(0));
       sim.force("collide", null);
@@ -4660,6 +4723,7 @@ function configureForcesForMode(mode){
         });
       sim.force("pillar", null);
     } else {
+      sim.force("center", d3.forceCenter(0, 0));
       sim.force("charge",  d3.forceManyBody().strength(-560));
       sim.force("collide", d3.forceCollide(d => d._r + 30).strength(0.85));
       sim.force("link")
@@ -5157,9 +5221,7 @@ function applyFilters() {
   if (viewMode === "families"){
     if (activePillar && !usePillarLayout()) activePillar = null;
     if (usePillarLayout()){
-      seedPillarLayout(viewNodes.filter(n => vis.has(n.id)), vis);
-      configureForcesForMode("families");
-      sim.alpha(0);
+      applyPillarLayout(vis);
       if (lviz){
         lviz.style("display", l => vis.has(sid(l)) && vis.has(tid(l)) && pillarLinkOpacity(l) > 0 ? null : "none");
         lviz.attr("stroke-opacity", pillarLinkOpacity);
@@ -6286,7 +6348,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.14.1";
+const APP_VERSION   = "2.14.2";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6577,6 +6639,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.14.2", date:"2026-06-20", items:[
+    "Families — fixed 3-pillar layout: families now stay in their zone grids instead of collapsing to the center (static layout, simulation disabled in pillar view)."
+  ]},
   {ver:"2.14.1", date:"2026-06-20", items:[
     "Chrome — Reset, Guided Plan, and Account Planner moved to a dedicated action bar below the main top bar so they no longer wrap or overlap filters."
   ]},
