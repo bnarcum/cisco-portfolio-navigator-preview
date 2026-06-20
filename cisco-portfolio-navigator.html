@@ -8607,13 +8607,13 @@ function insertProductHero(id, kind){
   hero.className = "p-hero";
   if (imgUrl){
     hero.innerHTML = `
-      <div class="p-hero-fallback" aria-hidden="true"><svg viewBox="0 0 24 24" style="color:${cat ? CATS[cat].color : "#fff"}"><use href="${symId}"/></svg></div>
+      <div class="p-hero-fallback" aria-hidden="true"><svg viewBox="0 0 256 256" style="color:${cat ? CATS[cat].color : "#fff"}"><use href="${symId}"/></svg></div>
       <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(n.name)}" loading="lazy" onerror="this.style.display='none'"/>
       <div class="p-hero-scrim"></div>
       <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
   } else {
     hero.innerHTML = `
-      <div class="p-hero-fallback"><svg viewBox="0 0 24 24" style="color:${cat ? CATS[cat].color : "#fff"}"><use href="${symId}"/></svg></div>
+      <div class="p-hero-fallback"><svg viewBox="0 0 256 256" style="color:${cat ? CATS[cat].color : "#fff"}"><use href="${symId}"/></svg></div>
       <div class="p-hero-scrim"></div>
       <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
   }
