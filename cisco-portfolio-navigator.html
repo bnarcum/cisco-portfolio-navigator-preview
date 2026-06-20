@@ -3973,6 +3973,10 @@ function applyCompositionNodeStyles(){
     .attr("text-anchor", "middle")
     .style("opacity", null);
   applyCompositionLabelTextStyle(labelText);
+  ndEl.selectAll("rect.nl-bg")
+    .style("opacity", 0)
+    .attr("width", null)
+    .attr("height", null);
   if (lviz){
     lviz.attr("stroke", d => d.type === "succession" ? "#c084fc" : "#64748b")
       .attr("stroke-opacity", d => d.type === "succession" ? 0.62 : 0.28)
@@ -4416,8 +4420,8 @@ function rebindGraph(opts){
       return pillarLinkOpacity(l);
     });
   }
-  applyPillarLabelStyles(selected);
   if (viewMode === "composition") applyCompositionNodeStyles();
+  else if (usePillarLayout()) applyPillarLabelStyles(selected);
   else resetStandardLabelStyles();
   updateCompositionHint();
   updatePillarGuides();
@@ -5180,6 +5184,8 @@ function applyViewLevel(mode, opts){
 
   // Run the appropriate post-mode filter pass.
   if (mode !== "spatial") applyFilters();
+
+  if (mode === "composition") fitCompositionView();
 
   // Persist user preference (skip on the initial boot load so we don't clobber).
   if (!opts.initial){
@@ -6860,7 +6866,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.22.5";
+const APP_VERSION   = "2.22.6";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -7151,6 +7157,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.22.6", date:"2026-06-20", items:[
+    "Composition — hide stale Families zoom label pills (nl-bg) on entry; fit orbit view immediately so labels no longer jumble at center."
+  ]},
   {ver:"2.22.5", date:"2026-06-20", items:[
     "Families — icon and label packed as one cluster from the cell bottom with a fixed gap, eliminating the large dead space above labels."
   ]},
