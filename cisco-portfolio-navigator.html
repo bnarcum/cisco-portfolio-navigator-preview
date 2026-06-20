@@ -3078,17 +3078,52 @@ function buildNodeGroup(sel){
     .style("fill", "#0f172a")
     .style("pointer-events", "none")
     .style("display", d => d._nodeBadge ? null : "none");
-  inner.append("text").attr("class","nl")
+  const lwrap = inner.append("g").attr("class", "nl-wrap").style("pointer-events", "none");
+  lwrap.append("rect").attr("class", "nl-bg").attr("rx", 4).style("display", "none");
+  lwrap.append("text").attr("class","nl")
     .attr("y", d => d._r + 14).text(d => d._shortName || d.name)
     .style("font-size","10px").style("fill","#525E6C")
     .style("text-anchor","middle").style("pointer-events","none");
 }
 
 function compositionLabelStyle(d){
-  if (d._kind === "family") return { fill: "#ffffff", stroke: "rgba(15,23,42,0.95)", weight: "700", size: "12px" };
-  if (d._status === "eol") return { fill: "#fecaca", stroke: "rgba(15,23,42,0.95)", weight: "600", size: "11px" };
-  if (d._status === "eos") return { fill: "#fde68a", stroke: "rgba(15,23,42,0.95)", weight: "600", size: "11px" };
-  return { fill: "#ffffff", stroke: "rgba(15,23,42,0.92)", weight: "600", size: "11px" };
+  if (d._kind === "family") return { fill: "#ffffff", weight: "700", size: "13px" };
+  if (d._status === "eol") return { fill: "#fecaca", weight: "600", size: "12px" };
+  if (d._status === "eos") return { fill: "#fde68a", weight: "600", size: "12px" };
+  return { fill: "#f8fafc", weight: "600", size: "12px" };
+}
+
+function layoutCompositionLabelPill(textSel, padX, padY){
+  textSel.each(function(){
+    const text = d3.select(this);
+    const node = this;
+    if (!node || !node.parentNode) return;
+    const bbox = node.getBBox();
+    if (!bbox.width && !bbox.height) return;
+    d3.select(node.parentNode).select("rect.nl-bg")
+      .attr("x", bbox.x - padX)
+      .attr("y", bbox.y - padY)
+      .attr("width", bbox.width + padX * 2)
+      .attr("height", bbox.height + padY * 2)
+      .attr("fill", "rgba(8,12,22,0.88)")
+      .style("display", null);
+  });
+}
+
+function resetStandardLabelStyles(){
+  if (!ndEl) return;
+  ndEl.selectAll("rect.nl-bg").style("display", "none").style("opacity", null);
+  ndEl.selectAll("text.nl")
+    .attr("transform", null)
+    .style("opacity", null)
+    .style("font-size", "10px")
+    .style("font-weight", null)
+    .style("fill", "#525E6C")
+    .style("letter-spacing", null)
+    .style("stroke", null)
+    .style("stroke-width", null)
+    .style("stroke-linejoin", null)
+    .style("paint-order", null);
 }
 
 function panelOffsetW(){
@@ -3238,8 +3273,10 @@ function applyCompositionInteractionStyles(selectedNode){
       if (nd._hasImage) return 1.2;
       return 0;
     });
-    g.select("text.nl").style("opacity", dim ? 0.35 : 1)
-      .style("fill", isSel ? "#ffffff" : (isHov ? "#f8fafc" : null));
+    const labelStyle = compositionLabelStyle(nd);
+    g.select("text.nl").style("opacity", dim ? 0.4 : 1)
+      .style("fill", isSel ? "#ffffff" : (isHov ? "#ffffff" : labelStyle.fill));
+    g.select("rect.nl-bg").style("opacity", dim ? 0.35 : 1);
   });
   if (lviz){
     lviz.attr("stroke-opacity", l => {
@@ -3280,23 +3317,25 @@ function applyCompositionNodeStyles(){
   ndEl.select("text.nbadge")
     .text(d => d._nodeBadge || "")
     .style("display", d => d._nodeBadge ? null : "none");
-  ndEl.select("text.nl")
+  const labelText = ndEl.select("text.nl")
     .text(d => d._shortName || d.name)
     .attr("y", d => d._r + (d._kind === "family" ? 18 : 14))
     .attr("transform", null)
     .attr("text-anchor", "middle")
+    .style("opacity", null)
     .each(function(d){
       const s = compositionLabelStyle(d);
       d3.select(this)
         .style("font-size", s.size)
         .style("font-weight", s.weight)
         .style("fill", s.fill)
-        .style("letter-spacing", "0.02em")
-        .style("paint-order", "stroke fill")
-        .style("stroke", s.stroke)
-        .style("stroke-width", "5px")
-        .style("stroke-linejoin", "round");
+        .style("letter-spacing", "0.01em")
+        .style("stroke", null)
+        .style("stroke-width", null)
+        .style("stroke-linejoin", null)
+        .style("paint-order", null);
     });
+  layoutCompositionLabelPill(labelText, 6, 3);
   if (lviz){
     lviz.attr("stroke", d => d.type === "succession" ? "#c084fc" : "#64748b")
       .attr("stroke-opacity", d => d.type === "succession" ? 0.62 : 0.28)
@@ -3435,7 +3474,8 @@ function rebindGraph(opts){
   });
   ndEl.select("text.nbadge").text(d => d._nodeBadge || "");
   ndEl.select("text.nl").text(d => d._shortName || d.name);
-  applyCompositionNodeStyles();
+  if (viewMode === "composition") applyCompositionNodeStyles();
+  else resetStandardLabelStyles();
   updateCompositionHint();
 
   sim.nodes(viewNodes);
@@ -5792,7 +5832,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.9.6";
+const APP_VERSION   = "2.9.7";
 const DATA_UPDATED  = "2026-05-30";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -6083,6 +6123,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.9.7", date:"2026-06-20", items:[
+    "Composition labels — dark pill backdrop behind each name, brighter white text, fixed hover reset that was washing labels to gray."
+  ]},
   {ver:"2.9.6", date:"2026-06-20", items:[
     "Auto-fit view — Collaboration filter and Composition orbit now center and scale to visible content (no more dragging from the corner).",
     "Composition labels — always horizontal below nodes, larger white text with stronger halo for readability."
