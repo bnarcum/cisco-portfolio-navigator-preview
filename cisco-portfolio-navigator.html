@@ -3773,21 +3773,68 @@ function matrixDeviceUrl(id){
 }
 /** Matrix photos on the graph — room + desk collaboration endpoints only. */
 const MATRIX_PHOTO_FAMILIES = new Set(["room-systems", "desk-devices"]);
-/** Device Matrix fallback for families without local brand hero art (room/desk endpoints). */
+/** Device Matrix product for panel heroes when no brand PNG exists. */
 const FAMILY_HERO_PRODUCT = {
   "room-systems": "room-bar-pro-g2",
   "desk-devices": "desk-pro-g2",
+  "webex-meetings": "room-bar-pro-g2",
+  "webex-app": "desk-pro-g2",
 };
+/** Software-only families borrow a related hardware family's brand/matrix hero. */
+const FAMILY_HERO_ALIAS = {
+  "webex-calling": "ip-phones",
+  "webex-cc": "conf-phones",
+  "webex-connect": "webex-app",
+  "aci": "nexus",
+  "silicon-one": "nexus",
+  "hypershield": "sf-enterprise",
+  "ai-defense": "sf-enterprise",
+  "duo": "catalyst-access",
+  "umbrella": "sf-enterprise",
+  "ise": "catalyst-access",
+  "xdr": "sf-enterprise",
+  "secure-access": "sf-enterprise",
+  "secure-email": "sf-enterprise",
+  "secure-endpoint": "sf-enterprise",
+  "talos": "sf-enterprise",
+  "secure-client": "sf-enterprise",
+  "secure-web": "sf-enterprise",
+  "multicloud-defense": "sf-enterprise",
+  "vuln-mgmt": "sf-enterprise",
+  "identity-intel": "sf-enterprise",
+  "cyber-vision": "industrial-eth",
+  "secure-equipment": "industrial-eth",
+  "secure-workload": "ucs",
+  "stealthwatch": "catalyst-center",
+  "thousandeyes": "catalyst-center",
+  "cloud-control": "catalyst-center",
+  "appdynamics": "thousandeyes",
+  "splunk": "ucs",
+  "fso": "splunk",
+  "hyperflex": "ucs",
+  "intersight": "ucs",
+};
+function resolveFamilyHeroSource(familyId){
+  const seen = new Set();
+  let id = familyId;
+  while (id && !seen.has(id)){
+    seen.add(id);
+    const brand = window.CPN_FAMILY_HERO_IMAGES?.[id];
+    if (brand) return brand;
+    const heroId = FAMILY_HERO_PRODUCT[id];
+    if (heroId && matrixImageUrl(heroId)) return matrixImageUrl(heroId);
+    id = FAMILY_HERO_ALIAS[id];
+  }
+  const rep = PRODUCTS.find(p =>
+    p.family === familyId && p.status === "current" && matrixImageUrl(p.id));
+  return rep ? matrixImageUrl(rep.id) : null;
+}
 function productAllowsMatrixPhoto(id){
   const p = prodById[id];
   return !!(p && MATRIX_PHOTO_FAMILIES.has(p.family) && matrixImageUrl(id));
 }
 function familyHeroImageUrl(familyId){
-  const brand = window.CPN_FAMILY_HERO_IMAGES?.[familyId];
-  if (brand) return brand;
-  const heroId = FAMILY_HERO_PRODUCT[familyId];
-  if (heroId && matrixImageUrl(heroId)) return matrixImageUrl(heroId);
-  return null;
+  return resolveFamilyHeroSource(familyId);
 }
 function heroImageUrl(id, kind){
   if (kind === "product") return productAllowsMatrixPhoto(id) ? matrixImageUrl(id) : null;
@@ -8195,7 +8242,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.2";
+const APP_VERSION   = "2.31.3";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8486,6 +8533,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.31.3", date:"2026-06-21", items:[
+    "Family panel heroes no longer show blank white tiles: software families borrow related hardware brand/matrix photos (Webex Meetings → Room Bar, Calling → IP phones, etc.).",
+    "Icon-only heroes use category-tinted gradients and larger glyphs when no photo applies.",
+  ]},
   {ver:"2.31.2", date:"2026-06-21", items:[
     "Family drawer heroes use official Cisco brand family photography (19 families) via assets/family-heroes; room/desk endpoints still use Device Matrix.",
     "Added scripts/build-family-heroes.mjs to copy and resize hero art from Families Cisco Brand-selected-assets.",
@@ -9107,6 +9158,7 @@ STYLE.textContent = `
   .p-hero-fallback{display:flex;align-items:center;justify-content:center;height:100%;position:absolute;inset:0;z-index:0;
     background:linear-gradient(165deg, #f8fafc 0%, #eef2f7 100%)}
   .p-hero-fallback svg{width:68px;height:68px;opacity:.88}
+  .p-hero--icon-only .p-hero-fallback svg{width:92px;height:92px;opacity:1;filter:drop-shadow(0 2px 8px rgba(15,23,42,0.14))}
   .p-hero--icon-only .p-hero-fallback{z-index:1}
   .p-hero--icon-only .p-hero-scrim{background:linear-gradient(180deg, transparent 70%, rgba(15,23,42,0.06) 100%)}
   .p-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg, transparent 58%, rgba(15,23,42,0.1) 100%);
@@ -11488,6 +11540,7 @@ function insertProductHero(id, kind){
   const symId = "#icon-" + (kind === "node" ? iconKey(nodeById[id]) :
     iconKey({ _kind: "product", _productRef: prodById[id], id }));
   const heroSvg = `<svg viewBox="0 0 256 256"><use href="${symId}" fill="${iconFill}"/></svg>`;
+  const iconBg = heroCategoryGradient(iconFill);
   const hero = document.createElement("div");
   hero.className = "p-hero" + (imgUrl ? "" : " p-hero--icon-only");
   if (imgUrl){
@@ -11499,13 +11552,31 @@ function insertProductHero(id, kind){
       <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
   } else {
     hero.innerHTML = `
-      <div class="p-hero-fallback">${heroSvg}</div>
+      <div class="p-hero-fallback" style="background:${iconBg}">${heroSvg}</div>
       <div class="p-hero-scrim"></div>
       <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
   }
   const nameEl = pb.querySelector(".p-name");
   if (nameEl) pb.insertBefore(hero, nameEl);
   else pb.prepend(hero);
+}
+function parseHexColor(hex){
+  const h = String(hex || "#64748b").replace("#", "");
+  const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h.slice(0, 6);
+  return {
+    r: parseInt(full.slice(0, 2), 16) || 100,
+    g: parseInt(full.slice(2, 4), 16) || 116,
+    b: parseInt(full.slice(4, 6), 16) || 139,
+  };
+}
+function mixChannel(c, w, pct){
+  return Math.round(c * pct / 100 + w * (100 - pct) / 100);
+}
+function heroCategoryGradient(hex){
+  const { r, g, b } = parseHexColor(hex);
+  const top = `${mixChannel(r, 255, 6)}, ${mixChannel(g, 255, 6)}, ${mixChannel(b, 255, 6)}`;
+  const bot = `${mixChannel(r, 248, 4)}, ${mixChannel(g, 248, 4)}, ${mixChannel(b, 249, 4)}`;
+  return `linear-gradient(165deg, rgb(${top}) 0%, rgb(${bot}) 100%)`;
 }
 function insertMatrixLink(id, kind){
   if (kind !== "product") return;
