@@ -23,7 +23,7 @@ try {
   );
 
   const version = await page.evaluate(() => window.__cpnV2?.APP_VERSION);
-  if (version !== "2.31.46") errors.push(`expected APP_VERSION 2.31.46, got ${version}`);
+  if (version !== "2.31.48") errors.push(`expected APP_VERSION 2.31.48, got ${version}`);
 
   const pathCount = await page.evaluate(() => window.DCLOUD_PATHS?.length || 0);
   if (pathCount < 5) errors.push(`expected >=5 learning paths, got ${pathCount}`);
