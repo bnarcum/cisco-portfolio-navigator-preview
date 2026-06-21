@@ -952,6 +952,7 @@
 <div id="toast"></div>
 
 <script src="assets/cisco-symbols.js"></script>
+<script src="assets/family-heroes.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 // PORTFOLIO FAMILY GRAPH NODES
@@ -3772,23 +3773,21 @@ function matrixDeviceUrl(id){
 }
 /** Matrix photos on the graph — room + desk collaboration endpoints only. */
 const MATRIX_PHOTO_FAMILIES = new Set(["room-systems", "desk-devices"]);
-/** Representative Device Matrix product for family detail-panel heroes. */
+/** Device Matrix fallback for families without local brand hero art (room/desk endpoints). */
 const FAMILY_HERO_PRODUCT = {
   "room-systems": "room-bar-pro-g2",
   "desk-devices": "desk-pro-g2",
-  "ip-phones": "wireless-9821",
-  "cisco-headsets": "headset-730",
 };
 function productAllowsMatrixPhoto(id){
   const p = prodById[id];
   return !!(p && MATRIX_PHOTO_FAMILIES.has(p.family) && matrixImageUrl(id));
 }
 function familyHeroImageUrl(familyId){
+  const brand = window.CPN_FAMILY_HERO_IMAGES?.[familyId];
+  if (brand) return brand;
   const heroId = FAMILY_HERO_PRODUCT[familyId];
   if (heroId && matrixImageUrl(heroId)) return matrixImageUrl(heroId);
-  const rep = PRODUCTS.find(p =>
-    p.family === familyId && p.status === "current" && matrixImageUrl(p.id));
-  return rep ? matrixImageUrl(rep.id) : null;
+  return null;
 }
 function heroImageUrl(id, kind){
   if (kind === "product") return productAllowsMatrixPhoto(id) ? matrixImageUrl(id) : null;
@@ -8196,7 +8195,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.1";
+const APP_VERSION   = "2.31.2";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8487,6 +8486,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.31.2", date:"2026-06-21", items:[
+    "Family drawer heroes use official Cisco brand family photography (19 families) via assets/family-heroes; room/desk endpoints still use Device Matrix.",
+    "Added scripts/build-family-heroes.mjs to copy and resize hero art from Families Cisco Brand-selected-assets.",
+  ]},
   {ver:"2.31.1", date:"2026-06-21", items:[
     "Wireless IP phones use the handheld phone icon (not WiFi); matrix photos limited to room-systems and desk-devices on the graph.",
     "Family detail panels show a representative Device Matrix hero (e.g. IP Phones, Headsets) instead of a blank icon-only strip.",

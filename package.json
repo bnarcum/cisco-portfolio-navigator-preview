@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "build:icons": "node scripts/build-cisco-icons.mjs",
+    "build:heroes": "node scripts/build-family-heroes.mjs",
+    "build:assets": "npm run build:icons && npm run build:heroes",
     "test:pillar-layout": "node scripts/test-pillar-layout.mjs",
     "test:composition": "node scripts/test-composition-view.mjs",
     "test:composition-spatial": "node scripts/test-composition-spatial.mjs",
