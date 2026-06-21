@@ -5284,7 +5284,7 @@ function buildCompositionView(familyId){
 // SPATIAL — optional 3D portfolio map
 // ══════════════════════════════════════
 const SPATIAL_LIB = "vendor/3d-force-graph.min.js";
-const spatialState = { graph: null, active: false, libPromise: null, spritePromise: null, resizeObs: null, labelCache: new Map(), tileCache: new Map(), tileLoadGen: 0, focusFamily: null, lastNodeClick: null, hoveredId: null, lightsAdded: false, threeCaptured: false, nodeRendererReady: false, meshTemplate: null };
+const spatialState = { graph: null, active: false, libPromise: null, spritePromise: null, resizeObs: null, labelCache: new Map(), tileCache: new Map(), tileLoadGen: 0, focusFamily: null, lastNodeClick: null, hoveredId: null, lightsAdded: false, threeCaptured: false, nodeRendererReady: false, meshTemplate: null, filterBoost: 1, filterActive: false, lastStats: null };
 
 function spatialResolveName(id){
   return nodeById[id]?.name || prodById[id]?.name || id;
@@ -5445,6 +5445,40 @@ function spatialNodeAccent(node){
   return { core: spatialHexToNum(p.base), emissive: spatialHexToNum(p.emissive), glow: spatialHexToNum(p.glow), emissiveInt: 0.32, glowOp: 0.24 };
 }
 
+function spatialFiltersActive(){
+  return activePillars.size > 0 || !!activeUC || !!activeInd || activeCats.size < Object.keys(CATS).length
+    || facetState.status.size !== 1 || !facetState.status.has("current") || facetState.tier.size > 0;
+}
+
+function spatialFilterBoost(){
+  if (spatialState.focusFamily) return 1;
+  const vis = getFilteredFamilyIds();
+  const ratio = vis.size / Math.max(NODES.length, 1);
+  if (ratio >= 0.92) return 1;
+  if (vis.size <= 12) return 1.5;
+  if (vis.size <= 24) return 1.32;
+  if (ratio <= 0.5) return 1.2;
+  return 1.1;
+}
+
+function spatialDecoFade(){
+  return spatialState.filterActive ? 0.42 : 1;
+}
+
+let spatialFitTimer = null;
+function scheduleSpatialFit(delay = 450){
+  clearTimeout(spatialFitTimer);
+  spatialFitTimer = setTimeout(() => {
+    if (!spatialState.active || !spatialState.graph || spatialState.focusFamily) return;
+    const g = spatialState.graph;
+    const nodes = g.graphData()?.nodes || [];
+    if (nodes.length < 1) return;
+    if (typeof g.zoomToFit !== "function") return;
+    const pad = spatialState.filterActive ? 120 : 170;
+    g.zoomToFit(spatialState.filterActive ? 700 : 900, pad);
+  }, delay);
+}
+
 function spatialFocusProductCount(){
   if (!spatialState.focusFamily) return 0;
   return PRODUCTS.filter(p => p.family === spatialState.focusFamily).length;
@@ -5492,9 +5526,11 @@ function spatialTileWorldSize(radius, profile){
 
 function spatialLabelTextHeight(node){
   const isProduct = node.kind === "product" && spatialState.focusFamily;
-  if (selected && selected.id === node.id) return isProduct ? 3.2 : 3.5;
-  if (stack.has(node.id)) return isProduct ? 3 : 3.3;
-  return isProduct ? 2.9 : 3.15;
+  let base;
+  if (selected && selected.id === node.id) base = isProduct ? 3.2 : 3.5;
+  else if (stack.has(node.id)) base = isProduct ? 3 : 3.3;
+  else base = isProduct ? 2.9 : 3.15;
+  return base * (spatialState.filterBoost || 1);
 }
 
 function spatialLabelOffsetY(node, radius, profile){
@@ -5631,14 +5667,15 @@ function updateSpatialNodeGroup(group, node){
   const radius = spatialNodeRadius(node);
   const profile = spatialNodeVisualProfile(node);
   const accent = spatialNodeAccent(node);
+  const deco = spatialDecoFade();
   group.traverse(obj => {
     if (obj.userData?.role === "halo" && obj.material){
       obj.material.color.setHex(accent.glow);
-      obj.material.opacity = accent.glowOp * 0.8;
+      obj.material.opacity = accent.glowOp * 0.8 * deco;
     }
     if (obj.userData?.role === "ring" && obj.material){
       obj.material.color.setHex(accent.glow);
-      obj.material.opacity = selected?.id === node.id ? 0.55 : 0.32;
+      obj.material.opacity = (selected?.id === node.id ? 0.55 : 0.32) * deco;
     }
     if (obj.userData?.role === "pedestal" && obj.material){
       obj.material.color.setHex(0x0d1828);
@@ -5766,22 +5803,40 @@ function refreshSpatialNodeVisuals(){
   });
 }
 
+function spatialLinkOpacity(l){
+  if (spatialState.focusFamily) return 0.55;
+  if (!spatialState.filterActive) return 0.55;
+  if (l.type === "direct") return 0.92;
+  if (l.type === "succession") return 0.78;
+  return 0.5;
+}
+
 function spatialLinkColor(l){
-  if (l.type === "succession") return "rgba(168,85,247,0.55)";
-  if (l.type === "composition") return "rgba(110,118,129,0.38)";
-  if (l.type === "direct") return "rgba(2,200,255,0.45)";
-  return "rgba(110,118,129,0.28)";
+  if (l.type === "succession") return spatialState.filterActive ? "rgba(168,85,247,0.85)" : "rgba(168,85,247,0.55)";
+  if (l.type === "composition") return spatialState.filterActive ? "rgba(148,163,184,0.62)" : "rgba(110,118,129,0.38)";
+  if (l.type === "direct") return spatialState.filterActive ? "rgba(2,200,255,0.92)" : "rgba(2,200,255,0.45)";
+  return spatialState.filterActive ? "rgba(148,163,184,0.48)" : "rgba(110,118,129,0.28)";
 }
 
 function spatialLinkWidth(l){
+  if (spatialState.focusFamily){
+    if (l.type === "succession") return 1.1;
+    if (l.type === "composition") return 0.7;
+    return l.type === "direct" ? 1.4 : 0.6;
+  }
+  if (spatialState.filterActive){
+    if (l.type === "succession") return 1.65;
+    if (l.type === "composition") return 1.05;
+    return l.type === "direct" ? 2.5 : 1.15;
+  }
   if (l.type === "succession") return 1.1;
   if (l.type === "composition") return 0.7;
   return l.type === "direct" ? 1.4 : 0.6;
 }
 
 function spatialLinkParticles(l){
-  if (l.type === "succession") return 1;
-  if (l.type === "direct") return 2;
+  if (l.type === "succession") return spatialState.filterActive ? 2 : 1;
+  if (l.type === "direct") return spatialState.filterActive ? 3 : 2;
   return 0;
 }
 
@@ -5789,7 +5844,9 @@ function configureSpatialForces(){
   if (!spatialState.graph) return;
   const g = spatialState.graph;
   if (typeof g.linkCurvature === "function"){
-    g.linkCurvature(spatialState.focusFamily ? 0.06 : 0.24);
+    if (spatialState.focusFamily) g.linkCurvature(0.06);
+    else if (spatialState.filterActive) g.linkCurvature(0.12);
+    else g.linkCurvature(0.24);
   }
   if (spatialState.focusFamily){
     g.d3Force("charge").strength(-145);
@@ -5798,6 +5855,9 @@ function configureSpatialForces(){
       if (l.type === "succession") return 62;
       return 68;
     });
+  } else if (spatialState.filterActive){
+    g.d3Force("charge").strength(-112);
+    g.d3Force("link").distance(l => l.type === "direct" ? 58 : 84);
   } else {
     g.d3Force("charge").strength(-135);
     g.d3Force("link").distance(l => l.type === "direct" ? 78 : 112);
@@ -5810,6 +5870,9 @@ function updateSpatialHud(){
   if (spatialState.focusFamily){
     const fam = nodeById[spatialState.focusFamily];
     hud.innerHTML = `${fam?.name || "Family"} — click a product for details · <kbd>Esc</kbd> back to Spatial map`;
+  } else if (spatialState.filterActive && spatialState.lastStats){
+    const s = spatialState.lastStats;
+    hud.innerHTML = `<strong>${s.families}</strong> families · <strong>${s.links}</strong> links (${s.direct} direct integrations) · cyan = direct · grey = adjacent · Double-click a family to explore products`;
   } else {
     hud.innerHTML = `Drag to orbit · Scroll to zoom · Click for details · Double-click a family to explore its products · <kbd>Esc</kbd> back to Families`;
   }
@@ -6060,7 +6123,7 @@ function initSpatialGraph(){
     .nodeVal("val")
     .linkColor(spatialLinkColor)
     .linkWidth(spatialLinkWidth)
-    .linkOpacity(0.55)
+    .linkOpacity(spatialLinkOpacity)
     .linkDirectionalParticles(spatialLinkParticles)
     .linkDirectionalParticleWidth(1.2)
     .linkDirectionalParticleSpeed(0.004)
@@ -6121,6 +6184,13 @@ function refreshSpatialGraph(){
   const data = spatialState.focusFamily
     ? buildSpatialCompositionData(spatialState.focusFamily)
     : buildSpatialGraphData();
+  spatialState.filterBoost = spatialFilterBoost();
+  spatialState.filterActive = spatialFiltersActive() && !spatialState.focusFamily;
+  spatialState.lastStats = spatialState.filterActive ? {
+    families: data.nodes.length,
+    links: data.links.length,
+    direct: data.links.filter(l => l.type === "direct").length
+  } : null;
   if (!spatialState.graph) initSpatialGraph();
   if (!spatialState.graph) return;
   const applyData = (attempt = 0) => {
@@ -6133,6 +6203,8 @@ function refreshSpatialGraph(){
     configureSpatialForces();
     ensureSpatialLights();
     refreshSpatialNodeVisuals();
+    updateSpatialHud();
+    scheduleSpatialFit(spatialState.filterActive ? 520 : 680);
   };
   requestAnimationFrame(() => requestAnimationFrame(() => applyData(0)));
 }
@@ -8270,7 +8342,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.9";
+const APP_VERSION   = "2.31.11";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8596,6 +8668,10 @@ STYLE.textContent = `
     background:var(--surface);border:1px solid var(--border);border-radius:10px;
     box-shadow:0 12px 36px rgba(0,0,0,.55);z-index:500;display:none;padding:8px 0;max-height:60vh;overflow-y:auto}
   #plans-menu.show{display:block}
+  #plans-menu .pm-section{padding:6px 14px;font-size:9.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--muted);opacity:.88}
+  #plans-menu .pm-item-meta{font-size:10.5px;color:var(--muted)}
+  #plans-menu .pm-empty{padding:9px 14px;font-size:11px;line-height:1.45;color:var(--muted)}
   .pm-section{padding:6px 14px;font-size:9.5px;font-weight:700;text-transform:uppercase;
     letter-spacing:.1em;color:var(--subtle)}
   .pm-item{display:flex;align-items:center;gap:8px;padding:9px 14px;cursor:pointer;
@@ -9381,7 +9457,7 @@ function renderPlansMenu(){
     </button>
     <div class="pm-sep"></div>
     <div class="pm-section">Saved plans (${plans.length})</div>
-    ${plans.length === 0 ? `<div style="padding:9px 14px;font-size:11px;color:var(--subtle)">No saved plans yet.</div>` : ""}
+    ${plans.length === 0 ? `<div class="pm-empty">No saved plans yet.</div>` : ""}
     ${plans.map(p => `
       <button class="pm-item ${p.id===currentPlanId?"cur":""}" data-act="load" data-id="${p.id}">
         <div class="pm-item-info">
