@@ -26,6 +26,8 @@ const ICON_MAP = {
   endpoint: "icon_endpoints.svg",
   eye: "icon_visibility.svg",
   radar: "icon_Telescope.svg",
+  "real-time": "icon_real_time_data.svg",
+  insights: "icon_insights.svg",
   "shield-network": "icon_network_security.svg",
   cube: "icon_containers_and_cloud_native.svg",
   flow: "icon_network_insights.svg",
@@ -35,6 +37,8 @@ const ICON_MAP = {
   wrench: "icon_implementation.svg",
   fingerprint: "icon_user_identity_access.svg",
   chat: "icon_collaboration/icon_collaboration.svg",
+  social: "icon_social_media.svg",
+  agent: "icon_attendee.svg",
   telepresence: "icon_telepresence.svg",
   webinar: "icon_webinar.svg",
   video: "icon_telepresence.svg",
@@ -43,6 +47,7 @@ const ICON_MAP = {
   "cloud-calling": "icon_cloud_calling.svg",
   deskphone: "icon_desk_phone.svg",
   confphone: "icon_conference.svg",
+  "conf-speaker": "icon_audio_recording.svg",
   headset: "icon_headset.svg",
   server: "icon_server_unified_computing_system_ucs.svg",
   hyperflex: "icon_hyperflex_data_center.svg",
@@ -66,17 +71,40 @@ function resolveIconPath(rel) {
 }
 
 function normalizeInnerSvg(inner) {
-  return inner
+  // Illustrator exports hide guide/registration layers via `.stN{display:none}` and
+  // tint artwork via CSS classes. Strip <style>, drop the hidden guide groups (so they
+  // don't reappear once the CSS is gone), remove class refs, then force currentColor.
+  const styleText = [...inner.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)]
+    .map(m => m[1]).join("\n");
+  const hiddenClasses = new Set();
+  for (const m of styleText.matchAll(/\.([\w-]+)\s*\{[^}]*display\s*:\s*none[^}]*\}/gi)) {
+    hiddenClasses.add(m[1]);
+  }
+
+  let out = inner
     .replace(/<\?xml[\s\S]*?\?>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "");
+
+  // Remove top-level guide groups whose class was marked display:none.
+  for (const cls of hiddenClasses) {
+    const re = new RegExp(`<g[^>]*class="[^"]*\\b${cls}\\b[^"]*"[\\s\\S]*?<\\/g>`, "gi");
+    out = out.replace(re, "");
+  }
+
+  return out
     .replace(/\sid="[^"]*"/gi, "")
+    .replace(/\sclass="[^"]*"/gi, "")
     .replace(/\sfill="[^"]*"/gi, "")
     .replace(/\sstroke="[^"]*"/gi, "")
+    .replace(/\sstyle="[^"]*"/gi, "")
     .replace(/<path(?![^>]*fill=)/gi, '<path fill="currentColor"')
     .replace(/<circle(?![^>]*fill=)/gi, '<circle fill="currentColor"')
     .replace(/<rect(?![^>]*fill=)/gi, '<rect fill="currentColor"')
     .replace(/<polygon(?![^>]*fill=)/gi, '<polygon fill="currentColor"')
-    .replace(/<ellipse(?![^>]*fill=)/gi, '<ellipse fill="currentColor"');
+    .replace(/<ellipse(?![^>]*fill=)/gi, '<ellipse fill="currentColor"')
+    .replace(/<polyline(?![^>]*fill=)/gi, '<polyline fill="currentColor"')
+    .replace(/<path(?![^>]*fill=)/gi, '<path fill="currentColor"');
 }
 
 function svgToSymbol(key, filePath) {

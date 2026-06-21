@@ -3820,7 +3820,9 @@ function productIconKey(p){
   if (/hyperflex/.test(s)) return "hyperflex";
   if (/ucs|server|blade|c220|c240/.test(s)) return "server";
   if (p?.family === "intersight") return "intersight";
-  if (/splunk|thousandeyes|appdynamics|fso/.test(s)) return "chart-line";
+  if (/thousandeyes|\bte-/.test(s)) return "real-time";
+  if (/\bxdr\b|securex/.test(s)) return "insights";
+  if (/splunk|appdynamics|fso/.test(s)) return "chart-line";
   const cat = p?.category;
   if (cat === "collaboration") return "telepresence";
   if (cat === "networking") return "switch";
@@ -3859,7 +3861,7 @@ function iconKey(n) {
   if (id === "secure-email")                                     return "email";
   if (id === "secure-endpoint")                                  return "endpoint";
   if (/^(talos|cyber-vision)$/.test(id))                         return "eye";
-  if (id === "xdr")                                              return "radar";
+  if (id === "xdr")                                              return "insights";
   if (id === "secure-client")                                    return "shield-network";
   if (id === "secure-workload")                                  return "cube";
   if (id === "stealthwatch")                                     return "flow";
@@ -3869,20 +3871,22 @@ function iconKey(n) {
   if (id === "secure-equipment")                                 return "wrench";
   if (id === "identity-intel")                                   return "fingerprint";
   // Collaboration
-  if (/^(webex-app|webex-connect)$/.test(id))                    return "chat";
+  if (id === "webex-app")                                        return "chat";
+  if (id === "webex-connect")                                    return "social";
   if (id === "webex-meetings")                                   return "webinar";
   if (id === "room-systems")                                     return "telepresence";
   if (id === "desk-devices")                                     return "telepresence";
   if (id === "ip-phones")                                        return "deskphone";
-  if (id === "conf-phones")                                      return "confphone";
+  if (id === "conf-phones")                                      return "conf-speaker";
   if (id === "webex-calling")                                    return "cloud-calling";
-  if (/^(webex-cc|cisco-headsets)$/.test(id))                    return "headset";
+  if (id === "webex-cc")                                         return "agent";
+  if (id === "cisco-headsets")                                   return "headset";
   // Computing
   if (id === "ucs")                                              return "server";
   if (id === "hyperflex")                                        return "hyperflex";
   // Observability
   if (id === "cloud-control")                                    return "dashboard";
-  if (id === "thousandeyes")                                     return "radar";
+  if (id === "thousandeyes")                                     return "real-time";
   if (id === "appdynamics")                                      return "chart-line";
   if (id === "splunk")                                           return "chart-bars";
   if (id === "fso")                                              return "dashboard";
@@ -8164,7 +8168,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.30.8";
+const APP_VERSION   = "2.30.9";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8455,6 +8459,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.30.9", date:"2026-06-21", items:[
+    "Icon build now strips Illustrator <style>/guide layers so brand SVGs tint correctly — fixes black telescope plus Catalyst Center, Splunk, and Industrial icons.",
+    "Collaboration icons differentiated: Webex Connect (omnichannel), Contact Center (agent), Conference Phones (mic); ThousandEyes→real-time, XDR→insights.",
+  ]},
   {ver:"2.30.8", date:"2026-06-21", items:[
     "Collaboration icons use TelePresence, webinar, tablet, and conference glyphs — no more play-button video/codec icons.",
     "Desk Pro/Mini and room endpoints map correctly; Secure Email, Hypershield, and Stealthwatch icons improved.",
