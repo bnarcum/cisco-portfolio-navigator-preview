@@ -1,9 +1,101 @@
 {
   "defaults": {
-    "sectionTitle": "Explore on dCloud",
-    "sectionHint": "Schedule or launch the live demo environment for this solution.",
+    "sectionTitle": "Learn & Try on dCloud",
+    "sectionHint": "Understand the solution, explore in the portfolio, then launch a hands-on lab.",
     "loginNote": "RTP datacenter \u00b7 Cisco.com login required"
   },
+  "paths": [
+    {
+      "id": "hybrid-work",
+      "title": "Hybrid Work",
+      "useCase": "Hybrid Work",
+      "tagline": "Collaboration, meeting rooms, and secure access for distributed teams",
+      "steps": [
+        "future-proof-workplaces-one-cisco-collab-ecosystem",
+        "agenticops-with-cisco-cloud-control",
+        "securily-connect-hybrid-workforce",
+        "webex-ai-experience-toolbox"
+      ]
+    },
+    {
+      "id": "zero-trust",
+      "title": "Zero Trust Security",
+      "useCase": "Zero Trust Security",
+      "tagline": "Identity, segmentation, firewall, and breach protection",
+      "steps": [
+        "one-cisco-secure-networking",
+        "cisco-xdr-breach-protection-suite-v1-instant-demo",
+        "discover-hybrid-mesh-firewall",
+        "secure-firewall-management"
+      ]
+    },
+    {
+      "id": "ai-networking",
+      "title": "AI Networking",
+      "useCase": "AI Networking",
+      "tagline": "AI-ready data center, campus automation, and observability",
+      "steps": [
+        "cisco-ai-ready-data-center",
+        "cloud-managed-campus-network-ai-era",
+        "meraki-aiops-assurance",
+        "cisco-secure-ai-factory-with-nvidia"
+      ]
+    },
+    {
+      "id": "sdwan-sase",
+      "title": "SD-WAN / SASE",
+      "useCase": "SD-WAN / SASE",
+      "tagline": "Secure connectivity from branch to cloud",
+      "steps": [
+        "one-cisco-secure-networking",
+        "discover-hybrid-mesh-firewall",
+        "meraki-aiops-assurance"
+      ]
+    },
+    {
+      "id": "network-automation",
+      "title": "Network Automation",
+      "useCase": "Network Automation",
+      "tagline": "Intent-based automation and assurance across the network",
+      "steps": [
+        "cisco-catalyst-center-automation-and-assurance",
+        "cloud-managed-campus-network-ai-era",
+        "simplify-network-fabric-deploy-ops-nexus-dashboard"
+      ]
+    },
+    {
+      "id": "contact-center",
+      "title": "Contact Center",
+      "useCase": "Contact Center",
+      "tagline": "AI agents, CPaaS, and omnichannel customer experience",
+      "steps": [
+        "webex-ai-experience-toolbox",
+        "webex-ai-agent-healthcare-experience",
+        "webex-connect-v6-instant-demo"
+      ]
+    },
+    {
+      "id": "dc-modernization",
+      "title": "Data Center Modernization",
+      "useCase": "Data Center Modernization",
+      "tagline": "Compute, fabric, and operations for modern DC",
+      "steps": [
+        "next-gen-data-center-with-cisco-ucs-x-series-and-intersight",
+        "cisco-nexus-hyperfabric-instant",
+        "simplify-network-fabric-deploy-ops-nexus-dashboard"
+      ]
+    },
+    {
+      "id": "iot-industrial",
+      "title": "IoT / Industrial",
+      "useCase": "IoT / Industrial",
+      "tagline": "OT visibility, segmentation, and industrial networking",
+      "steps": [
+        "cisco-cyber-vision-5-4-instant-demo",
+        "experience-cisco-cyber-vision-new-ui-instant-demo"
+      ]
+    }
+  ],
   "entries": [
     {
       "id": "cisco-ai-ready-data-center",
@@ -211,6 +303,9 @@
       "hint": "Hybrid work room refresh \u2014 guided workspace design with Room Kit Pro G2",
       "catalogUrl": "https://dcloud2-rtp.cisco.com/content/profile/discover-cisco-room-kit-pro-g2",
       "datacenter": "RTP",
+      "families": [
+        "room-systems"
+      ],
       "products": [
         "room-kit-pro"
       ],
@@ -531,6 +626,146 @@
         "AI Networking"
       ],
       "instantUrl": "https://dcloud2-rtp.cisco.com/content/instantdemo/vast-ai-os-on-ucs?returnPathTitleKey=content-view"
+    },
+    {
+      "id": "cisco-ise-zero-trust-access",
+      "name": "Cisco ISE and Zero Trust Network Access",
+      "linkLabel": "ISE \u00b7 Zero Trust Access",
+      "hint": "Explore identity-based network access control and micro-segmentation with Cisco ISE",
+      "catalogUrl": "https://dcloud2-rtp.cisco.com/content/profile/one-cisco-secure-networking?returnPathTitleKey=content-view",
+      "datacenter": "RTP",
+      "families": [
+        "ise",
+        "duo",
+        "catalyst-center"
+      ],
+      "useCases": [
+        "Zero Trust Security",
+        "Network Automation"
+      ],
+      "level": "intermediate",
+      "duration": "~45 min",
+      "learningObjectives": [
+        "Configure identity-based access policies",
+        "Validate TrustSec segmentation flows",
+        "Integrate Duo MFA with network admission"
+      ],
+      "pathId": "zero-trust",
+      "pathStep": 1
+    },
+    {
+      "id": "webex-suite-hybrid-collaboration",
+      "name": "Webex Suite for Hybrid Collaboration",
+      "linkLabel": "Webex Suite \u00b7 Hybrid Collab",
+      "hint": "Messaging, meetings, calling, and AI assistant in one hybrid work experience",
+      "catalogUrl": "https://dcloud2-rtp.cisco.com/content/instantdemo/webex-ai-experience-toolbox?returnPathTitleKey=content-view",
+      "datacenter": "RTP",
+      "families": [
+        "webex-app",
+        "webex-meetings",
+        "webex-calling",
+        "desk-devices"
+      ],
+      "useCases": [
+        "Hybrid Work",
+        "Digital Transformation"
+      ],
+      "instantUrl": "https://dcloud2-rtp.cisco.com/content/instantdemo/webex-ai-experience-toolbox?returnPathTitleKey=content-view",
+      "primary": true,
+      "level": "intro",
+      "duration": "~30 min",
+      "learningObjectives": [
+        "Navigate Webex messaging and meetings",
+        "Experience AI assistant workflows",
+        "Connect desk and room endpoints"
+      ],
+      "pathId": "hybrid-work",
+      "pathStep": 2
+    },
+    {
+      "id": "room-systems-collab-ecosystem",
+      "name": "Cisco Room Systems and Collaboration Devices",
+      "linkLabel": "Room Systems \u00b7 Collab Devices",
+      "hint": "RoomOS devices, board series, and workspace design for hybrid meeting rooms",
+      "catalogUrl": "https://dcloud2-rtp.cisco.com/content/profile/future-proof-workplaces-one-cisco-collab-ecosystem?returnPathTitleKey=content-view",
+      "datacenter": "RTP",
+      "families": [
+        "room-systems",
+        "desk-devices",
+        "cisco-headsets",
+        "conf-phones"
+      ],
+      "products": [
+        "room-kit-pro",
+        "room-bar-pro",
+        "board-pro-75",
+        "desk-pro"
+      ],
+      "useCases": [
+        "Hybrid Work"
+      ],
+      "primary": true,
+      "level": "intro",
+      "duration": "~40 min",
+      "learningObjectives": [
+        "Compare room system form factors",
+        "Design a hybrid meeting room layout",
+        "Pair devices with Webex Control Hub"
+      ],
+      "pathId": "hybrid-work",
+      "pathStep": 1
+    },
+    {
+      "id": "thousandeyes-digital-experience",
+      "name": "ThousandEyes Digital Experience Monitoring",
+      "linkLabel": "ThousandEyes \u00b7 Digital Experience",
+      "hint": "End-to-end visibility for SaaS, ISP, and application performance",
+      "catalogUrl": "https://dcloud2-rtp.cisco.com/content/profile/cloud-managed-campus-network-ai-era?returnPathTitleKey=content-view",
+      "datacenter": "RTP",
+      "families": [
+        "thousandeyes",
+        "meraki-mx",
+        "webex-app"
+      ],
+      "useCases": [
+        "Hybrid Work",
+        "Network Automation",
+        "Digital Transformation"
+      ],
+      "level": "intermediate",
+      "duration": "~35 min",
+      "learningObjectives": [
+        "Correlate app outages to network paths",
+        "Monitor Webex and SaaS quality",
+        "Triage ISP vs. internal issues"
+      ]
+    },
+    {
+      "id": "sdwan-secure-connectivity",
+      "name": "Cisco SD-WAN and Secure Connectivity",
+      "linkLabel": "SD-WAN \u00b7 Secure Connect",
+      "hint": "Branch connectivity with integrated security and cloud on-ramp",
+      "catalogUrl": "https://dcloud2-rtp.cisco.com/content/profile/one-cisco-secure-networking?returnPathTitleKey=content-view",
+      "datacenter": "RTP",
+      "families": [
+        "sdwan",
+        "meraki-mx",
+        "isr-routers",
+        "secure-access"
+      ],
+      "useCases": [
+        "SD-WAN / SASE",
+        "Zero Trust Security"
+      ],
+      "level": "intermediate",
+      "duration": "~45 min",
+      "learningObjectives": [
+        "Configure SD-WAN edge policies",
+        "Validate secure cloud on-ramp",
+        "Integrate Umbrella and Secure Access"
+      ],
+      "pathId": "sdwan-sase",
+      "pathStep": 1
     }
   ]
 }

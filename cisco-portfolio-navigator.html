@@ -540,7 +540,53 @@
       margin-top:14px;padding:14px;border-radius:10px;text-align:left;
       border:1px solid rgba(0,212,255,.45);
       background:linear-gradient(145deg,rgba(0,200,255,.14) 0%,rgba(0,60,90,.12) 100%)}
-    .gw-dcloud-title{display:none}
+    .gw-dcloud-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#b8f0ff;margin-bottom:8px}
+    .p-learn-ladder{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+    .p-learn-step{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+      padding:3px 8px;border-radius:999px;background:rgba(0,212,255,.15);color:#b8f0ff;border:1px solid rgba(0,212,255,.35)}
+    .p-dcloud-objectives{margin:0 0 10px;padding-left:18px;font-size:11.5px;color:#e8f6ff;line-height:1.5}
+    .p-dcloud-objectives li{margin:3px 0}
+    .p-dcloud-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+    .p-dcloud-chip{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+      padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.22);color:#d0ecfa;border:1px solid rgba(0,212,255,.25)}
+    .p-dcloud-entry{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(0,212,255,.15)}
+    .p-dcloud-entry:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    .p-dcloud-entry-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .la-dcloud-schedule{border-color:rgba(148,163,184,.45)!important;background:rgba(15,23,42,.45)!important}
+    .la-dcloud-schedule .la-dcloud-meta{background:#64748b!important;color:#fff!important}
+    .p-dcloud-eco{font-size:11px;color:#c4e8f8;margin:0 0 10px;line-height:1.45;font-style:italic}
+    #learn-path-banner{position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:65;
+      display:none;max-width:min(920px,calc(100vw - 40px));padding:10px 14px;border-radius:10px;
+      background:rgba(0,40,70,.92);border:1px solid rgba(0,212,255,.45);
+      box-shadow:0 8px 32px rgba(0,0,0,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      color:#e8f6ff;font-size:12px;line-height:1.45}
+    #learn-path-banner.show{display:block}
+    .lpb-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .lpb-title{font-size:13px;font-weight:700;color:#fff}
+    .lpb-tagline{font-size:11px;color:#b8e8ff;margin-top:2px}
+    .lpb-close{background:none;border:none;color:#94a3b8;font-size:18px;line-height:1;cursor:pointer;padding:0 2px}
+    .lpb-steps{display:flex;flex-direction:column;gap:6px}
+    .lpb-step{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;
+      background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2)}
+    .lpb-step-num{font-size:10px;font-weight:800;color:#00d4ff;min-width:18px}
+    .lpb-step-body{flex:1;min-width:0}
+    .lpb-step-label{font-size:11.5px;font-weight:600;color:#fff}
+    .lpb-step-meta{font-size:10px;color:#94c8e0;margin-top:1px}
+    .lpb-step a.lpb-launch{font-size:10px;font-weight:700;color:#001824;background:#00d4ff;
+      padding:4px 9px;border-radius:5px;text-decoration:none;white-space:nowrap}
+    .lpb-step a.lpb-launch:hover{background:#fff}
+    .ptab[data-tab="labs"] .ptab-b{background:#00d4ff;color:#001824}
+    .lab-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+      padding:12px;margin-bottom:10px;border-left:3px solid #00d4ff}
+    .lab-card.done{border-left-color:var(--green);opacity:.88}
+    .lab-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+    .lab-check{width:18px;height:18px;flex-shrink:0;margin-top:1px;cursor:pointer;accent-color:#00d4ff}
+    .lab-name{font-size:13px;font-weight:700;flex:1}
+    .lab-meta{font-size:10px;color:var(--muted);margin-bottom:6px}
+    .lab-objectives{font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:8px;padding-left:16px}
+    .lab-actions{display:flex;flex-wrap:wrap;gap:6px}
+    .lab-coverage{font-size:11px;color:var(--muted);margin-bottom:12px;padding:8px 10px;border-radius:7px;
+      background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2)}
 
     /* PLANNER */
     #planner{position:fixed;top:var(--topbar-h);right:0;bottom:0;width:490px;
@@ -8323,7 +8369,7 @@ document.addEventListener("keydown",ev=>{
   // The old "cisco-portfolio-tour-completed-v1" key still suppresses the *first-time* tour
   // for users who already completed v1; they can re-launch the latest via the ? button.
   const STORAGE_KEY = "cisco-portfolio-tour-completed-v1";
-  const TOUR_VERSION = "v2.5";
+  const TOUR_VERSION = "v2.6";
   const STORAGE_KEY_LATEST = "cisco-portfolio-tour-latest-seen";
 
   // Inject DOM
@@ -8421,7 +8467,19 @@ document.addEventListener("keydown",ev=>{
       body: `Pick a <strong>use case</strong> (Hybrid Work, Zero Trust, SD-WAN …)
              or <strong>industry</strong> (Healthcare, Manufacturing, Retail …) to
              see only the products that map to it.`,
-      tip: `<b>v2:</b> picking a use case also overlays its <strong>Reference Architecture</strong> — the canonical Cisco product stack for that solution.`
+      tip: `<b>v2:</b> picking a use case also overlays its <strong>Reference Architecture</strong> — the canonical Cisco product stack for that solution — and shows a <strong>dCloud learning path</strong> with hands-on labs to run.`
+    },
+    {
+      target: "#learn-path-banner", place: "bottom",
+      title: "dCloud learning paths",
+      body: `When you filter by use case, a <strong>learning path</strong> appears with ordered
+             dCloud labs — each with duration, level, and a direct launch link.<br><br>
+             Complete labs with a customer, then export a <strong>Customer Learning Agenda</strong>
+             from the planner.`,
+      before: () => {
+        const uc = document.getElementById("ucs");
+        if (uc && !uc.value) { uc.value = "Hybrid Work"; uc.dispatchEvent(new Event("change")); }
+      }
     },
     {
       target: "#gw", place: "left",
@@ -8527,10 +8585,11 @@ document.addEventListener("keydown",ev=>{
     // ── Analysis output ──────────────────────────────────────────────────────
     {
       target: null, place: "center",
-      title: "Six views of the analysis",
-      body: `After running, you get six tabs:<br><br>
+      title: "Seven views of the analysis",
+      body: `After running, you get seven tabs:<br><br>
              <strong style="color:#02C8FF">Suggestions</strong> — products that pair well with what they already have<br>
              <strong style="color:#f87171">Upgrades</strong> — replace old or end-of-life technology<br>
+             <strong style="color:#00d4ff">Hands-on labs</strong> — ranked dCloud demos with learning objectives<br>
              <strong>Solution packages</strong> — progress toward complete Cisco solution sets<br>
              <strong>Gaps &amp; strengths</strong> — which needs are covered vs. still open<br>
              <strong style="color:#FF9000">Migration plan</strong> — step-by-step migration with dates &amp; successors<br>
@@ -8545,6 +8604,8 @@ document.addEventListener("keydown",ev=>{
              use cases, and industries.
              <ul style="margin:6px 0 0 16px;padding:0">
                <li><b>Explore N products →</b> — drills into Composition (2D) or Spatial composition (3D) for this family</li>
+               <li><b>Learn &amp; Try on dCloud</b> — learning objectives + instant or scheduled lab links</li>
+               <li><b>Device Matrix 3D</b> — built-in showroom for collaboration devices</li>
                <li><b>Breadcrumbs</b> — back/forward navigation through visited items</li>
                <li><b>Licensing tier badge</b> — DNA / Advantage / Premier and similar</li>
                <li><b>Field notices</b> — surfaced PSIRT advisories where relevant</li>
@@ -8864,7 +8925,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.24";
+const APP_VERSION   = "2.31.25";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -9824,6 +9885,9 @@ STYLE.textContent = `
   .refarch-active.show{display:flex;align-items:center;gap:8px}
   .refarch-active::before{content:"⌖";font-size:13px}
   .refarch-active span{background:rgba(0,0,0,.2);padding:1px 6px;border-radius:8px;font-weight:600}
+  body.learn-path-open #learn-path-banner{top:102px}
+  body.refarch-open #learn-path-banner{top:102px}
+  body.learn-path-open.refarch-open #learn-path-banner{top:142px}
 `;
 document.head.appendChild(STYLE);
 
@@ -10303,7 +10367,7 @@ function planSummary(){
     return {name: b.name, pct: Math.round(own.length/b.products.length*100), owned: own.length, total: b.products.length, missing: b.products.filter(p => !effNodes.has(p)).map(p => nameOf(p))};
   }).sort((a,b) => b.pct - a.pct);
 
-  const dcloudDemos = typeof dcloudPlanRecommendations === "function" ? dcloudPlanRecommendations(5) : [];
+  const dcloudDemos = typeof dcloudPlanRecommendations === "function" ? dcloudPlanRecommendations(8) : [];
   return { acct, date, profile, items, legacy, recs, stackUCs, allUC, bundles, dcloudDemos };
 }
 
@@ -10331,11 +10395,13 @@ function exportMarkdown(){
   md += `\n## Solution Packages\n\n`;
   s.bundles.forEach(b => { md += `- **${b.name}** — ${b.pct}% (${b.owned}/${b.total})${b.missing.length?"; missing "+b.missing.slice(0,3).join(", "):""}\n`; });
   if (s.dcloudDemos?.length){
-    md += `\n## Explore on dCloud\n\n`;
-    s.dcloudDemos.forEach(d => {
-      md += `- **[${d.label}](${d.catalogUrl})**`;
-      if (d.hint) md += ` — ${d.hint}`;
-      md += `\n  - ${d.catalogUrl}\n`;
+    md += `\n## Customer Learning Agenda (dCloud)\n\n`;
+    s.dcloudDemos.forEach((d, i) => {
+      md += `${i + 1}. **${d.label}** (${d.duration || "lab"}${d.level ? ", " + d.level : ""})\n`;
+      if (d.learningObjectives?.length){
+        d.learningObjectives.forEach(o => { md += `   - ${o}\n`; });
+      } else if (d.hint) md += `   - ${d.hint}\n`;
+      md += `   - Launch: ${d.instantUrl || d.catalogUrl}\n`;
     });
     md += `\n*Cisco.com login required for dCloud.*\n`;
   }
@@ -10396,7 +10462,9 @@ function exportPDF(){
     <tbody>${s.bundles.map(b => `<tr><td>${escapeHtml(b.name)}</td><td>${b.pct}%</td><td>${b.owned}/${b.total}</td></tr>`).join("")}</tbody></table>
     <h2>Gaps &amp; Strengths</h2>
     <p>${s.allUC.map(u => `${s.stackUCs.has(u)?"✓":"✗"} ${escapeHtml(u)}`).join(" &nbsp;·&nbsp; ")}</p>
-    ${s.dcloudDemos?.length ? `<h2>Explore on dCloud</h2><ul>${s.dcloudDemos.map(d => `<li><strong>${escapeHtml(d.label)}</strong>${d.hint ? `<br><em>${escapeHtml(d.hint.slice(0, 140))}${d.hint.length > 140 ? "…" : ""}</em>` : ""}<br><a href="${escapeHtml(d.catalogUrl)}">${escapeHtml(d.catalogUrl)}</a></li>`).join("")}</ul><p><em>Cisco.com login required for dCloud.</em></p>` : ""}
+    ${s.dcloudDemos?.length ? `<h2>Customer Learning Agenda (dCloud)</h2><ol>${s.dcloudDemos.map(d => `<li><strong>${escapeHtml(d.label)}</strong>${d.duration ? ` · ${escapeHtml(d.duration)}` : ""}${d.level ? ` · ${escapeHtml(d.level)}` : ""}
+      ${d.learningObjectives?.length ? `<ul>${d.learningObjectives.map(o => `<li>${escapeHtml(o)}</li>`).join("")}</ul>` : (d.hint ? `<br><em>${escapeHtml(d.hint.slice(0, 140))}${d.hint.length > 140 ? "…" : ""}</em>` : "")}
+      <br><a href="${escapeHtml(d.instantUrl || d.catalogUrl)}">${escapeHtml(d.instantUrl || d.catalogUrl)}</a></li>`).join("")}</ol><p><em>Cisco.com login required for dCloud.</em></p>` : ""}
     <div class="pf">Generated by Cisco Portfolio Navigator v${APP_VERSION}</div>
   `;
   document.body.appendChild(area);
@@ -10410,22 +10478,25 @@ function exportPptxDcloudSlide(pp, demos){
   if (!demos?.length) return;
   const sl = pp.addSlide();
   sl.background = { color: "0D1117" };
-  sl.addText("Explore on dCloud", { x:0.5, y:0.4, w:12, h:0.5, fontSize:24, bold:true, color:"00BCEB" });
-  const hint = typeof DCLOUD_DEFAULTS !== "undefined" ? DCLOUD_DEFAULTS.sectionHint : "Schedule or launch the live demo environment for this solution.";
+  sl.addText("Customer Learning Agenda — dCloud", { x:0.5, y:0.4, w:12, h:0.5, fontSize:24, bold:true, color:"00BCEB" });
+  const hint = typeof DCLOUD_DEFAULTS !== "undefined" ? DCLOUD_DEFAULTS.sectionHint : "Hands-on labs matched to this account plan.";
   sl.addText(hint, { x:0.6, y:0.95, w:12, h:0.35, fontSize:11, color:"8B949E" });
   demos.slice(0, 5).forEach((d, i) => {
     const y = 1.35 + i * 1.05;
-    sl.addText(d.label, {
+    const meta = [d.duration, d.level, d.demoType === "instant" ? "Instant" : ""].filter(Boolean).join(" · ");
+    sl.addText(`${i + 1}. ${d.label}`, {
       x:0.6, y, w:12, h:0.32, fontSize:14, bold:true, color:"FFFFFF",
-      hyperlink: { url: d.catalogUrl, tooltip: d.name || d.label }
+      hyperlink: { url: d.instantUrl || d.catalogUrl, tooltip: d.name || d.label }
     });
-    if (d.hint){
-      const short = d.hint.length > 120 ? d.hint.slice(0, 117) + "…" : d.hint;
-      sl.addText(short, { x:0.7, y: y + 0.32, w:11.5, h:0.35, fontSize:10, color:"8B949E" });
+    if (meta) sl.addText(meta, { x:0.7, y: y + 0.28, w:11.5, h:0.22, fontSize:9, color:"6E7681" });
+    const obj = d.learningObjectives?.[0] || d.hint;
+    if (obj){
+      const short = obj.length > 100 ? obj.slice(0, 97) + "…" : obj;
+      sl.addText(short, { x:0.7, y: y + 0.48, w:11.5, h:0.35, fontSize:10, color:"8B949E" });
     }
-    sl.addText(d.catalogUrl, {
-      x:0.7, y: y + 0.68, w:11.5, h:0.25, fontSize:9, color:"00BCEB",
-      hyperlink: { url: d.catalogUrl }
+    sl.addText(d.instantUrl || d.catalogUrl, {
+      x:0.7, y: y + 0.82, w:11.5, h:0.22, fontSize:9, color:"00BCEB",
+      hyperlink: { url: d.instantUrl || d.catalogUrl }
     });
   });
   const note = typeof DCLOUD_DEFAULTS !== "undefined" ? DCLOUD_DEFAULTS.loginNote : "Cisco.com login required";
@@ -10573,8 +10644,11 @@ function addPlannerTabs(){
   const ptabs = $(".ptabs");
   if (!ptabs) return;
   const tabBar = ptabs;
-  // Insert before Bundles & Coverage
   const bundlesTab = tabBar.querySelector('[data-tab="bundles"]');
+  const labsBtn = document.createElement("button");
+  labsBtn.className = "ptab"; labsBtn.dataset.tab = "labs";
+  labsBtn.innerHTML = `Hands-on labs <span class="ptab-b" id="labs-cnt">0</span>`;
+  tabBar.insertBefore(labsBtn, bundlesTab);
   const tplBtn = document.createElement("button");
   tplBtn.className = "ptab"; tplBtn.dataset.tab = "migrate";
   tplBtn.innerHTML = `Migration plan <span class="ptab-b" id="mig-cnt">0</span>`;
@@ -10586,12 +10660,13 @@ function addPlannerTabs(){
 
   // Add tab content panels
   const pb = $("#pb #analysis-results");
+  const tcLabs = document.createElement("div"); tcLabs.className = "tc"; tcLabs.id = "tab-labs";
   const tcWarn = document.createElement("div"); tcWarn.className = "tc"; tcWarn.id = "tab-warn";
   const tcMig  = document.createElement("div"); tcMig.className = "tc";  tcMig.id  = "tab-migrate";
+  pb.insertBefore(tcLabs, pb.querySelector("#tab-recs"));
   pb.appendChild(tcMig); pb.appendChild(tcWarn);
 
-  // Wire tab clicks
-  [tplBtn, warnBtn].forEach(btn => btn.addEventListener("click", () => {
+  [labsBtn, tplBtn, warnBtn].forEach(btn => btn.addEventListener("click", () => {
     $$(".ptab").forEach(b => b.classList.remove("active"));
     $$(".tc").forEach(t => t.classList.remove("active"));
     btn.classList.add("active");
@@ -10699,6 +10774,7 @@ window.runAnalysis = function(){
   if (_origRunAnalysis) _origRunAnalysis();
   renderMigratePlan();
   renderCompatWarnings();
+  renderPlannerLabs();
 };
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -11581,14 +11657,16 @@ function renderBreadcrumbs(){
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   dCloud demo links (dcloud-links.json)
+   dCloud demo links (dcloud-links.json) — Learn & Try
    ════════════════════════════════════════════════════════════════════════*/
 let DCLOUD_ENTRIES = [];
+let DCLOUD_PATHS = [];
 const DCLOUD_DEFAULTS = {
-  sectionTitle: "Explore on dCloud",
-  sectionHint: "Schedule or launch the live demo environment for this solution.",
+  sectionTitle: "Learn & Try on dCloud",
+  sectionHint: "Understand the solution, explore in the portfolio, then launch a hands-on lab.",
   loginNote: "Cisco.com login required"
 };
+const DCLOUD_LABS_DONE_KEY = "cpn-dcloud-labs-done";
 const WIZARD_DOMAIN_USECASES = {
   rooms: ["Hybrid Work"],
   collab: ["Hybrid Work", "Digital Transformation"],
@@ -11601,29 +11679,85 @@ const WIZARD_DOMAIN_USECASES = {
   obs: ["Digital Transformation"]
 };
 
-async function loadDcloudLinks(){
-  try {
-    const res = await fetch("dcloud-links.json", { cache: "no-cache" });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      DCLOUD_ENTRIES = data;
-    } else {
-      DCLOUD_ENTRIES = data.entries || [];
-      Object.assign(DCLOUD_DEFAULTS, data.defaults || {});
-    }
-  } catch (_) { /* file:// or offline */ }
+function dcloudLabsDoneSet(){
+  return new Set(lsGet(DCLOUD_LABS_DONE_KEY, []));
+}
+function dcloudMarkLabDone(id, done){
+  const s = dcloudLabsDoneSet();
+  if (done) s.add(id); else s.delete(id);
+  lsSet(DCLOUD_LABS_DONE_KEY, [...s]);
+}
+function dcloudNormalizeEntry(e){
+  if (!e) return e;
+  e.demoType = e.demoType || (e.instantUrl ? "instant" : "scheduled");
+  e.level = e.level || (e.primary ? "intro" : "intermediate");
+  e.duration = e.duration || (e.demoType === "instant" ? "~30 min" : "~45 min");
+  if (!e.learningObjectives?.length && e.hint){
+    const h = e.hint.replace(/\u2026/g, "").trim();
+    e.learningObjectives = [h.length > 140 ? h.slice(0, 137) + "…" : h];
+  }
+  if (!e.relatedFamilies?.length) e.relatedFamilies = e.families ? [...e.families] : [];
+  return e;
 }
 
-function dcloudRankEntries({ familyIds = [], productIds = [], useCases = [], limit = 5, requireProductOrFamily = false } = {}){
+async function loadDcloudLinks(){
+  const apply = (data) => {
+    if (Array.isArray(data)) {
+      DCLOUD_ENTRIES = data.map(dcloudNormalizeEntry);
+    } else {
+      DCLOUD_ENTRIES = (data.entries || []).map(dcloudNormalizeEntry);
+      DCLOUD_PATHS = data.paths || [];
+      Object.assign(DCLOUD_DEFAULTS, data.defaults || {});
+    }
+  };
+  try {
+    const res = await fetch("dcloud-links.json", { cache: "no-cache" });
+    if (res.ok) {
+      apply(await res.json());
+      return;
+    }
+  } catch (_) { /* file:// or offline */ }
+  if (typeof window.__DCLOUD_BOOT !== "undefined" && window.__DCLOUD_BOOT) {
+    apply(window.__DCLOUD_BOOT);
+    try { delete window.__DCLOUD_BOOT; } catch (_) {}
+  }
+}
+
+function dcloudEntryById(id){
+  return DCLOUD_ENTRIES.find(e => e.id === id);
+}
+
+function dcloudPrimaryUrl(e){
+  return e?.instantUrl || e?.catalogUrl || "";
+}
+
+function dcloudScheduleUrl(e){
+  if (!e?.catalogUrl) return "";
+  if (e.instantUrl && e.catalogUrl !== e.instantUrl) return e.catalogUrl;
+  if (!e.instantUrl) return e.catalogUrl;
+  return "";
+}
+
+function dcloudConnectedFamilyIds(familyIds = []){
+  const connected = new Set(familyIds.filter(id => nodeById[id]));
+  LINKS.forEach(l => {
+    const s = sid(l), t = tid(l);
+    if (connected.has(s) && nodeById[t]) connected.add(t);
+    if (connected.has(t) && nodeById[s]) connected.add(s);
+  });
+  return [...connected];
+}
+
+function dcloudRankEntries({ familyIds = [], productIds = [], useCases = [], limit = 5, requireProductOrFamily = false, connectedBonus = true } = {}){
   if (!DCLOUD_ENTRIES.length) return [];
+  const connected = connectedBonus ? dcloudConnectedFamilyIds(familyIds) : familyIds;
   const scored = DCLOUD_ENTRIES.map(e => {
     const productSpecific = (e.products?.length ?? 0) > 0;
     const familyHit = familyIds.some(f => e.families?.includes(f));
     const productHit = productIds.some(p => e.products?.includes(p));
     const useCaseHit = useCases.some(u => e.useCases?.includes(u));
     if (productSpecific){
-      if (!productHit) return null;
+      if (!productHit && !familyHit) return null;
     } else {
       const relevant = requireProductOrFamily
         ? (familyHit || productHit)
@@ -11635,6 +11769,10 @@ function dcloudRankEntries({ familyIds = [], productIds = [], useCases = [], lim
     if (familyHit) score += 3;
     if (productHit) score += 5;
     if (useCaseHit) score += 2;
+    const rel = e.relatedFamilies?.length ? e.relatedFamilies : (e.families || []);
+    const multiHit = connected.filter(f => rel.includes(f)).length;
+    if (multiHit >= 2) score += 4;
+    else if (multiHit === 1 && !familyHit) score += 1;
     return { entry: e, score };
   }).filter(Boolean);
   scored.sort((a, b) => b.score - a.score || (b.entry.primary ? 1 : 0) - (a.entry.primary ? 1 : 0));
@@ -11650,18 +11788,41 @@ function dcloudRankEntries({ familyIds = [], productIds = [], useCases = [], lim
 }
 
 function dcloudLinksFor({ familyId, productId, kind = "node" } = {}){
-  return DCLOUD_ENTRIES.filter(e => {
-    if ((e.products?.length ?? 0) > 0){
-      return kind === "product" && productId && e.products.includes(productId);
-    }
-    if (kind === "product" && familyId){
-      return e.families?.includes(familyId);
-    }
-    if (kind === "node" && familyId){
-      return e.families?.includes(familyId);
-    }
-    return false;
-  }).sort((a, b) => (b.primary ? 1 : 0) - (a.primary ? 1 : 0));
+  const product = productId ? prodById[productId] : null;
+  const fam = familyId || product?.family;
+  return dcloudRankEntries({
+    familyIds: fam ? [fam] : [],
+    productIds: productId ? [productId] : [],
+    limit: 4,
+    requireProductOrFamily: true
+  });
+}
+
+function dcloudEcosystemLabs(familyId, limit = 2){
+  if (!familyId) return [];
+  const connected = dcloudConnectedFamilyIds([familyId]).filter(f => f !== familyId);
+  return dcloudRankEntries({
+    familyIds: connected,
+    limit,
+    requireProductOrFamily: true,
+    connectedBonus: false
+  });
+}
+
+function dcloudPathForUseCase(useCase){
+  if (!useCase) return null;
+  return DCLOUD_PATHS.find(p => p.useCase === useCase) || null;
+}
+
+function dcloudPathEntries(path){
+  if (!path?.steps?.length) return [];
+  return path.steps.map(id => dcloudEntryById(id)).filter(Boolean);
+}
+
+function dcloudRefArchLab(useCase){
+  const path = dcloudPathForUseCase(useCase);
+  if (path) return dcloudPathEntries(path)[0] || null;
+  return dcloudRankEntries({ useCases: [useCase], limit: 1 })[0] || null;
 }
 
 function dcloudStackContext(){
@@ -11699,7 +11860,11 @@ function dcloudEntryExportRow(e){
     hint: e.hint || "",
     catalogUrl: e.catalogUrl || e.instantUrl || "",
     instantUrl: e.instantUrl || e.catalogUrl || "",
-    datacenter: e.datacenter || "RTP"
+    datacenter: e.datacenter || "RTP",
+    duration: e.duration || "",
+    level: e.level || "",
+    demoType: e.demoType || "",
+    learningObjectives: e.learningObjectives || []
   };
 }
 
@@ -11709,16 +11874,19 @@ function dcloudPlanRecommendations(limit = 5){
     ? dcloudWizardFamilies() : [];
   const useCases = (typeof wizardState !== "undefined" && wizardState?.domains?.length)
     ? dcloudWizardUseCases() : [];
+  const ucSet = new Set(useCases);
+  const ucFilter = $("#ucs")?.value;
+  if (ucFilter) ucSet.add(ucFilter);
   const familyIds = [...new Set([...stackCtx.familyIds, ...wizardFamilies])];
   return dcloudRankEntries({
     familyIds,
     productIds: stackCtx.productIds,
-    useCases,
+    useCases: [...ucSet],
     limit
   }).map(dcloudEntryExportRow);
 }
 
-function dcloudGuidedRecommendations(limit = 2){
+function dcloudGuidedRecommendations(limit = 5){
   return dcloudPlanRecommendations(limit);
 }
 
@@ -11734,7 +11902,49 @@ function dcloudLogoHtml(){
 function dcloudHeaderHtml(compact){
   return `<div class="p-dcloud-header${compact ? " p-dcloud-header-compact" : ""}">
     ${dcloudLogoHtml()}
-    <span class="dcloud-badge">Live demo</span>
+    <span class="dcloud-badge">Hands-on lab</span>
+  </div>`;
+}
+
+function dcloudEntryMetaHtml(e){
+  const chips = [];
+  if (e.duration) chips.push(e.duration);
+  if (e.level) chips.push(e.level);
+  if (e.demoType === "instant") chips.push("Instant demo");
+  else chips.push("Schedule lab");
+  return chips.length ? `<div class="p-dcloud-meta-row">${chips.map(c => `<span class="p-dcloud-chip">${escapeHtml(c)}</span>`).join("")}</div>` : "";
+}
+
+function dcloudEntryObjectivesHtml(e){
+  const objs = e.learningObjectives || [];
+  if (!objs.length) return "";
+  return `<ul class="p-dcloud-objectives">${objs.slice(0, 3).map(o => `<li>${escapeHtml(o)}</li>`).join("")}</ul>`;
+}
+
+function dcloudEntryActionsHtml(e){
+  const primary = dcloudPrimaryUrl(e);
+  const schedule = dcloudScheduleUrl(e);
+  const instantLabel = e.demoType === "instant" ? "Launch instant demo ↗" : "Open in dCloud ↗";
+  let html = `<a class="la la-dcloud" href="${escapeHtml(primary)}" target="_blank" rel="noopener" data-dcloud-id="${escapeHtml(e.id)}">
+    <span class="la-dcloud-main">${escapeHtml(e.linkLabel || e.name)}</span>
+    <span class="la-dcloud-meta">${instantLabel}</span>
+  </a>`;
+  if (schedule){
+    html += `<a class="la la-dcloud la-dcloud-schedule" href="${escapeHtml(schedule)}" target="_blank" rel="noopener">
+      <span class="la-dcloud-main">Schedule / profile page</span>
+      <span class="la-dcloud-meta">Book lab ↗</span>
+    </a>`;
+  }
+  return html;
+}
+
+function renderDcloudEntryBlock(e, opts = {}){
+  const compact = !!opts.compact;
+  return `<div class="p-dcloud-entry">
+    ${compact ? "" : dcloudEntryMetaHtml(e)}
+    ${dcloudEntryObjectivesHtml(e)}
+    <div class="p-dcloud-entry-actions">${dcloudEntryActionsHtml(e)}</div>
+    ${e.hint && compact ? `<div class="p-dcloud-entry-hint">${escapeHtml(e.hint)}</div>` : ""}
   </div>`;
 }
 
@@ -11743,42 +11953,56 @@ function renderDcloudSectionBody(entries, opts = {}){
   const hint = opts.sectionHint ?? DCLOUD_DEFAULTS.sectionHint;
   const loginNote = opts.loginNote ?? DCLOUD_DEFAULTS.loginNote;
   const compact = !!opts.compact;
-  const links = entries.map(e => {
-    const label = e.linkLabel || e.name;
-    const entryHint = e.hint ? `<div class="p-dcloud-entry-hint">${escapeHtml(e.hint)}</div>` : "";
-    return `<a class="la la-dcloud" href="${escapeHtml(e.catalogUrl)}" target="_blank" rel="noopener">
-      <span class="la-dcloud-main">${escapeHtml(label)}</span>
-      <span class="la-dcloud-meta">Open in dCloud ↗</span>
-    </a>${entryHint}`;
-  }).join("");
+  const showLadder = !compact && !opts.hideLadder;
+  const links = entries.map(e => renderDcloudEntryBlock(e, opts)).join("");
+  const eco = opts.ecosystemNote ? `<div class="p-dcloud-eco">${escapeHtml(opts.ecosystemNote)}</div>` : "";
   return `${dcloudHeaderHtml(compact)}
-    ${compact ? "" : `<div class="p-dcloud-tagline">${escapeHtml(DCLOUD_DEFAULTS.sectionTitle)}</div>`}
+    ${compact ? `<div class="gw-dcloud-title">Hands-on labs for this plan</div>` : `<div class="p-dcloud-tagline">${escapeHtml(DCLOUD_DEFAULTS.sectionTitle)}</div>`}
     ${compact ? "" : `<div class="p-dcloud-hint">${escapeHtml(hint)}</div>`}
+    ${showLadder ? `<div class="p-learn-ladder" aria-label="Learning flow">
+      <span class="p-learn-step">1 · Understand</span>
+      <span class="p-learn-step">2 · See in portfolio</span>
+      <span class="p-learn-step">3 · Try in dCloud</span>
+    </div>` : ""}
+    ${eco}
     <div class="lb la-dcloud-list">${links}</div>
     ${loginNote ? `<div class="p-dcloud-note">${escapeHtml(loginNote)}</div>` : ""}`;
 }
 
 function dcloudGuidedRecommendationsHtml(){
-  const entries = dcloudGuidedRecommendations(2);
+  const entries = dcloudGuidedRecommendations(5);
   if (!entries.length) return "";
-  return `<div class="gw-dcloud-section">${renderDcloudSectionBody(entries, { compact: true })}</div>`;
+  const raw = entries.map(r => dcloudEntryById(r.id) || r);
+  return `<div class="gw-dcloud-section">${renderDcloudSectionBody(raw, { compact: true, hideLadder: true })}</div>`;
 }
 
 function insertDcloudLinks(id, kind){
   const pb = $("#pbody"); if (!pb || pb.querySelector(".p-dcloud")) return;
   const product = kind === "product" ? prodById[id] : null;
-  const entries = dcloudLinksFor(
+  const familyId = kind === "product" ? product?.family : id;
+  let entries = dcloudLinksFor(
     kind === "product"
-      ? { productId: id, familyId: product?.family, kind: "product" }
+      ? { productId: id, familyId, kind: "product" }
       : { familyId: id, kind: "node" }
   );
   if (!entries.length) return;
 
+  const eco = kind === "node" ? dcloudEcosystemLabs(id, 1) : [];
+  if (eco.length && !entries.some(e => e.id === eco[0].id)) entries = [...entries, ...eco.slice(0, 1)];
+
+  const hasMatrix = kind === "product" && matrixDeviceUrl(id);
+  const ecoNote = eco.length
+    ? `Also covers connected families: ${eco[0].linkLabel || eco[0].name}`
+    : "";
+
   const sec = document.createElement("div");
   sec.className = "p-sec p-dcloud";
-  sec.innerHTML = `<div class="p-dcloud-card">${renderDcloudSectionBody(entries)}</div>`;
+  sec.innerHTML = `<div class="p-dcloud-card">${renderDcloudSectionBody(entries, { ecosystemNote: ecoNote })}</div>`;
 
-  // Prefer directly under Device Matrix (3D showroom); else under description on family panels.
+  sec.querySelectorAll("[data-dcloud-id]").forEach(a => {
+    a.addEventListener("click", () => dcloudMarkLabDone(a.dataset.dcloudId, true));
+  });
+
   const matrix = pb.querySelector(".p-matrix-link");
   if (matrix){ matrix.insertAdjacentElement("afterend", sec); return; }
   const desc = pb.querySelector(".p-desc");
@@ -11786,6 +12010,13 @@ function insertDcloudLinks(id, kind){
   const anchor = pb.querySelector(".add-stack-btn");
   if (anchor) pb.insertBefore(sec, anchor);
   else pb.appendChild(sec);
+
+  if (hasMatrix){
+    const note = sec.querySelector(".p-learn-ladder");
+    if (note) note.innerHTML = `<span class="p-learn-step">1 · Understand</span>
+      <span class="p-learn-step">2 · 3D Showroom above</span>
+      <span class="p-learn-step">3 · Try in dCloud</span>`;
+  }
 }
 
 function refreshDcloudPanelIfOpen(){
@@ -11794,6 +12025,106 @@ function refreshDcloudPanelIfOpen(){
   if (!pb || !panel?.classList.contains("open") || !pb.dataset.lastId) return;
   pb.querySelector(".p-dcloud")?.remove();
   insertDcloudLinks(pb.dataset.lastId, pb.dataset.lastKind || "node");
+}
+
+function buildLearningPathBanner(){
+  const b = document.createElement("div");
+  b.id = "learn-path-banner";
+  b.setAttribute("role", "region");
+  b.setAttribute("aria-label", "Recommended dCloud learning path");
+  document.body.appendChild(b);
+  b.addEventListener("click", e => {
+    if (e.target.closest(".lpb-close")) hideLearningPathBanner();
+  });
+}
+
+function renderLearningPathBanner(useCase){
+  const path = dcloudPathForUseCase(useCase);
+  const el = $("#learn-path-banner");
+  if (!el) return;
+  if (!path){
+    hideLearningPathBanner();
+    return;
+  }
+  const steps = dcloudPathEntries(path);
+  if (!steps.length){ hideLearningPathBanner(); return; }
+  el.innerHTML = `
+    <div class="lpb-head">
+      <div>
+        <div class="lpb-title">${escapeHtml(path.title)} learning path</div>
+        <div class="lpb-tagline">${escapeHtml(path.tagline || "Recommended hands-on labs for this use case")}</div>
+      </div>
+      <button type="button" class="lpb-close" aria-label="Dismiss learning path">×</button>
+    </div>
+    <div class="lpb-steps">${steps.map((e, i) => {
+      const url = dcloudPrimaryUrl(e);
+      return `<div class="lpb-step">
+        <span class="lpb-step-num">${i + 1}</span>
+        <div class="lpb-step-body">
+          <div class="lpb-step-label">${escapeHtml(e.linkLabel || e.name)}</div>
+          <div class="lpb-step-meta">${escapeHtml(e.duration || "")}${e.duration && e.level ? " · " : ""}${escapeHtml(e.level || "")}</div>
+        </div>
+        <a class="lpb-launch" href="${escapeHtml(url)}" target="_blank" rel="noopener" data-dcloud-id="${escapeHtml(e.id)}">Launch ↗</a>
+      </div>`;
+    }).join("")}</div>`;
+  el.classList.add("show");
+  document.body.classList.add("learn-path-open");
+  el.querySelectorAll("[data-dcloud-id]").forEach(a => {
+    a.addEventListener("click", () => dcloudMarkLabDone(a.dataset.dcloudId, true));
+  });
+}
+
+function hideLearningPathBanner(){
+  $("#learn-path-banner")?.classList.remove("show");
+  document.body.classList.remove("learn-path-open");
+}
+
+function renderPlannerLabs(){
+  const el = $("#tab-labs"); if (!el) return;
+  const recs = dcloudPlanRecommendations(8);
+  const done = dcloudLabsDoneSet();
+  const covered = recs.filter(r => done.has(r.id)).length;
+  $("#labs-cnt").textContent = recs.length;
+  if (!recs.length){
+    el.innerHTML = `<div class="empty"><h3>No labs matched yet</h3><p>Add products to the stack or complete Guided Plan, then analyze to see ranked dCloud labs.</p></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="lab-coverage"><strong>${covered} of ${recs.length}</strong> recommended labs marked complete · check off as you run them with the customer</div>
+    ${recs.map(r => {
+      const e = dcloudEntryById(r.id) || r;
+      const isDone = done.has(r.id);
+      const objs = (e.learningObjectives || []).slice(0, 2);
+      const primary = dcloudPrimaryUrl(e);
+      const schedule = dcloudScheduleUrl(e);
+      return `<div class="lab-card${isDone ? " done" : ""}" data-lab-id="${escapeHtml(r.id)}">
+        <div class="lab-head">
+          <input type="checkbox" class="lab-check" ${isDone ? "checked" : ""} aria-label="Mark complete">
+          <div class="lab-name">${escapeHtml(r.label)}</div>
+        </div>
+        <div class="lab-meta">${escapeHtml(e.duration || "")}${e.duration && e.level ? " · " : ""}${escapeHtml(e.level || "")}${e.demoType ? " · " + escapeHtml(e.demoType === "instant" ? "Instant" : "Scheduled") : ""}</div>
+        ${objs.length ? `<ul class="lab-objectives">${objs.map(o => `<li>${escapeHtml(o)}</li>`).join("")}</ul>` : (r.hint ? `<div class="lab-meta">${escapeHtml(r.hint.slice(0, 160))}${r.hint.length > 160 ? "…" : ""}</div>` : "")}
+        <div class="lab-actions">
+          <a class="rc-btn prim" href="${escapeHtml(primary)}" target="_blank" rel="noopener">Launch lab ↗</a>
+          ${schedule ? `<a class="rc-btn" href="${escapeHtml(schedule)}" target="_blank" rel="noopener">Schedule ↗</a>` : ""}
+        </div>
+      </div>`;
+    }).join("")}`;
+  el.querySelectorAll(".lab-check").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const card = cb.closest(".lab-card");
+      const id = card?.dataset.labId;
+      if (!id) return;
+      dcloudMarkLabDone(id, cb.checked);
+      card.classList.toggle("done", cb.checked);
+      const cov = el.querySelector(".lab-coverage");
+      if (cov){
+        const n = dcloudLabsDoneSet();
+        const c = recs.filter(r => n.has(r.id)).length;
+        cov.innerHTML = `<strong>${c} of ${recs.length}</strong> recommended labs marked complete · check off as you run them with the customer`;
+      }
+    });
+  });
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -12179,22 +12510,32 @@ function applyRefArch(ucName){
       .attr("stroke-opacity", both ? 0.9 : 0.04)
       .attr("stroke-width", both ? 2.4 : 1);
   });
-  $("#refarch-name").textContent = ucName;
+  const lab = dcloudRefArchLab(ucName);
+  const labHint = lab ? ` · Try <strong>${escapeHtml(lab.linkLabel || lab.name)}</strong> in dCloud` : "";
+  $("#refarch-name").innerHTML = `${escapeHtml(ucName)}${labHint}`;
   $("#refarch-badge").classList.add("show");
+  document.body.classList.add("refarch-open");
+  renderLearningPathBanner(ucName);
 }
 function clearRefArch(){
   activeRefArch = null;
   $("#refarch-badge").classList.remove("show");
+  document.body.classList.remove("refarch-open");
   resetHL(); highlightStack();
+  if (!$("#ucs")?.value) hideLearningPathBanner();
 }
 // Hook use-case dropdown clicks (when user picks a UC, also offer overlay)
 function wireRefArchToUC(){
   $("#ucs").addEventListener("change", () => {
-    if ($("#ucs").value && REF_ARCH[$("#ucs").value]) {
-      // Subtle nudge: highlight via overlay
-      applyRefArch($("#ucs").value);
+    const uc = $("#ucs").value;
+    if (uc && REF_ARCH[uc]) {
+      applyRefArch(uc);
+    } else if (uc) {
+      clearRefArch();
+      renderLearningPathBanner(uc);
     } else {
       clearRefArch();
+      hideLearningPathBanner();
     }
   });
 }
@@ -13560,7 +13901,11 @@ function wireThemeToggle(){
 function boot(){
   initAmbientBackground();
   wireThemeToggle();
-  loadDcloudLinks().then(refreshDcloudPanelIfOpen);
+  loadDcloudLinks().then(() => {
+    refreshDcloudPanelIfOpen();
+    window.DCLOUD_PATHS = DCLOUD_PATHS;
+    window.DCLOUD_ENTRIES = DCLOUD_ENTRIES;
+  });
   loadMatrixBridge();
   buildPlansMenu();
   buildExportMenu();
@@ -13572,6 +13917,7 @@ function boot(){
   buildComparePanel();
   buildRecentPinned();
   buildRefArchBadge();
+  buildLearningPathBanner();
   buildContextMenu();
   buildTimelineView();
   buildDiffModal();

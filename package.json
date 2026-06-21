@@ -14,7 +14,8 @@
     "test:spatial-filtered-photos": "node scripts/test-spatial-filtered-photos.mjs",
     "test:planner-ui": "node scripts/test-planner-ui.mjs",
     "test:matrix-embed": "node scripts/test-matrix-embed.mjs",
-    "test": "npm run test:pillar-layout && npm run test:composition && npm run test:composition-spatial && npm run test:panel-hero && npm run test:spatial-labels && npm run test:spatial-filtered-photos && npm run test:planner-ui && npm run test:matrix-embed"
+    "test:dcloud-learning": "node scripts/test-dcloud-learning.mjs",
+    "test": "npm run test:pillar-layout && npm run test:composition && npm run test:composition-spatial && npm run test:panel-hero && npm run test:spatial-labels && npm run test:spatial-filtered-photos && npm run test:planner-ui && npm run test:matrix-embed && npm run test:dcloud-learning"
   },
   "devDependencies": {
     "playwright": "^1.49.0"
