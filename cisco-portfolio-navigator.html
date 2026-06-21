@@ -1334,37 +1334,37 @@ const NODES = [
    desc:"Unified collaboration platform combining messaging, meetings, calling, AI assistants, and deep app integrations in a single client.",
    useCases:["Hybrid Work","Contact Center","Digital Transformation"],
    industries:["Healthcare","Financial Services","Education","Government","Retail","Manufacturing"],
-   url:"https://www.webex.com", docsUrl:"https://help.webex.com"},
+   url:"https://www.webex.com", docsUrl:"https://www.webex.com"},
   {id:"webex-meetings",    name:"Webex Meetings",              category:"collaboration",
    desc:"Enterprise video conferencing with AI noise removal, real-time translation in 100+ languages, and automatic meeting summaries.",
    useCases:["Hybrid Work","Digital Transformation"],
    industries:["Healthcare","Financial Services","Education","Government","Manufacturing"],
    url:"https://www.webex.com/video-conferencing.html",
-   docsUrl:"https://help.webex.com/en-US/article/nti3p4e/Webex-Meetings"},
+   docsUrl:"https://www.webex.com/video-conferencing.html"},
   {id:"webex-calling",     name:"Webex Calling",               category:"collaboration",
    desc:"Cloud calling replacing on-premises PBX/CUCM with enterprise-grade calling, voicemail, and PSTN — fully integrated with Webex and Contact Center.",
    useCases:["Hybrid Work","Digital Transformation","Contact Center"],
    industries:["Healthcare","Financial Services","Education","Retail","Government"],
    url:"https://www.webex.com/cloud-calling.html",
-   docsUrl:"https://help.webex.com/en-US/article/n18e1d3/Webex-Calling"},
+   docsUrl:"https://www.webex.com/cloud-calling.html"},
   {id:"webex-cc",          name:"Webex Contact Center",        category:"collaboration",
    desc:"Cloud-native CCaaS with AI-powered routing, virtual agents, workforce management, real-time analytics, and omnichannel engagement.",
    useCases:["Contact Center","Digital Transformation","AI Networking"],
    industries:["Financial Services","Retail","Healthcare","Government","Education"],
    url:"https://www.webex.com/contact-center.html",
-   docsUrl:"https://help.webex.com/en-US/article/n12sv3k/Webex-Contact-Center"},
+   docsUrl:"https://www.webex.com/contact-center.html"},
   {id:"room-systems",      name:"Cisco Room Systems",          category:"collaboration",
    desc:"Room Bar, Room Bar Pro, Room Kit EQ, Room Kit Pro, Board Pro G2 — purpose-built video systems for huddle to boardroom with AI-powered cameras and audio.",
    useCases:["Hybrid Work","Digital Transformation"],
    industries:["Healthcare","Financial Services","Education","Government","Manufacturing"],
    url:"https://www.cisco.com/c/en/us/products/collaboration-endpoints/index.html",
-   docsUrl:"https://help.webex.com/en-US/article/n31aly3/Webex-Devices"},
+   docsUrl:"https://www.cisco.com/c/en/us/support/collaboration-endpoints/index.html"},
   {id:"desk-devices",      name:"Cisco Desk Devices",          category:"collaboration",
    desc:"Cisco Desk Pro, Desk, and Desk Mini — personal 4K touch collaboration devices with built-in AI codec, camera, mic, and speaker for individual workstations.",
    useCases:["Hybrid Work","Digital Transformation"],
    industries:["Healthcare","Financial Services","Education","Government","Manufacturing"],
    url:"https://www.cisco.com/c/en/us/products/collaboration-endpoints/index.html",
-   docsUrl:"https://help.webex.com/en-US/article/n31aly3/Webex-Devices"},
+   docsUrl:"https://www.cisco.com/c/en/us/support/collaboration-endpoints/index.html"},
   {id:"ip-phones",         name:"Cisco IP Phones",             category:"collaboration",
    desc:"IP Phone 6800, 8800, and 9800 series plus Video Phone 8875 — wired and wireless desk phones for Webex Calling, CUCM, or third-party call control.",
    useCases:["Hybrid Work","Digital Transformation","Contact Center"],
@@ -1388,7 +1388,7 @@ const NODES = [
    useCases:["Contact Center","Digital Transformation"],
    industries:["Financial Services","Retail","Healthcare","Education"],
    url:"https://www.webex.com/connect.html",
-   docsUrl:"https://help.webex.com/en-US/article/nkhy3gb/Webex-Connect"},
+   docsUrl:"https://www.webex.com/connect.html"},
 
   // COMPUTING
   {id:"ucs",               name:"Cisco UCS Servers",           category:"computing",
@@ -7937,8 +7937,7 @@ document.addEventListener("keydown",ev=>{
     {
       target: "#v2-footer", place: "top",
       title: "Footer — version & shortcuts",
-      body: `The footer shows the data-freshness date, a <em>What's new</em> link
-             (changelog) and the keyboard shortcuts cheat-sheet.<br><br>
+      body: `The footer shows the data-freshness date and the keyboard shortcuts cheat-sheet.<br><br>
              Try <code>?</code> any time to relaunch this tour, <code>G</code> for Guided Plan,
              <code>/</code> to focus search, <code>a</code> to open the AI assistant,
              <code>t</code> to toggle Refresh timeline. In Spatial view, <code>Esc</code> steps
@@ -8177,7 +8176,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.6";
+const APP_VERSION   = "2.31.7";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8188,7 +8187,6 @@ const STORAGE_KEYS  = {
   profile:  "cpn-profile-v2",
   aiKey:    "cpn-ai-key-v2",
   aiCfg:    "cpn-ai-cfg-v2",
-  changelogSeen: "cpn-changelog-v2",
   pptxTheme: "cpn-pptx-theme-v2",
   wizard: "cpn-wizard-v2"
 };
@@ -8464,406 +8462,6 @@ const FIELD_NOTICES = [
 ];
 const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.productId, f]));
 
-/* ────────────────────────────────────────────────────────────────
-   [24] Changelog
-   ────────────────────────────────────────────────────────────────*/
-const CHANGELOG = [
-  {ver:"2.31.6", date:"2026-06-21", items:[
-    "All side-drawer panel heroes use the category icon badge consistently (no brand or Device Matrix photos).",
-  ]},
-  {ver:"2.31.5", date:"2026-06-21", items:[
-    "Webex App and Webex Calling family drawers use category icon heroes only (no Desk or phone hardware photos).",
-  ]},
-  {ver:"2.31.4", date:"2026-06-21", items:[
-    "Icon-only panel heroes use a category-colored badge with a white glyph (fixes invisible icons caused by dark-panel currentColor on white hero tiles).",
-  ]},
-  {ver:"2.31.3", date:"2026-06-21", items:[
-    "Family panel heroes no longer show blank white tiles: software families borrow related hardware brand/matrix photos (Webex Meetings → Room Bar, Calling → IP phones, etc.).",
-    "Icon-only heroes use category-tinted gradients and larger glyphs when no photo applies.",
-  ]},
-  {ver:"2.31.2", date:"2026-06-21", items:[
-    "Family drawer heroes use official Cisco brand family photography (19 families) via assets/family-heroes; room/desk endpoints still use Device Matrix.",
-    "Added scripts/build-family-heroes.mjs to copy and resize hero art from Families Cisco Brand-selected-assets.",
-  ]},
-  {ver:"2.31.1", date:"2026-06-21", items:[
-    "Wireless IP phones use the handheld phone icon (not WiFi); matrix photos limited to room-systems and desk-devices on the graph.",
-    "Family detail panels show a representative Device Matrix hero (e.g. IP Phones, Headsets) instead of a blank icon-only strip.",
-  ]},
-  {ver:"2.31.0", date:"2026-06-21", items:[
-    "Icon build uses balanced SVG parsing (art-layer extraction, junk group removal) — fixes white squares from empty Splunk/Catalyst/Industrial symbols and solid export-frame rects.",
-    "Remapped collaboration and observability icons: ThousandEyes→globe, XDR→secure radar, Contact Center→services desk, Webex Connect→customer journey, Webex App→hybrid work, conference phones→conference glyph.",
-  ]},
-  {ver:"2.30.9", date:"2026-06-21", items:[
-    "Icon build now strips Illustrator <style>/guide layers so brand SVGs tint correctly — fixes black telescope plus Catalyst Center, Splunk, and Industrial icons.",
-    "Collaboration icons differentiated: Webex Connect (omnichannel), Contact Center (agent), Conference Phones (mic); ThousandEyes→real-time, XDR→insights.",
-  ]},
-  {ver:"2.30.8", date:"2026-06-21", items:[
-    "Collaboration icons use TelePresence, webinar, tablet, and conference glyphs — no more play-button video/codec icons.",
-    "Desk Pro/Mini and room endpoints map correctly; Secure Email, Hypershield, and Stealthwatch icons improved.",
-  ]},
-  {ver:"2.30.7", date:"2026-06-21", items:[
-    "Graph icons now use official Cisco brand SVGs (482 assets + build script); Phosphor symbols removed.",
-    "Dedicated icons for Intersight, HyperFlex, Cloud Control (dashboard), and Webex Calling (cloud-calling).",
-  ]},
-  {ver:"2.30.5", date:"2026-06-21", items:[
-    "Families — single-pillar focus no longer dims the canvas; labels use brighter white type with a lighter halo; icons run at full saturation.",
-    "Workplaces — Meraki MX family label shortened to “Meraki MX SD-WAN” so it fits without truncation."
-  ]},
-  {ver:"2.30.4", date:"2026-06-21", items:[
-    "Families — all-pillars view is icon-only again (no zoom-reveal label clutter); hover shows a single halo label, full name in tooltip.",
-    "Families — single-pillar focus uses two-line word-wrapped labels with subtle text halo instead of truncated black pills; Workplaces grid widens to 4 columns when focused."
-  ]},
-  {ver:"2.30.3", date:"2026-06-21", items:[
-    "Families & Overview — pillar frame titles centered on all three cards (AI-Ready Data Centers, Future-Proofed Workplaces, Digital Resilience), matching the Digital Resilience layout.",
-    "Pillar labels — Title Case across ONE_CISCO, pillar guides, and Overview deck."
-  ]},
-  {ver:"2.30.2", date:"2026-06-20", items:[
-    "Light theme — stronger text/surface contrast, theme-aware Overview deck (connectors, labels, pillar cards), and pillar legend styling.",
-    "Overview — fix pillar cards shaking on hover (CSS transform was overriding SVG positioning; hover lift now uses SVG transform + glow filter)."
-  ]},
-  {ver:"2.30.1", date:"2026-06-20", items:[
-    "All Products — fix Room Systems (and other) product nodes showing as white icon rings; product nodes now get proper category-colored fills and icons instead of inheriting Composition matrix styling."
-  ]},
-  {ver:"2.30.0", date:"2026-06-20", items:[
-    "Visual polish — frosted-glass top bar, action bar, detail panel, and Account Planner; light presentation theme toggle.",
-    "Families — dimmed cross-pillar links, focus-mode canvas dimming, node glow hierarchy (hover/select/stack), connectivity spine + family stats on pillar panels.",
-    "Motion — staged view transitions; ambient pillar-color echo when entering Spatial or filtering a pillar; triple-ring composition orbit.",
-    "Search — command-surface dropdown with pillar badges and keyboard ↑↓/Enter navigation.",
-    "Refresh timeline — glass header with ambient backdrop matching the main canvas."
-  ]},
-  {ver:"2.29.4", date:"2026-06-20", items:[
-    "Overview — Secure global connectivity uses a line gap instead of a dark label box; Accelerated by Cisco AI chevrons point outward like the deck slide."
-  ]},
-  {ver:"2.29.3", date:"2026-06-20", items:[
-    "Families — fixed overlapping pillar panel outlines: lock panel size in all-pillars view, add gap between zones, and nudge Digital resilience below the top row."
-  ]},
-  {ver:"2.29.2", date:"2026-06-20", items:[
-    "Families — pillar panels use Overview deck logos and headers (AI-ready data centers, Future-proofed workplaces, Digital resilience) with matching cyan borders."
-  ]},
-  {ver:"2.29.1", date:"2026-06-20", items:[
-    "Spatial — transparent WebGL canvas so the ambient glow/grid/mesh shows through behind 3D family map and product orbit."
-  ]},
-  {ver:"2.29.0", date:"2026-06-20", items:[
-    "Ambient background — stronger Cisco-blue glow, grid, and network mesh; moved inside graph canvas so it is visible behind Overview and Families (still respects prefers-reduced-motion)."
-  ]},
-  {ver:"2.23.0", date:"2026-06-20", items:[
-    "Ambient background — subtle drifting Cisco-blue glow, faint dot grid, and low-opacity network mesh behind the graph (respects prefers-reduced-motion)."
-  ]},
-  {ver:"2.22.8", date:"2026-06-20", items:[
-    "Refresh timeline — renamed from Timeline view (toolbar, panel title, tour, keyboard help); still shows EOS/EOL Gantt by family."
-  ]},
-  {ver:"2.28.0", date:"2026-06-20", items:[
-    "Family product drawer — single-click any family (including Composition hub) opens a scrollable product list in the side panel; drawer auto-opens when drilling into Composition or Spatial orbit.",
-    "Composition hub — panel resolves full family metadata from portfolio data (fixes blank/broken drawer when clicking Room Systems center node)."
-  ]},
-  {ver:"2.27.3", date:"2026-06-20", items:[
-    "Composition — product photos now appear when drilling in from All Products or after filter changes (syncNodeProductImages on graph update, not just first enter)."
-  ]},
-  {ver:"2.27.2", date:"2026-06-20", items:[
-    "Spatial — restore Device Matrix product photos in family orbit; fix blank tiles after filtered breadcrumb drill-in by attaching billboards when async loads finish (including after cache clears)."
-  ]},
-  {ver:"2.27.1", date:"2026-06-20", items:[
-    "Account Planner — fix Analyze / Refresh footer button: unified scroll area, sticky footer z-index, toast + scroll to results on re-analyze, and 'Refresh analysis' label when results exist."
-  ]},
-  {ver:"2.27.0", date:"2026-06-20", items:[
-    "Account Planner — plain-language labels: Suggestions, Upgrades, Solution packages, Gaps & strengths; 'Their products' instead of stack; star legend for connection strength."
-  ]},
-  {ver:"2.26.1", date:"2026-06-20", items:[
-    "Account Planner — fix Start Guided Plan banner link; export menu and planner actions covered by Playwright QA."
-  ]},
-  {ver:"2.26.0", date:"2026-06-20", items:[
-    "Account Planner — cleaner layout: collapsible Legacy and Quick start sections, Guided Plan banner, sticky Analyze footer, compact post-analyze summary bar, and Clear moved to overflow menu."
-  ]},
-  {ver:"2.25.3", date:"2026-06-20", items:[
-    "Spatial — fix icon tiles clipped at the corner by scaling glyphs around center (128,128) instead of the SVG origin."
-  ]},
-  {ver:"2.25.2", date:"2026-06-20", items:[
-    "Spatial — icon tiles show the glyph only (removed category shape plate and outline rectangle behind each icon)."
-  ]},
-  {ver:"2.25.1", date:"2026-06-20", items:[
-    "Spatial — fix icon tiles rendering as [object Object] by using native Three.js Sprite/CanvasTexture instead of SpriteText for tile billboards."
-  ]},
-  {ver:"2.25.0", date:"2026-06-20", items:[
-    "Spatial — icon tiles on glass pedestals replace colored spheres: category shapes (hex, shield, screen, blade, gauge), wireframe rings, constellation family map vs product-orbit layouts; icons only (no mixed photos)."
-  ]},
-  {ver:"2.24.3", date:"2026-06-20", items:[
-    "UI — filter badge and Spatial/Composition breadcrumb stack vertically instead of overlapping when both are visible."
-  ]},
-  {ver:"2.24.2", date:"2026-06-20", items:[
-    "Spatial — product labels always visible in family orbit (small families show full names; dense families use shortened labels instead of hiding until hover)."
-  ]},
-  {ver:"2.24.1", date:"2026-06-20", items:[
-    "Side drawer — product hero fallback uses a light stage background and category-colored icons (fixes black-on-black icons for products without Device Matrix images)."
-  ]},
-  {ver:"2.24.0", date:"2026-06-20", items:[
-    "Spatial — polished 3D orbs with glass/metallic materials, category glow, rim lighting, and matrix product thumbnails; labels show on hover in family orbit to reduce overlap."
-  ]},
-  {ver:"2.23.0", date:"2026-06-20", items:[
-    "Spatial — switching from Composition keeps the current family selection and opens its 3D product orbit; Composition button works from Spatial drill-in too."
-  ]},
-  {ver:"2.22.9", date:"2026-06-20", items:[
-    "Composition — pin family hub at graph origin after drill-in (fixes off-center orbit from stale pillar sim coords); Playwright regression test added."
-  ]},
-  {ver:"2.22.8", date:"2026-06-20", items:[
-    "Composition — stop sim end handler from resetting zoom after drill-in; fit orbit synchronously on filter pass and on family click."
-  ]},
-  {ver:"2.22.7", date:"2026-06-20", items:[
-    "Composition — cancel pillar click-to-pan before drill-in; remove nl-bg pills; snap orbit fit instantly so family centers on entry."
-  ]},
-  {ver:"2.22.6", date:"2026-06-20", items:[
-    "Composition — hide stale Families zoom label pills (nl-bg) on entry; fit orbit view immediately so labels no longer jumble at center.",
-    "Ask AI — moved to the action bar between Guided Plan and Account Planner (gradient button, active state when panel open); removed bottom-right FAB.",
-    "Keyboard shortcut A and Guided Plan handoff unchanged; AI panel sits closer to the footer without the FAB row."
-  ]},
-  {ver:"2.22.5", date:"2026-06-20", items:[
-    "Families — icon and label packed as one cluster from the cell bottom with a fixed gap, eliminating the large dead space above labels."
-  ]},
-  {ver:"2.22.4", date:"2026-06-20", items:[
-    "Families — pillar zoom label text vertically centered inside the dark pill background."
-  ]},
-  {ver:"2.22.3", date:"2026-06-20", items:[
-    "Families — labels locked to a bottom cell band; icons shift up in tight cells instead of labels overlapping.",
-    "Workplaces panel widened and grid math enforces minimum row height so zoom labels no longer bleed into the next row."
-  ]},
-  {ver:"2.22.2", date:"2026-06-20", items:[
-    "Families — fixed label/icon overlap (fixed gap below glow ring, icons shifted up in cell); larger readable white labels on dark pills; tooltip suppressed when zoom labels already show."
-  ]},
-  {ver:"2.22.1", date:"2026-06-20", items:[
-    "Families — removed SVG textLength stretching on zoom labels; truncation only, backdrop sized to actual text width."
-  ]},
-  {ver:"2.22.0", date:"2026-06-20", items:[
-    "Families — zoom labels capped to cell height, dark backdrop + stroke halo; connection lines hidden while zoom labels show (hover/select links still visible).",
-    "Grid layout picks column count from panel height; workplaces uses 6×4 grid for clearer label bands."
-  ]},
-  {ver:"2.21.0", date:"2026-06-20", items:[
-    "Families — fixed zoom label overlap: truncation now fits each grid cell; SVG textLength clamps width; workplaces grid widened to 5 columns.",
-    "Layout regression test now checks zoom-revealed label collisions at 2.2× scale."
-  ]},
-  {ver:"2.20.0", date:"2026-06-20", items:[
-    "Families — category pill filters keep the three-panel pillar layout (no force-graph fallback); empty pillars hide until families match again.",
-    "Families — zoom-to-reveal labels restored with hover/select priority; labels sit below icons via counter-scaled offset.",
-    "Layout regression test now verifies partial category filter stays collision-free."
-  ]},
-  {ver:"2.19.0", date:"2026-06-20", items:[
-    "Families — replaced overlapping Venn zones with three separated deck panels; dashed hub connectors and brighter cross-pillar links show relationships instead.",
-    "Families — all-pillars view shows labels on hover/select only (single-pillar focus still labels every family); wider grid cells reduce truncation.",
-    "Chrome — search bar is full-width on the top row; view mode, category pills, and filters moved to the action bar below."
-  ]},
-  {ver:"2.18.0", date:"2026-06-17", items:[
-    "Families — three outcome pillars only: removed connectivity overlap band and legend row; every family renders in its primary pillar per Cisco One Cisco outcome mapping.",
-    "Secure global connectivity remains on the Overview deck spine only; tighter grid insets keep icons out of the decorative center overlap.",
-    "Kept zoom-to-reveal labels, unified zone geometry, and layout regression checks (npm run test:pillar-layout)."
-  ]},
-  {ver:"2.17.0", date:"2026-06-17", items:[
-    "Families — Option C bridge band: connectivity families render once in the pillar overlap with dual-pillar gradient rings and explicit bridge metadata (not random grid bleed).",
-    "Families — zoom-to-reveal labels now works for multi-pillar selection; detail panel shows bridge + connected pillar badges."
-  ]},
-  {ver:"2.16.3", date:"2026-06-17", items:[
-    "Families — fixed zoom labels overlapping icons: labels sit outside the node-scaler, use text-before-edge baseline, and a clearer offset below the glow ring."
-  ]},
-  {ver:"2.16.2", date:"2026-06-17", items:[
-    "Families — zoom in on the all-pillars view to progressively reveal family labels (counter-scaled text so spacing grows faster than label width); single-pillar focus still shows all labels immediately."
-  ]},
-  {ver:"2.16.1", date:"2026-06-17", items:[
-    "Families — all-pillars view shows icons only (names on hover/select via tooltip); single-pillar focus shows uniform labels on every family in that pillar.",
-    "Layout regression test now verifies hidden labels in all-pillars mode and no label overlap when a pillar is focused."
-  ]},
-  {ver:"2.16.0", date:"2026-06-20", items:[
-    "Families — unified pillar layout: borders, titles, and icons share one zone; inset grids keep icons inside overlapping panels without collision.",
-    "Regression test now checks cross-pillar collisions, icons inside zones, and triple zone overlap (npm run test:pillar-layout)."
-  ]},
-  {ver:"2.15.2", date:"2026-06-20", items:[
-    "Families — overlapping zone borders kept for One Cisco; icon grids moved to separate non-overlapping content regions so pillars no longer collide.",
-    "All three pillars show zone titles and spaced product labels; layout self-test validates zero cross-pillar collisions."
-  ]},
-  {ver:"2.15.1", date:"2026-06-20", items:[
-    "Families — all three pillars show spaced labels (icon top-aligned in cell, no row overlap); zones overlap in the center for the One Cisco story.",
-    "Pillar layout — AI-ready DC and Workplaces nudged inward; Digital resilience pulled up into the shared overlap region."
-  ]},
-  {ver:"2.15.0", date:"2026-06-20", items:[
-    "Families — auto-growing pillar grids with fixed icon size (no overlap in all-pillars view); short labels only when the cell fits, otherwise icon + tooltip.",
-    "Pillar filter — multi-select: toggle any combination in the legend or zone panels; All pillars clears the filter.",
-    "All tab — product labels on hover/select only, stronger collision spacing; families keep short labels (dense power-user view retained)."
-  ]},
-  {ver:"2.14.3", date:"2026-06-20", items:[
-    "Overview — single click opens Families with all three pillars; double-click a card to focus one pillar.",
-    "Families — All pillars row in legend; labels on hover only (fixes overlap when one pillar is focused); expanded grid when filtered."
-  ]},
-  {ver:"2.16.0", date:"2026-06-20", items:[
-    "dCloud — expanded dcloud-links.json to 31 demos parsed from the saved Cisco dCloud catalog (instant + profile labs mapped to Portfolio Navigator families).",
-    "AgenticOps catalog title synced to Cisco Cloud Control: AgenticOps in Action."
-  ]},
-  {ver:"2.15.2", date:"2026-06-20", items:[
-    "Fix — Composition hub click and auto-open family drawer no longer fail silently (pushBreadcrumb scope error from v2.15.1)."
-  ]},
-  {ver:"2.15.1", date:"2026-06-20", items:[
-    "Fix — product detail breadcrumbs show the product's portfolio family (e.g. Room Systems › Room Kit Pro G2), not unrelated prior navigation history.",
-    "Family product drawer — opening a family now records it in breadcrumb history; back/forward and family crumb clicks stay in composition context."
-  ]},
-  {ver:"2.15.0", date:"2026-06-20", items:[
-    "New family: cloud-control — Cisco Cloud Control (AgenticOps platform with Collaboration Control Hub, AI Canvas, and AI Assistant).",
-    "Graph links — Cloud Control connects to Webex, room/desk devices, ThousandEyes, Catalyst Center, Meraki, and FSO.",
-    "Products — Control Hub, AI Canvas, and Cloud Control AI Assistant in Composition view.",
-    "Planner — Cloud Control Platform solution package; Hybrid Work Suite includes cloud-control.",
-    "Guided Plan — cloud-control in Meetings & messaging and Observability capability domains.",
-    "dCloud — AgenticOps with Cisco Cloud Control instant demo mapped to the cloud-control family."
-  ]},
-  {ver:"2.14.2", date:"2026-06-20", items:[
-    "Families — fixed 3-pillar layout: families now stay in their zone grids instead of collapsing to the center (static layout, simulation disabled in pillar view)."
-  ]},
-  {ver:"2.14.1", date:"2026-06-20", items:[
-    "Chrome — Reset, Guided Plan, and Account Planner moved to a dedicated action bar below the main top bar so they no longer wrap or overlap filters."
-  ]},
-  {ver:"2.14.0", date:"2026-06-20", items:[
-    "Families — pinned grid layout removes overlap; icons-only in the 3-zone view, labels when a pillar is selected.",
-    "Pillar filter — click a legend row or zone panel to focus one outcome pillar; click again or Reset to show all.",
-    "Overview — pillar cards jump into Families with that pillar pre-filtered."
-  ]},
-  {ver:"2.13.0", date:"2026-06-20", items:[
-    "Families — 3-pillar layout only (no connectivity zone); branch/WAN families fold into Workplaces, identity/SASE into Resilience; quieter links and no duplicate zone labels.",
-    "Overview — exact slide 12 deck icons extracted from One Cisco Deck.PPTX (bracketed rack, collaboration ring, resilience spring).",
-    "Legend — compact 3-row key without title or hint text."
-  ]},
-  {ver:"2.12.0", date:"2026-06-20", items:[
-    "Overview icons — closer match to deck line art (bracketed rack, collaboration ring, resilience spring).",
-    "Families layout — replaced overlapping venn ellipses with deck-aligned zone panels, legend, and corrected ThousandEyes → Digital resilience mapping.",
-    "No auto-prompts — guided tour and What's New changelog only open when you choose them (? button or footer link)."
-  ]},
-  {ver:"2.11.2", date:"2026-06-20", items:[
-    "Overview deck — custom slide icons (bracketed server rack, collaboration ring, resilience spring) and centered Digital resilience label."
-  ]},
-  {ver:"2.11.1", date:"2026-06-20", items:[
-    "Overview — rebuilt as the One Cisco deck layout: two top pillar cards, Secure global connectivity spine, gradient Digital resilience bar, and Accelerated by Cisco AI footer."
-  ]},
-  {ver:"2.11.0", date:"2026-06-20", items:[
-    "One Cisco — Overview rebuilt as 3 outcome pillars (AI-ready DC, Workplaces, Digital resilience) aligned to the Dec 2025 strategy deck.",
-    "Families view — pillar sector layout with connectivity spine when all categories are active; zone guides and cross-pillar link emphasis.",
-    "Account Planner — One Cisco coverage pills show which pillars your stack touches; family detail panel shows pillar badge."
-  ]},
-  {ver:"2.10.0", date:"2026-06-20", items:[
-    "Icons — replaced hand-drawn graph glyphs with Phosphor Icons Regular (unified style across Overview, Families, and product fallbacks)."
-  ]},
-  {ver:"2.9.9", date:"2026-06-20", items:[
-    "Composition — removed in-circle variant badges (G2, Plus, Mini, etc.); product names below nodes only."
-  ]},
-  {ver:"2.9.8", date:"2026-06-20", items:[
-    "Composition labels — removed pill backdrops that overlapped nodes; labels sit clear below circles with text-only halo.",
-    "Graph labels — brighter default text under category icons; tooltip body copy lightened for readability."
-  ]},
-  {ver:"2.9.7", date:"2026-06-20", items:[
-    "Composition labels — dark pill backdrop behind each name, brighter white text, fixed hover reset that was washing labels to gray."
-  ]},
-  {ver:"2.9.6", date:"2026-06-20", items:[
-    "Auto-fit view — Collaboration filter and Composition orbit now center and scale to visible content (no more dragging from the corner).",
-    "Composition labels — always horizontal below nodes, larger white text with stronger halo for readability."
-  ]},
-  {ver:"2.9.5", date:"2026-06-20", items:[
-    "Hotfix — restored page boot after Composition zoom handler referenced viewMode before initialization."
-  ]},
-  {ver:"2.9.4", date:"2026-06-20", items:[
-    "Composition polish — wider orbit for large families, dashed ring guide, softer spokes, stronger succession links.",
-    "Photo nodes — inset thumbnails, neutral rings, green/purple glow on hover/select only, variant badges for shared matrix images.",
-    "Labels — larger type, radial text on lower arc, fade when zoomed out; hub node enlarged with white ring.",
-    "Tooltips — product description on composition node hover."
-  ]},
-  {ver:"2.9.3", date:"2026-06-20", items:[
-    "Panel product hero — pure white photo backing.",
-    "Device Matrix CTA — compact purple card between the original link and the full highlight card."
-  ]},
-  {ver:"2.9.2", date:"2026-06-20", items:[
-    "Device Matrix CTA — purple highlight card with Launch button, matching dCloud prominence.",
-    "Product photos — light backing on panel heroes and composition graph thumbnails so brochure images read clearly against the canvas."
-  ]},
-  {ver:"2.9.1", date:"2026-06-20", items:[
-    "Product status filters — Current/EoL facets now apply across Composition, Families, All Products, Timeline, search, and panels; default is Current only.",
-    "End-of-Sale products are permanently hidden from all views (not toggleable).",
-    "Room Bar Pro G2 — matrix-bridge mapping added so composition nodes and panel hero use the Device Matrix photo."
-  ]},
-  {ver:"2.9.0", date:"2026-06-20", items:[
-    "Collaboration Device Matrix integration — product heroes and composition thumbnails use brochure WebP photos via matrix-bridge.json.",
-    "Product panels — View in Collaboration Device Matrix deep-links to the 3D showroom (?vendor=cisco&device=…).",
-    "Composition labels — fixed resetHL wiping light text; stroke halo for readable names on dark canvas."
-  ]},
-  {ver:"2.8.0", date:"2026-06-17", items:[
-    "Composition view — fixed orbit layout (current outer ring, legacy inner), product-specific icons, short readable labels, and status styling for EOL/EOS.",
-    "All-products mode — product nodes use descriptive icons by form factor and category."
-  ]},
-  {ver:"2.7.10", date:"2026-06-17", items:[
-    "Product-specific dCloud demos (e.g. Room Kit Pro G2) only appear on matching product pages — not every sibling in the family."
-  ]},
-  {ver:"2.7.9", date:"2026-06-17", items:[
-    "dCloud panel only appears when the open product or family matches a demo entry — primary flag no longer shows demos on unrelated products."
-  ]},
-  {ver:"2.7.8", date:"2026-06-17", items:[
-    "Connected Technologies — toggle extended ecosystem (2-hop) in family detail panels; graph highlight and product-panel jump show the wider neighborhood.",
-    "Context menu Connections filter now includes families within 2 hops."
-  ]},
-  {ver:"2.7.7", date:"2026-06-17", items:[
-    "dCloud — Explore on dCloud section in product and family panels with primary CTA styling, short link labels, and schedule/login hints from dcloud-links.json.",
-    "dCloud manifest — defaults (sectionTitle, sectionHint, loginNote) plus per-entry linkLabel and hint fields.",
-    "Guided Plan finale — Recommended on dCloud surfaces top matching labs from your stack and wizard capability domains."
-  ]},
-  {ver:"2.7.6", date:"2026-05-31", items:[
-    "Spatial view — optional 3D map of product families with always-visible labels, orbit/zoom navigation, filters, and stack highlights. Double-click a family (or Explore N products) to drill into a 3D composition; Esc or the breadcrumb steps back. Bundled offline (no CDN); 2D hint bar hidden while Spatial is active.",
-    "Guided tour updated (v2.5) — new Spatial step, Guided Plan AI deliverables, and export/AI context coverage.",
-    "Compare — separate compare queue independent of ★ Pin: Show in Compare adds items to a visible chip list (up to 4) with side-by-side detail columns; Pin only saves to Recent/Pinned. Clear button and remove via chip or column ×.",
-    "Overview — category bubbles seed in a tight ring on load and show all cross-category links (including Collaboration), so nothing drifts away on a fresh session.",
-    "Guided Plan — 5-step wizard (industry → size → capabilities → legacy refresh) that builds your stack, runs analysis, and persists your session so you can reopen, edit answers, or start over.",
-    "Guided Plan reveal — inline AI deliverables: exec summary, 90-day roadmap, customer email, or gap analysis without leaving the wizard; results persist with your session.",
-    "AI Assistant includes account plan context when a plan exists; Ask AI FAB and Guided Plan tour polish.",
-    "PowerPoint export — Account Discovery Summary plus one polished slide per generated AI deliverable."
-  ]},
-  {ver:"2.2.0", date:"2026-05-29", items:[
-    "Catalog refresh — Cisco Live 2025 + early 2026 product wave (~28 new products, 2 new families)",
-    "New family: secure-routers — the 8000-series Secure Routers (8100/8200/8300/8400/8500) unified SD-WAN + SASE + NGFW + post-quantum routing line",
-    "New family: ai-defense — Cisco AI Defense, the purpose-built security pillar for AI models, applications, and agentic (MCP-aware) workflows",
-    "Networking: Catalyst 9350 + 9610 Smart Switches (Silicon One G300, 51.2 Tbps), Catalyst 9300-M / 9400-M AI-native switches, Wireless 9179F (Wi-Fi 7 + URWB), Campus Gateway, Nexus 9800 AI spine, N9000 AI Networking",
-    "Security: Secure Firewall 210 / 220 / 6100 (Cisco Live 2025), full AI Defense product family (Cloud Visibility, Validation, Runtime, BOM + MCP Catalog, Explorer Edition)",
-    "Devices: Desk Pro G2 (dual-lens 4K, Agentic Director, Spatial Meetings), Wireless Phone 9821 (Wi-Fi 6E, PhoneOS, man-down detection), Desk Phone 9811 (named 7811 successor)",
-    "Webex AI lineup split out: AI Codec, AI Routing, Translator Agent, Agent Assistant — discoverable individually in search and compare",
-    "Data center / AI infra: Silicon One G300 ASIC, UCS C845A M8 (Secure AI Factory with NVIDIA)",
-    "EoX sweep: ip-7821 (EOL15900, Oct 2026 / Oct 2031), ip-7811 (EOL15899), conf-7832 moved to EOS; successor links corrected to point at real catalog ids",
-    "Timeline view filters now match the graph (category chips, use case, industry, Filters drawer).",
-    "Fix: timeline horizontal scrollbar no longer hidden behind footer chrome."
-  ]},
-  {ver:"2.1.0", date:"2026-05-29", items:[
-    "Four-level drill-down: Overview (5 category bubbles) → Families (52 families, the default) → Composition (one family + every product, with dashed succession edges) → All (every family + product, ~350 nodes)",
-    "Segmented control in the topbar plus a breadcrumb chip below it for navigating up the hierarchy",
-    "Explore N products → button on every family's detail panel, with double-click on family bubbles as the same shortcut",
-    "Product search now auto-promotes the graph into Composition mode for the matching product's family",
-    "Last view mode + focused family persist in localStorage and restore on reload",
-    "Catalog filled in across all 52 families — 97 new specific products (Catalyst Center appliances, full SD-WAN control plane, APIC/Nexus Dashboard, Silicon One, Wi-Fi 7 APs, IoT routers, the entire Webex SKU lineup, Intersight tiers, UCS FIs + M8 servers, ThousandEyes/AppDynamics/Splunk/FSO). 200 → 297 products.",
-    "Pin / Compare buttons now appear on family detail panels (not just product panels), and an inline ⇆ compare button is shown on each Recent / Pinned item",
-    "Compare mirrors the pinned list — pin anything and it appears in compare; closing compare no longer wipes pins; up to 4 columns.",
-    "Smooth D3 enter/exit fade transitions between view modes; per-mode force tuning (charge / collide / link distance)",
-    "Bug fix: phantom edges in the All view from stale D3-mutated link references"
-  ]},
-  {ver:"2.0.0", date:"2026-05-28", items:[
-    "Saved & named plans with auto-save and shareable URLs",
-    "Export to CSV, Markdown, PDF (print), and PPTX (best-effort via PptxGenJS)",
-    "Migration plan generator for EOL/EOS items in stack",
-    "Competitor → Cisco replacement matrix (Palo Alto, Zoom, Aruba, Zscaler, Datadog, etc.)",
-    "Customer profile prefilter (vertical / size / hybrid)",
-    "Reference architecture overlays for use cases",
-    "Industry starter templates (Hospital, K-12, Bank Branch, Retail, ...)",
-    "Compare mode — pin up to 3 products side-by-side",
-    "Licensing/tier badges in detail panel",
-    "Compatibility / dependency warnings panel",
-    "AI assistant (BYOK, OpenAI-compatible)",
-    "Keyboard navigation, ARIA labels, right-click context menu",
-    "Search-pulse, breadcrumbs, recent + pinned",
-    "Timeline view by EOS/EOL date",
-    "Stack diff (snapshot vs. current)",
-    "Faceted product filtering panel",
-    "Field notices / PSIRT badges (curated)",
-    "Data-freshness footer + this changelog"
-  ]},
-  {ver:"1.x", date:"May 2025", items:[
-    "Initial release — 44 product families, force-directed graph, and Account Planner",
-    "130+ specific models with EOL/EOS dates, migration paths, and successor links",
-    "Guided tour, EOL bulletin URLs, and category-themed SVG node icons"
-  ]},
-];
 
 /* ────────────────────────────────────────────────────────────────
    Helpers
@@ -9014,6 +8612,14 @@ STYLE.textContent = `
   #gw-body{flex:1;overflow-y:auto;padding:20px 22px 8px}
   #gw-body .gw-q{font-size:15px;font-weight:700;margin-bottom:6px}
   #gw-body .gw-hint{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.45}
+  #gw-panel .gw-card .gw-desc,
+  #gw-panel .gw-tile .gw-td,
+  #gw-panel .gw-stat .gw-sl,
+  #gw-panel .gw-ai-lbl,
+  #gw-panel .gw-ai-hint,
+  #gw-foot .gw-step-lbl{color:var(--muted)}
+  #gw-panel .gw-card .gw-desc,
+  #gw-panel .gw-tile .gw-td{font-size:10.5px}
   .gw-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
   .gw-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
     padding:12px 10px;cursor:pointer;text-align:center;transition:all .15s;font-family:inherit}
@@ -9508,25 +9114,6 @@ STYLE.textContent = `
   #v2-footer .sep{color:var(--border)}
   #tools{bottom:42px}
   #hint{bottom:42px}
-
-  /* Changelog modal */
-  #cl-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9300;
-    display:none;align-items:center;justify-content:center;padding:20px}
-  #cl-modal.show{display:flex}
-  .cl-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;
-    width:min(620px,95vw);max-height:85vh;overflow:hidden;display:flex;flex-direction:column}
-  .cl-h{padding:14px 20px;border-bottom:1px solid var(--border);
-    display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-  .cl-h h3{font-size:14px;font-weight:700}
-  .cl-body{padding:18px 22px;overflow-y:auto;flex:1}
-  .cl-ver{margin-bottom:18px}
-  .cl-vh{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px;
-    display:flex;align-items:center;gap:8px}
-  .cl-vh .badge{background:var(--surface2);color:var(--muted);font-size:10px;
-    padding:1px 8px;border-radius:4px;font-weight:600}
-  .cl-vh .date{color:var(--subtle);font-size:11px;font-weight:400;margin-left:auto}
-  .cl-list{list-style:disc;padding-left:18px;margin:5px 0 0}
-  .cl-list li{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:2px}
 
   /* AI overlay loading spinner */
   .ai-loading{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}
@@ -12998,7 +12585,7 @@ function wireKeyboardA11y(){
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   [24] Data-freshness FOOTER + CHANGELOG modal
+   [24] Data-freshness FOOTER
    ════════════════════════════════════════════════════════════════════════*/
 function buildFooter(){
   const f = document.createElement("div");
@@ -13008,8 +12595,6 @@ function buildFooter(){
       <strong style="color:var(--text)">v${APP_VERSION}</strong>
       <span class="sep"> · </span>
       Portfolio data current as of <strong style="color:var(--text)">${DATA_UPDATED}</strong>
-      <span class="sep"> · </span>
-      <a id="ft-changelog">What's new</a>
     </div>
     <div>
       <span style="color:var(--subtle)">Press <kbd style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:10px">?</kbd> for tour</span>
@@ -13018,29 +12603,8 @@ function buildFooter(){
     </div>
   `;
   document.body.appendChild(f);
-  $("#ft-changelog").addEventListener("click", () => openChangelog());
   $("#ft-shortcuts").addEventListener("click", () => openShortcuts());
 }
-function buildChangelog(){
-  const m = document.createElement("div");
-  m.id = "cl-modal";
-  m.innerHTML = `<div class="cl-box">
-    <div class="cl-h">
-      <h3>What's New — Cisco Portfolio Navigator</h3>
-      <button id="cl-x" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);width:26px;height:26px;font-size:14px;cursor:pointer">×</button>
-    </div>
-    <div class="cl-body">
-      ${CHANGELOG.map(v => `<div class="cl-ver">
-        <div class="cl-vh"><span class="badge">v${v.ver}</span><span class="date">${v.date}</span></div>
-        <ul class="cl-list">${v.items.map(i => `<li>${escapeHtml(i)}</li>`).join("")}</ul>
-      </div>`).join("")}
-    </div>
-  </div>`;
-  document.body.appendChild(m);
-  $("#cl-x").addEventListener("click", () => m.classList.remove("show"));
-  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("show"); });
-}
-function openChangelog(){ $("#cl-modal").classList.add("show"); lsSet(STORAGE_KEYS.changelogSeen, APP_VERSION); }
 function openShortcuts(){
   const lines = [
     ["⌘K / Ctrl+K", "Focus search"],
@@ -13206,7 +12770,6 @@ function boot(){
   buildFacets();
   buildAiAssistant();
   buildFooter();
-  buildChangelog();
   wireRefArchToUC();
   wireSearchPulse();
   wireAdaptivePlaceholder();
@@ -13229,8 +12792,6 @@ function boot(){
   // Restore prior state (URL hash > current plan > autosave)
   bootRestore();
   if (typeof updatePlannerUI === "function") updatePlannerUI();
-
-  // Changelog is available from the footer — never auto-open on load.
 }
 
 // Wait a beat to ensure existing graph is ready
@@ -13239,7 +12800,7 @@ else window.addEventListener("load", boot);
 
 window.__cpnV2 = {
   APP_VERSION, DATA_UPDATED, STORAGE_KEYS, ALL_LEGACY, TIERS, COMPAT_RULES,
-  REF_ARCH, INDUSTRY_TEMPLATES, FIELD_NOTICES, FIELD_NOTICE_BY_PROD, CHANGELOG,
+  REF_ARCH, INDUSTRY_TEMPLATES, FIELD_NOTICES, FIELD_NOTICE_BY_PROD,
   helpers: { $, $$, lsGet, lsSet, lsDel, nameOf, catOf, downloadBlob, escapeHtml, relTime },
   phases: { readState, applyState, encodeShareableUrl, decodeShareableUrl,
     exportMarkdown, exportCSV, exportJSON, exportPDF, exportPPTX, exportText,
@@ -13248,7 +12809,7 @@ window.__cpnV2 = {
     buildProfileBox, buildTemplatesStrip, buildQuickStartSection, buildComparePanel, buildRecentPinned,
     addPlannerTabs, refreshPlansBtn, applyRefArch, clearRefArch, renderTimeline,
     openTimelineView, closeTimelineView, setTimelineZoom,
-    showStackDiff, sendAi, openAiWithPrompt, buildPlanContext, openChangelog, boot, savePlan, loadPlan, deletePlan,
+    showStackDiff, sendAi, openAiWithPrompt, buildPlanContext, boot, savePlan, loadPlan, deletePlan,
     listPlans, planSummary, pillarLayoutSelfTest: __cpnPillarLayoutSelfTest,
     compositionSelfTest: __cpnCompositionSelfTest }
 };
