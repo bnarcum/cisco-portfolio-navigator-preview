@@ -466,6 +466,42 @@
       font-size:10px;font-weight:700;flex-shrink:0;color:#2e1065!important;
       background:#c084fc;padding:5px 9px;border-radius:5px;letter-spacing:.01em}
     .la-matrix:hover .la-matrix-meta{background:#fff;color:#581c87!important}
+    .p-matrix-actions{display:flex;flex-direction:column;gap:7px}
+    .matrix-open-btn{
+      display:flex;align-items:center;justify-content:space-between;width:100%;
+      cursor:pointer;font:inherit;text-align:left;border:none}
+    .matrix-open-btn:focus-visible{outline:2px solid #c084fc;outline-offset:2px}
+
+    #matrix-overlay{
+      position:fixed;inset:0;z-index:9400;display:none;align-items:stretch;justify-content:center;
+      background:rgba(2,8,18,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      padding:12px}
+    #matrix-overlay.show{display:flex}
+    body.matrix-overlay-open{overflow:hidden}
+    .matrix-overlay-shell{
+      display:flex;flex-direction:column;flex:1;max-width:min(1480px,100%);margin:0 auto;
+      border-radius:12px;overflow:hidden;border:1px solid rgba(168,85,247,.42);
+      box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 0 1px rgba(192,132,252,.12);
+      background:#07182d}
+    .matrix-overlay-bar{
+      display:flex;align-items:center;gap:12px;padding:10px 14px;
+      border-bottom:1px solid rgba(168,85,247,.28);
+      background:linear-gradient(180deg,rgba(88,28,135,.32) 0%,rgba(30,10,55,.72) 100%)}
+    .matrix-overlay-brand{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+    .matrix-overlay-kicker{
+      font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#e9d5ff}
+    .matrix-overlay-title{
+      font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .matrix-overlay-mode{
+      flex-shrink:0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+      padding:5px 10px;border-radius:999px;background:rgba(168,85,247,.22);color:#f3e8ff;
+      border:1px solid rgba(192,132,252,.38)}
+    .matrix-overlay-close{
+      flex-shrink:0;width:36px;height:36px;border-radius:8px;border:1px solid rgba(192,132,252,.35);
+      background:rgba(30,10,55,.55);color:#f3e8ff;font-size:22px;line-height:1;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .matrix-overlay-close:hover{border-color:#c084fc;background:rgba(168,85,247,.28);color:#fff}
+    .matrix-overlay-frame{flex:1;width:100%;min-height:0;border:0;background:#07182d}
     .gw-dcloud-section{
       margin-top:14px;padding:14px;border-radius:10px;text-align:left;
       border:1px solid rgba(0,212,255,.45);
@@ -3805,11 +3841,96 @@ function matrixImageUrl(id){
   const base = MATRIX_BRIDGE.imageBase || MATRIX_IMG_BASE;
   return e.hash ? `${base}img-${e.hash}.webp` : null;
 }
-function matrixDeviceUrl(id){
+function matrixDeviceUrl(id, view){
   const e = matrixBridgeEntry(id); if (!e?.matrixId) return null;
   const base = MATRIX_BRIDGE.matrixBase || MATRIX_SITE;
-  return `${base}?vendor=cisco&device=${encodeURIComponent(e.matrixId)}`;
+  const params = new URLSearchParams();
+  params.set("vendor", "cisco");
+  params.set("device", e.matrixId);
+  params.set("embed", "cpn");
+  if (view === "aisle") params.set("view", "showcase");
+  return `${base}?${params.toString()}`;
 }
+
+const matrixOverlayState = { open: false, productId: null, view: null };
+
+function ensureMatrixOverlay(){
+  let ov = document.getElementById("matrix-overlay");
+  if (ov) return ov;
+  ov = document.createElement("div");
+  ov.id = "matrix-overlay";
+  ov.setAttribute("role", "dialog");
+  ov.setAttribute("aria-modal", "true");
+  ov.setAttribute("aria-hidden", "true");
+  ov.innerHTML = `
+    <div class="matrix-overlay-shell">
+      <header class="matrix-overlay-bar">
+        <div class="matrix-overlay-brand">
+          <span class="matrix-overlay-kicker">Device Matrix</span>
+          <span class="matrix-overlay-title" id="matrix-overlay-title">Collaboration device</span>
+        </div>
+        <span class="matrix-overlay-mode" id="matrix-overlay-mode">Showroom</span>
+        <button type="button" class="matrix-overlay-close" id="matrix-overlay-close" aria-label="Close Device Matrix">×</button>
+      </header>
+      <iframe id="matrix-overlay-frame" class="matrix-overlay-frame"
+        title="Collaboration Device Matrix — 3D showroom and aisle"
+        allow="fullscreen" loading="lazy"></iframe>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector("#matrix-overlay-close")?.addEventListener("click", closeMatrixEmbed);
+  ov.addEventListener("click", e => {
+    if (e.target === ov) closeMatrixEmbed();
+  });
+  return ov;
+}
+
+function openMatrixEmbed(productId, view){
+  const url = matrixDeviceUrl(productId, view === "aisle" ? "aisle" : "showroom");
+  if (!url) return;
+  const ov = ensureMatrixOverlay();
+  const frame = document.getElementById("matrix-overlay-frame");
+  const titleEl = document.getElementById("matrix-overlay-title");
+  const modeEl = document.getElementById("matrix-overlay-mode");
+  const product = prodById[productId];
+  if (titleEl) titleEl.textContent = product?.name || spatialResolveName(productId);
+  if (modeEl) modeEl.textContent = view === "aisle" ? "Aisle" : "Showroom";
+  if (frame) frame.src = url;
+  ov.classList.add("show");
+  ov.setAttribute("aria-hidden", "false");
+  document.body.classList.add("matrix-overlay-open");
+  matrixOverlayState.open = true;
+  matrixOverlayState.productId = productId;
+  matrixOverlayState.view = view || "showroom";
+  document.getElementById("matrix-overlay-close")?.focus();
+}
+
+function closeMatrixEmbed(){
+  const ov = document.getElementById("matrix-overlay");
+  const frame = document.getElementById("matrix-overlay-frame");
+  if (!ov) return;
+  ov.classList.remove("show");
+  ov.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("matrix-overlay-open");
+  matrixOverlayState.open = false;
+  matrixOverlayState.productId = null;
+  matrixOverlayState.view = null;
+  if (frame) frame.src = "about:blank";
+}
+window.openMatrixEmbed = openMatrixEmbed;
+window.closeMatrixEmbed = closeMatrixEmbed;
+
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-matrix-view]");
+  if (!btn) return;
+  const sec = btn.closest(".p-matrix-link");
+  const productId = sec?.dataset.productId;
+  if (!productId) return;
+  e.preventDefault();
+  openMatrixEmbed(productId, btn.dataset.matrixView);
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && matrixOverlayState.open) closeMatrixEmbed();
+});
 /** Matrix photos on the graph — room + desk collaboration endpoints only. */
 const MATRIX_PHOTO_FAMILIES = new Set(["room-systems", "desk-devices"]);
 function productAllowsMatrixPhoto(id){
@@ -6858,6 +6979,8 @@ window.__cpnSpatialTileStats = () => {
   });
   return { cacheReady: ready, cachePending: pending, cacheMatrix: matrix, groups, withTile };
 };
+window.__cpnMatrixOverlayOpen = () => matrixOverlayState.open;
+window.__cpnMatrixDeviceUrl = (id, view) => matrixDeviceUrl(id, view);
 window.__cpnSpatialVisibleLabels = () => {
   let visible = 0;
   spatialState.labelCache.forEach(sprite => {
@@ -8619,7 +8742,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.21";
+const APP_VERSION   = "2.31.22";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -11623,20 +11746,26 @@ function insertMatrixLink(id, kind){
   if (kind !== "product") return;
   const pb = $("#pbody"); if (!pb) return;
   pb.querySelector(".p-matrix-link")?.remove();
-  const url = matrixDeviceUrl(id);
-  if (!url) return;
+  if (!matrixDeviceUrl(id)) return;
   const sec = document.createElement("div");
   sec.className = "p-sec p-matrix-link";
+  sec.dataset.productId = id;
   sec.innerHTML = `
     <div class="p-matrix-card">
       <div class="p-matrix-header">
         <span class="matrix-brand">Device Matrix</span>
-        <span class="matrix-badge">3D Showroom</span>
+        <span class="matrix-badge">Built-in 3D</span>
       </div>
-      <a class="la la-matrix" href="${escapeHtml(url)}" target="_blank" rel="noopener">
-        <span class="la-matrix-main">View in Device Matrix</span>
-        <span class="la-matrix-meta">Launch ↗</span>
-      </a>
+      <div class="p-matrix-actions">
+        <button type="button" class="la la-matrix matrix-open-btn" data-matrix-view="showroom">
+          <span class="la-matrix-main">3D Showroom</span>
+          <span class="la-matrix-meta">Open</span>
+        </button>
+        <button type="button" class="la la-matrix matrix-open-btn" data-matrix-view="aisle">
+          <span class="la-matrix-main">Device Aisle</span>
+          <span class="la-matrix-meta">Browse</span>
+        </button>
+      </div>
     </div>`;
   const hero = pb.querySelector(".p-hero") || pb.querySelector(".p-name");
   if (hero?.nextSibling) hero.parentNode.insertBefore(sec, hero.nextSibling);
