@@ -5487,16 +5487,38 @@ function spatialDecoFade(){
 }
 
 let spatialFitTimer = null;
+function spatialConstellationCamera(ms = 450){
+  if (!spatialState.graph || spatialState.focusFamily) return;
+  const nodes = (spatialState.graph.graphData()?.nodes || []).filter(n => n.id !== "__three_probe__");
+  if (!nodes.length) return;
+  let cx = 0, cy = 0, cz = 0, n = 0;
+  nodes.forEach(node => {
+    if (node.x == null) return;
+    cx += node.x; cy += node.y; cz += node.z; n++;
+  });
+  if (!n){ cx = cy = cz = 0; }
+  else { cx /= n; cy /= n; cz /= n; }
+  const dist = Math.min(235, Math.max(150, 125 + Math.sqrt(n) * 11));
+  spatialState.graph.cameraPosition(
+    { x: cx, y: cy + 26, z: cz + dist },
+    { x: cx, y: cy, z: cz },
+    ms
+  );
+}
+
 function scheduleSpatialFit(delay = 450){
   clearTimeout(spatialFitTimer);
   spatialFitTimer = setTimeout(() => {
     if (!spatialState.active || !spatialState.graph || spatialState.focusFamily) return;
     const g = spatialState.graph;
-    const nodes = g.graphData()?.nodes || [];
+    const nodes = (g.graphData()?.nodes || []).filter(n => n.id !== "__three_probe__");
     if (nodes.length < 1) return;
+    if (!spatialState.filterActive){
+      spatialConstellationCamera(500);
+      return;
+    }
     if (typeof g.zoomToFit !== "function") return;
-    const pad = spatialState.filterActive ? 120 : 170;
-    g.zoomToFit(spatialState.filterActive ? 700 : 900, pad);
+    g.zoomToFit(450, 55);
   }, delay);
 }
 
@@ -6422,7 +6444,6 @@ function enterSpatialView(){
       if (!spatialState.active) return;
       initSpatialGraph();
       configureSpatialBackground();
-      refreshSpatialGraph();
       const dims = getSpatialDims();
       if (spatialState.graph) spatialState.graph.width(dims.w).height(dims.h);
     })
@@ -8513,7 +8534,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.15";
+const APP_VERSION   = "2.31.16";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
