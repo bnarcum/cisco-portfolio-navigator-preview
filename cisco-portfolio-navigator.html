@@ -3155,14 +3155,16 @@ function pillarAnchorForFamily(familyId, visibleIds){
   const row = Math.floor(idx / cols);
   return pillarNodeInCell(content, col, row, cols, rows);
 }
+function pillarIconBBox(n){
+  const r = PILLAR_NODE_R + PILLAR_GLOW_PAD + 2;
+  return { minX: n.x - r, maxX: n.x + r, minY: n.y - r, maxY: n.y + r, pillar: familyPillar(n.id) };
+}
 function pillarNodeBBox(n, k){
   k = k || 1;
-  const r = PILLAR_NODE_R + PILLAR_GLOW_PAD + 2;
-  const labelOn = n._pillarShowLabel;
-  const labelH = labelOn
-    ? pillarLabelY(n) + pillarLabelBlockH(k)
-    : 0;
-  return { minX: n.x - r, maxX: n.x + r, minY: n.y - r, maxY: n.y + labelH, pillar: familyPillar(n.id) };
+  const box = pillarIconBBox(n);
+  if (!n._pillarShowLabel) return box;
+  const labelBottom = n.y + pillarLabelY(n) + pillarLabelBlockH(k);
+  return { ...box, maxY: Math.max(box.maxY, labelBottom) };
 }
 function bboxInsideZone(box, zoneRect, slack){
   slack = slack ?? 6;
@@ -3238,7 +3240,7 @@ function __cpnPillarLayoutSelfTest(){
   clearPillarFilter();
   pinPillarNodes(viewNodes, vis);
   const placed = NODES.filter(n => vis.has(n.id));
-  const boxes = placed.map(n => pillarNodeBBox(n, 1));
+  const boxes = placed.map(n => pillarIconBBox(n));
   const cross = [], within = [], outside = [];
   for (let i = 0; i < boxes.length; i++){
     const z = pillarZoneLayout?.[boxes[i].pillar];
@@ -3251,7 +3253,13 @@ function __cpnPillarLayoutSelfTest(){
       else within.push(pair);
     }
   }
-  const allPillarLabelsOff = placed.every(n => !n._pillarShowLabel);
+  const allPillarLabelsOn = placed.every(n => n._pillarShowLabel);
+  const allLabelBoxes = placed.map(n => pillarLabelTextBBox(n, 1)).filter(Boolean);
+  let allPillarLabelOverlaps = 0;
+  for (let i = 0; i < allLabelBoxes.length; i++)
+    for (let j = i + 1; j < allLabelBoxes.length; j++)
+      if (allLabelBoxes[i].pillar === allLabelBoxes[j].pillar
+          && bboxesOverlap(allLabelBoxes[i], allLabelBoxes[j], 2)) allPillarLabelOverlaps++;
   const zs = PILLAR_LAYOUT.zones.map(z => pillarZoneLayout?.[z.id] || layoutZoneForItems(z, NODES.filter(n => familyPillar(n.id) === z.id)));
   const overlapPairs = [];
   for (let i = 0; i < zs.length; i++)
@@ -3299,7 +3307,7 @@ function __cpnPillarLayoutSelfTest(){
   clearPillarFilter();
   const filtVis = new Set(NODES.filter(n => familyNodeVisible(n)).map(n => n.id));
   pinPillarNodes(viewNodes, filtVis);
-  const filtBoxes = NODES.filter(n => filtVis.has(n.id)).map(n => pillarNodeBBox(n, 1));
+  const filtBoxes = NODES.filter(n => filtVis.has(n.id)).map(n => pillarIconBBox(n));
   let filtCross = 0, filtWithin = 0, filtOutside = 0;
   for (let i = 0; i < filtBoxes.length; i++){
     const z = pillarZoneLayout?.[filtBoxes[i].pillar];
@@ -3314,7 +3322,7 @@ function __cpnPillarLayoutSelfTest(){
   activeCats = prevCats;
   return {
     ok: cross.length === 0 && within.length === 0 && outside.length === 0 && zonesNoOverlap
-      && allPillarLabelsOff && labelOverlaps === 0 && zoomLabelOverlaps === 0
+      && allPillarLabelsOn && allPillarLabelOverlaps === 0 && labelOverlaps === 0 && zoomLabelOverlaps === 0
       && iconLabelOverlap === 0
       && focusedLabelCoverage.every(r => r.allLabeled)
       && filtLayoutOk,
@@ -3322,7 +3330,8 @@ function __cpnPillarLayoutSelfTest(){
     withinCollisions: within.length,
     outsideZone: outside.length,
     zonesNoOverlap,
-    allPillarLabelsOff,
+    allPillarLabelsOn,
+    allPillarLabelOverlaps,
     labelOverlaps,
     zoomLabelOverlaps,
     iconLabelOverlap,
@@ -3506,7 +3515,7 @@ function layoutPillarGrid(layoutZone, items){
   const rows = Math.ceil(n / cols);
   const cellW = content.w / cols;
   const cellH = content.h / rows;
-  const showAllLabels = singlePillarFocused();
+  const showAllLabels = true;
   items.forEach((node, idx) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
@@ -3557,6 +3566,7 @@ function applyPillarLayout(visibleIds){
   configureForcesForMode("families");
   sim.alpha(0).stop();
   refreshPillarNodePositions();
+  applyPillarLabelStyles(selected);
   return true;
 }
 function seedPillarLayout(nodes, visibleIds){
@@ -8503,7 +8513,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.13";
+const APP_VERSION   = "2.31.14";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
