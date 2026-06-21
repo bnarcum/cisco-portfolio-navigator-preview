@@ -952,7 +952,6 @@
 <div id="toast"></div>
 
 <script src="assets/cisco-symbols.js"></script>
-<script src="assets/family-heroes.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 // PORTFOLIO FAMILY GRAPH NODES
@@ -3773,75 +3772,9 @@ function matrixDeviceUrl(id){
 }
 /** Matrix photos on the graph — room + desk collaboration endpoints only. */
 const MATRIX_PHOTO_FAMILIES = new Set(["room-systems", "desk-devices"]);
-/** Panel heroes that should always use the category icon (no borrowed hardware photos). */
-const FAMILY_ICON_ONLY = new Set(["webex-app", "webex-calling"]);
-/** Device Matrix product for panel heroes when no brand PNG exists. */
-const FAMILY_HERO_PRODUCT = {
-  "room-systems": "room-bar-pro-g2",
-  "desk-devices": "desk-pro-g2",
-  "webex-meetings": "room-bar-pro-g2",
-};
-/** Software-only families borrow a related hardware family's brand/matrix hero. */
-const FAMILY_HERO_ALIAS = {
-  "webex-cc": "conf-phones",
-  "webex-connect": "webex-app",
-  "aci": "nexus",
-  "silicon-one": "nexus",
-  "hypershield": "sf-enterprise",
-  "ai-defense": "sf-enterprise",
-  "duo": "catalyst-access",
-  "umbrella": "sf-enterprise",
-  "ise": "catalyst-access",
-  "xdr": "sf-enterprise",
-  "secure-access": "sf-enterprise",
-  "secure-email": "sf-enterprise",
-  "secure-endpoint": "sf-enterprise",
-  "talos": "sf-enterprise",
-  "secure-client": "sf-enterprise",
-  "secure-web": "sf-enterprise",
-  "multicloud-defense": "sf-enterprise",
-  "vuln-mgmt": "sf-enterprise",
-  "identity-intel": "sf-enterprise",
-  "cyber-vision": "industrial-eth",
-  "secure-equipment": "industrial-eth",
-  "secure-workload": "ucs",
-  "stealthwatch": "catalyst-center",
-  "thousandeyes": "catalyst-center",
-  "cloud-control": "catalyst-center",
-  "appdynamics": "thousandeyes",
-  "splunk": "ucs",
-  "fso": "splunk",
-  "hyperflex": "ucs",
-  "intersight": "ucs",
-};
-function resolveFamilyHeroSource(familyId){
-  if (FAMILY_ICON_ONLY.has(familyId)) return null;
-  const seen = new Set();
-  let id = familyId;
-  while (id && !seen.has(id)){
-    seen.add(id);
-    if (FAMILY_ICON_ONLY.has(id)) return null;
-    const brand = window.CPN_FAMILY_HERO_IMAGES?.[id];
-    if (brand) return brand;
-    const heroId = FAMILY_HERO_PRODUCT[id];
-    if (heroId && matrixImageUrl(heroId)) return matrixImageUrl(heroId);
-    id = FAMILY_HERO_ALIAS[id];
-  }
-  const rep = PRODUCTS.find(p =>
-    p.family === familyId && p.status === "current" && matrixImageUrl(p.id));
-  return rep ? matrixImageUrl(rep.id) : null;
-}
 function productAllowsMatrixPhoto(id){
   const p = prodById[id];
   return !!(p && MATRIX_PHOTO_FAMILIES.has(p.family) && matrixImageUrl(id));
-}
-function familyHeroImageUrl(familyId){
-  return resolveFamilyHeroSource(familyId);
-}
-function heroImageUrl(id, kind){
-  if (kind === "product") return productAllowsMatrixPhoto(id) ? matrixImageUrl(id) : null;
-  if (kind === "node" && nodeById[id]) return familyHeroImageUrl(id);
-  return null;
 }
 function nodeHasMatrixImage(d){
   return d._kind === "product" && productAllowsMatrixPhoto(d.id);
@@ -8244,7 +8177,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.5";
+const APP_VERSION   = "2.31.6";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8535,6 +8468,9 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.31.6", date:"2026-06-21", items:[
+    "All side-drawer panel heroes use the category icon badge consistently (no brand or Device Matrix photos).",
+  ]},
   {ver:"2.31.5", date:"2026-06-21", items:[
     "Webex App and Webex Calling family drawers use category icon heroes only (no Desk or phone hardware photos).",
   ]},
@@ -11546,26 +11482,14 @@ function insertProductHero(id, kind){
   if (!n) return;
   const cat = catOf(id);
   const iconFill = cat ? CATS[cat].color : "#64748b";
-  const imgUrl = heroImageUrl(id, kind);
   const symId = "#icon-" + (kind === "node" ? iconKey(nodeById[id]) :
     iconKey({ _kind: "product", _productRef: prodById[id], id }));
-  const iconBadge = heroIconBadgeHtml(symId, iconFill);
-  const iconBg = heroCategoryGradient(iconFill);
   const hero = document.createElement("div");
-  hero.className = "p-hero" + (imgUrl ? "" : " p-hero--icon-only");
-  if (imgUrl){
-    hero.innerHTML = `
-      <div class="p-hero-fallback" aria-hidden="true">${iconBadge}</div>
-      <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(n.name)}" loading="lazy"
-        onerror="var h=this.closest('.p-hero');if(h)h.classList.add('p-hero--icon-only');this.remove()"/>
-      <div class="p-hero-scrim"></div>
-      <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
-  } else {
-    hero.innerHTML = `
-      <div class="p-hero-fallback" style="background:${iconBg}">${iconBadge}</div>
-      <div class="p-hero-scrim"></div>
-      <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
-  }
+  hero.className = "p-hero p-hero--icon-only";
+  hero.innerHTML = `
+    <div class="p-hero-fallback" style="background:${heroCategoryGradient(iconFill)}">${heroIconBadgeHtml(symId, iconFill)}</div>
+    <div class="p-hero-scrim"></div>
+    <div class="p-hero-meta"><span></span><span class="p-hero-cat">${cat ? escapeHtml(CATS[cat].label) : ""}</span></div>`;
   const nameEl = pb.querySelector(".p-name");
   if (nameEl) pb.insertBefore(hero, nameEl);
   else pb.prepend(hero);
