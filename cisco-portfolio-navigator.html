@@ -901,6 +901,93 @@
     .tp-btn.prim:hover{background:var(--cisco-blue-light);color:#fff}
     .tp-btn.skip{padding:7px 10px;color:var(--subtle);border:none}
     .tp-btn.skip:hover{color:var(--text);background:transparent}
+
+    /* ── One Cisco Story Mode (presenter / keynote) ─────────────────────── */
+    #story-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
+      background:linear-gradient(135deg,#0A60FF,#02C8FF);color:#fff;border:none;border-radius:7px;
+      font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:filter .15s;white-space:nowrap;
+      box-shadow:0 0 14px rgba(2,200,255,.25)}
+    #story-btn:hover{filter:brightness(1.08)}
+    /* Hide app chrome + distractions while the story is running (stage view). */
+    body.story-open #app-chrome,
+    body.story-open #help-fab,
+    body.story-open #top-chips,
+    body.story-open #hint,
+    body.story-open #tools,
+    body.story-open #v2-footer,
+    body.story-open #planner,
+    body.story-open #panel{display:none !important}
+    body.story-open #gw{top:0 !important}
+    #story-overlay{position:fixed;inset:0;z-index:9500;display:none;
+      font-family:inherit;color:#eaf6ff}
+    #story-overlay.show{display:block}
+    #story-scrim{position:absolute;inset:0;background:rgba(4,12,28,0);
+      transition:background .6s ease;pointer-events:auto}
+    #story-overlay.scene #story-scrim{background:radial-gradient(ellipse at 50% 42%,#0a2342 0%,#050d1c 70%)}
+    /* Abstract fabric scene (beats 2-3) */
+    #story-scene{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);
+      width:760px;height:440px;max-width:92vw;display:none;pointer-events:none}
+    #story-overlay.scene #story-scene{display:block}
+    #story-spine{position:absolute;left:6%;right:6%;top:50%;height:2px;
+      background:linear-gradient(90deg,transparent,#02C8FF,transparent);
+      opacity:0;transform:scaleX(.2);transform-origin:center;
+      transition:opacity .7s ease .25s,transform .7s ease .25s}
+    #story-scene.fabric #story-spine{opacity:.9;transform:scaleX(1)}
+    .story-tile{position:absolute;width:118px;height:52px;border-radius:9px;
+      background:rgba(120,135,150,.16);border:1.5px solid rgba(160,175,190,.4);
+      box-shadow:0 4px 14px rgba(0,0,0,.3);
+      transition:left .8s cubic-bezier(.45,.05,.2,1),top .8s cubic-bezier(.45,.05,.2,1),
+                 background .6s ease,border-color .6s ease,box-shadow .6s ease}
+    .story-tile::after{content:"";position:absolute;left:10px;top:18px;width:60%;height:5px;
+      border-radius:3px;background:rgba(200,210,220,.5)}
+    #story-scene.fabric .story-tile{background:var(--tcol,#0A60FF);border-color:rgba(255,255,255,.7);
+      box-shadow:0 6px 20px var(--tglow,rgba(10,96,255,.4))}
+    #story-scene.fabric .story-tile::after{background:rgba(255,255,255,.85)}
+    #story-ai{position:absolute;left:50%;top:8%;transform:translateX(-50%);
+      font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+      color:#9fe8ff;opacity:0;transition:opacity .6s ease .5s}
+    #story-scene.fabric #story-ai{opacity:1}
+    /* Centered headline card (title + payoff beats) */
+    #story-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      max-width:min(760px,90vw);text-align:center;display:none;pointer-events:none;padding:0 24px}
+    #story-overlay.card #story-card{display:block}
+    #story-card .sc-kicker{font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+      color:#5fd0ff;margin-bottom:16px}
+    #story-card .sc-title{font-size:clamp(36px,6vw,76px);font-weight:800;line-height:1.05;
+      letter-spacing:-.02em;color:#fff;text-shadow:0 4px 30px rgba(2,200,255,.35)}
+    #story-card .sc-sub{font-size:clamp(15px,2vw,24px);color:#bfe4ff;margin-top:18px;font-weight:500;line-height:1.4}
+    #story-card .sc-list{margin:22px auto 0;max-width:560px;text-align:left;display:grid;gap:10px}
+    #story-card .sc-list div{font-size:clamp(14px,1.6vw,19px);color:#dff1ff;
+      padding-left:26px;position:relative}
+    #story-card .sc-list div::before{content:"\2192";position:absolute;left:0;color:#5fd0ff;font-weight:800}
+    /* Bottom cue bar (always shown for tool/scene beats) */
+    #story-cue{position:absolute;left:50%;bottom:118px;transform:translateX(-50%);
+      max-width:min(900px,92vw);text-align:center;pointer-events:none;display:none}
+    #story-overlay.cue #story-cue{display:block}
+    #story-cue .cue-t{font-size:clamp(22px,3.4vw,40px);font-weight:800;color:#fff;
+      letter-spacing:-.01em;line-height:1.12;text-shadow:0 3px 22px rgba(0,0,0,.55)}
+    #story-cue .cue-s{font-size:clamp(13px,1.7vw,20px);color:#cfe9ff;margin-top:10px;
+      font-weight:500;line-height:1.35;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+    /* Captions (toggle) */
+    #story-caption{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);
+      max-width:min(820px,90vw);text-align:center;display:none;
+      font-size:clamp(13px,1.6vw,18px);line-height:1.5;color:#eaf6ff;
+      background:rgba(4,12,28,.72);border:1px solid rgba(95,208,255,.3);
+      border-radius:10px;padding:10px 16px;pointer-events:none}
+    #story-overlay.captions #story-caption{display:block}
+    /* Presenter control bar */
+    #story-ctrl{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);
+      display:flex;align-items:center;gap:10px;pointer-events:auto;
+      background:rgba(4,14,30,.82);border:1px solid rgba(95,208,255,.28);
+      border-radius:999px;padding:8px 12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+    #story-ctrl button{background:transparent;border:1px solid rgba(160,200,230,.3);
+      color:#dff1ff;border-radius:8px;font-size:13px;font-weight:700;
+      padding:7px 12px;cursor:pointer;transition:all .15s;font-family:inherit;line-height:1}
+    #story-ctrl button:hover{border-color:#02C8FF;color:#fff;background:rgba(2,200,255,.14)}
+    #story-ctrl button.on{background:#02C8FF;color:#04121c;border-color:#02C8FF}
+    #story-ctrl .sc-count{font-size:12px;font-weight:700;color:#9fc7df;min-width:42px;text-align:center;letter-spacing:.04em}
+    #story-ctrl .sc-x{border-color:rgba(255,120,120,.35);color:#ffc7c7}
+    #story-ctrl .sc-x:hover{background:rgba(255,80,80,.16);border-color:#ff8080;color:#fff}
   </style>
 </head>
 <body>
@@ -949,6 +1036,11 @@
   <button id="rst">Reset</button>
   <button id="theme-toggle" type="button" title="Toggle light / dark presentation theme" aria-label="Toggle theme">☀ Light</button>
   <div class="actionbar-end">
+  <button id="story-btn" type="button" title="Play the One Cisco story (presenter mode)">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M5 3.5v9l7-4.5-7-4.5z" fill="currentColor"/>
+    </svg><span>One Cisco Story</span>
+  </button>
   <button id="guided-btn" type="button" title="Step-by-step guided account plan">
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
@@ -8896,6 +8988,234 @@ document.addEventListener("keydown",ev=>{
 })();
 
 /* ══════════════════════════════════════════════════════════════════════════
+   ONE CISCO STORY MODE  (presenter / keynote)
+   A canned, deterministic, presenter-advanced narrative that puppeteers the
+   real app through the One Cisco story. Launched by the #story-btn button (or
+   the #story URL hash); never auto-offered. Esc exits and restores prior state.
+   ──────────────────────────────────────────────────────────────────────────*/
+(function(){
+  const PILLAR_TINT = {
+    0: { col:"#0A60FF", glow:"rgba(10,96,255,.45)"   },  // AI-Ready DC
+    1: { col:"#2dce5c", glow:"rgba(45,206,92,.45)"   },  // Workplaces
+    2: { col:"#FF9000", glow:"rgba(255,144,0,.45)"   }   // Resilience
+  };
+  // Deterministic tile coordinates (px within the 760x440 scene box).
+  const FRAG = [
+    [22,46],[206,18],[372,58],[548,24],[636,128],
+    [40,196],[250,168],[470,150],[638,214],
+    [60,332],[300,318],[516,360]
+  ];
+  const COLS = [120, 360, 600], ROWS = [36, 146, 256, 356];
+
+  let overlay, scrim, scene, spine, aiTag, card, cue, caption, ctrl, countEl, capBtn;
+  let active = false, idx = 0, captionsOn = false, snapshot = null, prevTheme = "dark";
+  const tiles = [];
+
+  // ── view-driver helpers (all via already-exposed primitives) ───────────────
+  function clearUC(){
+    const sel = document.getElementById("ucs");
+    if (sel && sel.value){ sel.value = ""; sel.dispatchEvent(new Event("change")); }
+  }
+  function goOverview(){ try { clearUC(); window.applyViewLevel && window.applyViewLevel("overview"); } catch(e){} }
+  function goFamilies(){ try { clearUC(); window.applyViewLevel && window.applyViewLevel("families"); } catch(e){} }
+  function goRefArch(uc){
+    try {
+      window.applyViewLevel && window.applyViewLevel("families");
+      const sel = document.getElementById("ucs");
+      if (sel){ sel.value = uc; sel.dispatchEvent(new Event("change")); }
+    } catch(e){}
+  }
+
+  const BEATS = [
+    { kind:"title", kicker:"Cisco", title:"One Cisco",
+      sub:"One portfolio. One fabric. One story.",
+      caption:"This is the One Cisco story — how the entire portfolio comes together as a single, integrated fabric.",
+      before(){ goOverview(); } },
+    { kind:"tool", cue:"Three outcomes, one secure fabric",
+      sub:"AI-Ready Data Centers · Future-Proofed Workplaces · Digital Resilience",
+      caption:"Everything Cisco builds ladders up to three customer outcomes — connected by secure global connectivity and accelerated by Cisco AI.",
+      before(){ goOverview(); } },
+    { kind:"scene", fabric:false, cue:"Today: fragmented",
+      sub:"Disconnected point products. Siloed. Hard to secure.",
+      caption:"Most environments are a pile of disconnected point products — siloed, complex, and hard to secure.",
+      before(){ setScene(false); } },
+    { kind:"scene", fabric:true, cue:"One integrated fabric",
+      sub:"Cisco brings it together — connected end to end, accelerated by AI.",
+      caption:"Cisco brings it together into one integrated fabric — connected end to end and accelerated by AI.",
+      before(){ setScene(true); } },
+    { kind:"tool", cue:"All three pillars, working as one",
+      sub:"One portfolio across the data center, the workplace, and resilience.",
+      caption:"In the portfolio you can see it: families organized into the three pillars, linked across the fabric.",
+      before(){ goFamilies(); } },
+    { kind:"tool", cue:"Future-Proofed Workplaces",
+      sub:"The Hybrid Work reference architecture — integrated end to end.",
+      caption:"Take Hybrid Work: a complete reference architecture spanning collaboration, identity, secure access, and assurance — integrated, not bolted together.",
+      before(){ goRefArch("Hybrid Work"); } },
+    { kind:"card", kicker:"From story to plan", title:"Minutes, not weeks",
+      list:["Tailored recommendations for the account","Clean migration path off legacy","Hands-on proof with dCloud labs","An exportable customer plan to leave behind"],
+      caption:"And it all turns into action — a tailored account plan, with recommendations and proof, ready to export.",
+      before(){ /* keep Hybrid Work lens behind the card */ } },
+    { kind:"title", kicker:"The advantage", title:"One Cisco",
+      sub:"Sell the outcome. Sell the fabric. Sell the story.",
+      caption:"That is the One Cisco advantage — one portfolio, one fabric, one story.",
+      before(){ goOverview(); } }
+  ];
+
+  function build(){
+    overlay = document.createElement("div"); overlay.id = "story-overlay";
+    overlay.innerHTML = `
+      <div id="story-scrim"></div>
+      <div id="story-scene">
+        <div id="story-spine"></div>
+        <div id="story-ai">Accelerated by Cisco AI</div>
+      </div>
+      <div id="story-card"></div>
+      <div id="story-cue"><div class="cue-t"></div><div class="cue-s"></div></div>
+      <div id="story-caption"></div>
+      <div id="story-ctrl">
+        <button type="button" data-act="prev" aria-label="Previous">◀</button>
+        <span class="sc-count"></span>
+        <button type="button" data-act="next" aria-label="Next">▶</button>
+        <button type="button" data-act="cc" title="Toggle captions">CC</button>
+        <button type="button" data-act="exit" class="sc-x" title="Exit (Esc)">Exit</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    scrim = overlay.querySelector("#story-scrim");
+    scene = overlay.querySelector("#story-scene");
+    spine = overlay.querySelector("#story-spine");
+    aiTag = overlay.querySelector("#story-ai");
+    card = overlay.querySelector("#story-card");
+    cue = overlay.querySelector("#story-cue");
+    caption = overlay.querySelector("#story-caption");
+    ctrl = overlay.querySelector("#story-ctrl");
+    countEl = ctrl.querySelector(".sc-count");
+    capBtn = ctrl.querySelector('[data-act="cc"]');
+
+    for (let i = 0; i < FRAG.length; i++){
+      const t = document.createElement("div");
+      t.className = "story-tile";
+      scene.appendChild(t);
+      tiles.push(t);
+    }
+
+    ctrl.addEventListener("click", ev => {
+      const b = ev.target.closest("button"); if (!b) return;
+      const act = b.dataset.act;
+      if (act === "next") next();
+      else if (act === "prev") prev();
+      else if (act === "cc") toggleCaptions();
+      else if (act === "exit") end();
+    });
+    // Swallow stray clicks on the backdrop (presenter advances via clicker/keys).
+    scrim.addEventListener("click", ev => ev.stopPropagation());
+  }
+
+  function setScene(fabric){
+    tiles.forEach((t, i) => {
+      if (fabric){
+        const col = i % 3, row = Math.floor(i / 3);
+        t.style.left = COLS[col] + "px";
+        t.style.top  = ROWS[row] + "px";
+        const tint = PILLAR_TINT[col];
+        t.style.setProperty("--tcol", tint.col);
+        t.style.setProperty("--tglow", tint.glow);
+      } else {
+        t.style.left = FRAG[i][0] + "px";
+        t.style.top  = FRAG[i][1] + "px";
+        t.style.removeProperty("--tcol");
+        t.style.removeProperty("--tglow");
+      }
+    });
+    scene.classList.toggle("fabric", !!fabric);
+  }
+
+  function render(){
+    const beat = BEATS[idx];
+    countEl.textContent = (idx + 1) + " / " + BEATS.length;
+    overlay.classList.toggle("scene", beat.kind === "scene");
+    overlay.classList.toggle("card", beat.kind === "card" || beat.kind === "title");
+    overlay.classList.toggle("cue", beat.kind === "tool" || beat.kind === "scene");
+
+    if (beat.kind === "card" || beat.kind === "title"){
+      card.innerHTML = `
+        ${beat.kicker ? `<div class="sc-kicker">${beat.kicker}</div>` : ""}
+        <div class="sc-title">${beat.title || ""}</div>
+        ${beat.sub ? `<div class="sc-sub">${beat.sub}</div>` : ""}
+        ${beat.list ? `<div class="sc-list">${beat.list.map(x => `<div>${x}</div>`).join("")}</div>` : ""}`;
+    }
+    if (beat.kind === "tool" || beat.kind === "scene"){
+      cue.querySelector(".cue-t").textContent = beat.cue || "";
+      cue.querySelector(".cue-s").textContent = beat.sub || "";
+    }
+    caption.textContent = beat.caption || "";
+
+    // Scene state is owned by before() for scene beats; reset for others.
+    if (beat.kind !== "scene") scene.classList.remove("fabric");
+
+    try { beat.before && beat.before(); } catch(e){ console.warn("story beat failed", e); }
+    window.__storyBeat = idx;
+  }
+
+  function next(){ if (idx < BEATS.length - 1){ idx++; render(); } else { end(); } }
+  function prev(){ if (idx > 0){ idx--; render(); } }
+  function toggleCaptions(){
+    captionsOn = !captionsOn;
+    overlay.classList.toggle("captions", captionsOn);
+    capBtn.classList.toggle("on", captionsOn);
+  }
+
+  function start(){
+    if (!overlay) build();
+    if (active) return;
+    active = true; idx = 0;
+    // Snapshot state so Esc restores the user's session exactly.
+    try { snapshot = window.__cpnV2?.phases?.readState?.() || null; } catch(e){ snapshot = null; }
+    prevTheme = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+    // Stage view: force light theme + hide chrome.
+    document.documentElement.setAttribute("data-theme", "light");
+    document.body.classList.add("story-open");
+    overlay.classList.add("show");
+    render();
+    window.dispatchEvent(new Event("resize"));
+  }
+  function end(){
+    if (!active) return;
+    active = false;
+    overlay.classList.remove("show","scene","card","cue","captions");
+    document.body.classList.remove("story-open");
+    captionsOn = false; capBtn.classList.remove("on");
+    // Restore theme + prior session state.
+    if (prevTheme === "light") document.documentElement.setAttribute("data-theme", "light");
+    else document.documentElement.removeAttribute("data-theme");
+    try { if (snapshot) window.__cpnV2?.phases?.applyState?.(snapshot); } catch(e){}
+    // Reconcile the reference-arch overlay / learning banner with the restored use case.
+    try { const sel = document.getElementById("ucs"); if (sel) sel.dispatchEvent(new Event("change")); } catch(e){}
+    try { window.applyViewLevel && window.applyViewLevel("families"); } catch(e){}
+    window.dispatchEvent(new Event("resize"));
+  }
+
+  document.addEventListener("keydown", ev => {
+    if (!active) return;
+    if (ev.key === "Escape"){ ev.preventDefault(); end(); }
+    else if (ev.key === "ArrowRight" || ev.key === " " || ev.key === "PageDown" || ev.key === "Enter"){ ev.preventDefault(); next(); }
+    else if (ev.key === "ArrowLeft" || ev.key === "PageUp"){ ev.preventDefault(); prev(); }
+    else if (ev.key === "c" || ev.key === "C"){ ev.preventDefault(); toggleCaptions(); }
+  });
+
+  function wire(){
+    const btn = document.getElementById("story-btn");
+    if (btn) btn.addEventListener("click", start);
+    // Explicit deep-link launch for the stage laptop (not auto-offered).
+    if (location.hash === "#story") setTimeout(start, 400);
+  }
+  if (document.readyState === "complete" || document.readyState === "interactive") wire();
+  else window.addEventListener("DOMContentLoaded", wire);
+
+  window.startStory = start;
+  window.endStory = end;
+})();
+
+/* ══════════════════════════════════════════════════════════════════════════
    V2 ENHANCEMENT LAYER
    ──────────────────────────────────────────────────────────────────────────
    Adds (in roughly the order listed):
@@ -8926,7 +9246,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.29";
+const APP_VERSION   = "2.31.30";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
