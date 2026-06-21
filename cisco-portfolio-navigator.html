@@ -5502,11 +5502,17 @@ function spatialMrTileFocus(node){
   const isStk = stack.has(node.id);
   const conn = selected ? connectionNodeSet(selected.id, connectionHighlightDepth) : null;
   const isConn = conn?.has(node.id);
-  if (isSel) return { scale: 1.14, alpha: 1 };
-  if (isHov || isStk || isConn) return { scale: 1.06, alpha: 0.94 };
-  if (selected) return { scale: 0.86, alpha: 0.4 };
-  return { scale: 1, alpha: 0.84 };
+  if (isSel) return { scale: 1.16, alpha: 1 };
+  if (isHov || isStk || isConn) return { scale: 1.08, alpha: 0.98 };
+  if (selected) return { scale: 0.88, alpha: 0.52 };
+  return { scale: 1, alpha: 0.94 };
 }
+
+const SPATIAL_PILLAR_HUBS = {
+  "ai-dc": { x: -92, y: 48, z: -26 },
+  workplaces: { x: 92, y: 48, z: -26 },
+  resilience: { x: 0, y: -68, z: 30 }
+};
 
 function spatialHash(id, salt){
   let h = 0;
@@ -5518,11 +5524,7 @@ function spatialHash(id, salt){
 function computeSpatialPillarSeeds(visibleIds){
   const positions = new Map();
   const buckets = pillarLayoutBuckets(visibleIds);
-  const hubs = {
-    "ai-dc": { x: -92, y: 48, z: -26 },
-    workplaces: { x: 92, y: 48, z: -26 },
-    resilience: { x: 0, y: -68, z: 30 }
-  };
+  const hubs = SPATIAL_PILLAR_HUBS;
   PILLAR_LAYOUT.zones.forEach(z => {
     const items = buckets[z.id] || [];
     if (!items.length) return;
@@ -5665,6 +5667,10 @@ function spatialFocusProductCount(){
 
 function spatialDisplayName(node){
   let name = node.name || spatialResolveName(node.id);
+  if (spatialConstellationLens() && spatialMrConstellationMode()
+      && selected?.id !== node.id && spatialState.hoveredId !== node.id && !stack.has(node.id)){
+    name = pillarShortName(name, 24);
+  }
   if (node.kind !== "product" || !spatialState.focusFamily) return name;
   const count = spatialFocusProductCount();
   if (count > 8 && name.startsWith("Cisco ")) name = name.slice(6);
@@ -5675,10 +5681,11 @@ function spatialDisplayName(node){
 
 function spatialLabelVisible(node){
   if (spatialState.focusFamily) return true;
+  if (spatialFullMesh()) return true;
+  if (spatialConstellationLens()) return true;
   if (stack.has(node.id)) return true;
   if (selected && selected.id === node.id) return true;
   if (spatialState.hoveredId === node.id) return true;
-  if (spatialFullMesh()) return true;
   return false;
 }
 
@@ -5698,7 +5705,7 @@ function spatialNodeCategory(node){
 function spatialNodeVisualProfile(node){
   const inOrbit = !!spatialState.focusFamily;
   const isHub = inOrbit && node.id === spatialState.focusFamily;
-  if (!inOrbit) return { mode: "constellation", tileScale: 2.05, tileMin: 11, labelGap: 0.55, ringScale: 1.02 };
+  if (!inOrbit) return { mode: "constellation", tileScale: 2.45, tileMin: 13.5, labelGap: 0.55, ringScale: 1.02 };
   if (isHub || node.kind === "family") return { mode: "hub", tileScale: 1.55, tileMin: 10.5, labelGap: 1.45, ringScale: 1.22 };
   return { mode: "product", tileScale: 1.18, tileMin: 8.5, labelGap: 1.25, ringScale: 1.14 };
 }
@@ -5751,7 +5758,7 @@ function spatialTileCacheKey(node){
   return [
     node.id,
     photoUrl ? "matrix:" + photoUrl : "icon:" + spatialIconKeyForNode(node),
-    "tile-mr-v6",
+    "tile-mr-v7",
     profile.mode,
     accent.core,
     selected?.id === node.id ? "sel" : "",
@@ -5861,14 +5868,14 @@ function updateSpatialNodeGroup(group, node){
   group.traverse(obj => {
     if (obj.userData?.role === "glass" && obj.material){
       obj.visible = mr;
-      obj.material.color.setHex(0x0a1528);
-      obj.material.opacity = (0.42 + (selected?.id === node.id ? 0.18 : 0)) * deco * focus.alpha;
+      obj.material.color.setHex(accent.core);
+      obj.material.opacity = (0.34 + (selected?.id === node.id ? 0.22 : 0)) * deco * focus.alpha;
     }
     if (obj.userData?.role === "glowSlab" && obj.material){
       obj.visible = mr;
       obj.material.color.setHex(accent.glow);
       const hot = selected?.id === node.id || spatialState.hoveredId === node.id;
-      obj.material.opacity = (hot ? 0.28 : 0.1) * deco * focus.alpha;
+      obj.material.opacity = (hot ? 0.38 : 0.18) * deco * focus.alpha;
     }
     if (obj.userData?.role === "edge" && obj.material){
       obj.visible = false;
@@ -5904,7 +5911,11 @@ function updateSpatialNodeGroup(group, node){
       if (obj.center) obj.center.y = mr ? 0.12 : -1.08;
       obj.position.y = spatialLabelOffsetY(node, radius, profile);
       obj.renderOrder = 12;
-      if (obj.material) obj.material.opacity = focus.alpha;
+      if (obj.material){
+        const dimRest = spatialConstellationLens() && mr && selected?.id !== node.id
+          && spatialState.hoveredId !== node.id && !stack.has(node.id);
+        obj.material.opacity = (dimRest ? 0.68 : 1) * focus.alpha;
+      }
     }
   });
   ensureSpatialTileOnGroup(group, node, radius, profile);
@@ -5924,9 +5935,9 @@ function buildSpatialNodeObject(node){
 
   const glass = template.clone();
   glass.material = new THREE.MeshBasicMaterial({
-    color: 0x0a1528,
+    color: accent.core,
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.34,
     depthWrite: false
   });
   glass.userData.role = "glass";
@@ -5937,7 +5948,7 @@ function buildSpatialNodeObject(node){
   glowSlab.material = new THREE.MeshBasicMaterial({
     color: accent.glow,
     transparent: true,
-    opacity: 0.1,
+    opacity: 0.18,
     depthWrite: false
   });
   glowSlab.userData.role = "glowSlab";
@@ -6012,14 +6023,63 @@ function ensureSpatialLights(){
   const THREE = ensureSpatialTHREE();
   if (!THREE?.AmbientLight || !THREE.DirectionalLight) return;
   const scene = spatialState.graph.scene();
-  scene.add(new THREE.AmbientLight(0x1a2840, 0.95));
-  const key = new THREE.DirectionalLight(0xf0f6ff, 1.05);
+  scene.add(new THREE.AmbientLight(0x243650, 1.05));
+  const key = new THREE.DirectionalLight(0xf4f8ff, 1.15);
   key.position.set(90, 130, 70);
   scene.add(key);
   const fill = new THREE.DirectionalLight(0x02c8ff, 0.28);
   fill.position.set(-70, 50, -90);
   scene.add(fill);
   spatialState.lightsAdded = true;
+}
+
+function ensureSpatialPillarGuides(){
+  if (!spatialState.graph) return;
+  const THREE = ensureSpatialTHREE();
+  const template = spatialState.meshTemplate;
+  const scene = spatialState.graph.scene();
+  if (!THREE || !scene || !template) return;
+  let root = scene.getObjectByName("cpnSpatialPillarGuides");
+  const show = spatialMrConstellationMode() && spatialConstellationLens() && !spatialState.focusFamily;
+  if (!root){
+    root = new THREE.Group();
+    root.name = "cpnSpatialPillarGuides";
+    PILLAR_LAYOUT.zones.forEach(z => {
+      const hub = SPATIAL_PILLAR_HUBS[z.id];
+      if (!hub) return;
+      const disc = template.clone();
+      disc.material = new THREE.MeshBasicMaterial({
+        color: spatialHexToNum(z.color),
+        transparent: true,
+        opacity: 0.08,
+        depthWrite: false
+      });
+      disc.userData.role = "pillarDisc";
+      disc.scale.set(62, 0.6, 52);
+      disc.rotation.x = Math.PI / 2;
+      disc.position.set(hub.x, hub.y - 8, hub.z);
+      root.add(disc);
+      if (window.SpriteText){
+        const label = new SpriteText(z.shortLabel || z.label);
+        label.color = z.color;
+        label.textHeight = 4.4;
+        label.backgroundColor = "rgba(7,18,36,0.78)";
+        label.padding = 3;
+        label.borderRadius = 4;
+        label.fontWeight = "700";
+        if (label.material){
+          label.material.depthWrite = false;
+          label.material.depthTest = false;
+        }
+        label.renderOrder = 2;
+        label.position.set(hub.x, hub.y + 24, hub.z);
+        label.userData.role = "pillarLabel";
+        root.add(label);
+      }
+    });
+    scene.add(root);
+  }
+  root.visible = show;
 }
 
 function refreshSpatialNodeVisuals(){
@@ -6081,6 +6141,7 @@ function setSpatialLinkPreset(preset){
   configureSpatialForces();
   refreshSpatialLinkStyles();
   refreshSpatialNodeVisuals();
+  ensureSpatialPillarGuides();
   updateSpatialHud();
 }
 
@@ -6106,6 +6167,11 @@ function bindSpatialStyleBar(){
     setSpatialLinkPreset(btn.dataset.spatialStyle);
   });
   spatialState.styleBarReady = true;
+}
+
+function spatialLinkVisible(l){
+  if (spatialState.focusFamily) return true;
+  return spatialLinkHighlightTier(l) !== "hidden";
 }
 
 function spatialLinkOpacity(l){
@@ -6207,6 +6273,7 @@ function spatialLinkParticleWidth(l){
 function refreshSpatialLinkStyles(){
   if (!spatialState.graph) return;
   const g = spatialState.graph;
+  if (typeof g.linkVisibility === "function") g.linkVisibility(g.linkVisibility());
   if (typeof g.linkColor === "function") g.linkColor(g.linkColor());
   if (typeof g.linkWidth === "function") g.linkWidth(g.linkWidth());
   if (typeof g.linkOpacity === "function") g.linkOpacity(g.linkOpacity());
@@ -6238,6 +6305,10 @@ function configureSpatialForces(){
     g.d3Force("charge").strength(-88);
     g.d3Force("link").distance(l => l.type === "direct" ? 64 : 88);
   }
+  const linkForce = g.d3Force("link");
+  if (linkForce && typeof linkForce.strength === "function"){
+    linkForce.strength(l => spatialLinkVisible(l) ? (l.type === "direct" ? 0.35 : 0.2) : 0);
+  }
 }
 
 function updateSpatialHud(){
@@ -6255,7 +6326,7 @@ function updateSpatialHud(){
     hud.innerHTML = `<strong>${s.families}</strong> families · <strong>${s.links}</strong> connections (${s.direct} direct · ${s.adjacent} adjacent) · ${styleHint}`;
   } else {
     const styleHint = spatialConstellationLens()
-      ? "Three outcome pillars · click a family to light its connections · labels on hover"
+      ? "Three outcome pillars · click a family to light its connections · short labels on each tile"
       : spatialFullMesh()
         ? (spatialState.linkPreset === "straight" ? "Full mesh · straight links · all connections lit" : "Full mesh · all connections lit · cyan = direct · gold = adjacent")
         : "Click a family to light its connections";
@@ -6349,6 +6420,9 @@ function styleSpatialLabelSprite(sprite, node){
   const textH = spatialLabelTextHeight(node);
   const isSel = selected && selected.id === node.id;
   const isStk = stack.has(node.id);
+  const isHov = spatialState.hoveredId === node.id;
+  const dimRest = spatialConstellationLens() && spatialMrConstellationMode()
+    && !isSel && !isStk && !isHov;
   if (isSel){
     sprite.color = "#ffffff";
     sprite.backgroundColor = "rgba(2,200,255,0.38)";
@@ -6359,6 +6433,11 @@ function styleSpatialLabelSprite(sprite, node){
     sprite.backgroundColor = "rgba(2,200,255,0.22)";
     sprite.textHeight = textH;
     sprite.strokeColor = "rgba(2,200,255,0.5)";
+  } else if (dimRest){
+    sprite.color = "#c8d8eb";
+    sprite.backgroundColor = "rgba(7,18,36,0.58)";
+    sprite.textHeight = textH * 0.92;
+    sprite.strokeColor = spatialHexToRgba(palette.glow, 0.28);
   } else {
     sprite.color = "#eef6ff";
     sprite.backgroundColor = spatialHexToRgba(palette.glow, 0.22);
@@ -6556,6 +6635,7 @@ function initSpatialGraph(){
     .linkColor(spatialLinkColor)
     .linkWidth(spatialLinkWidth)
     .linkOpacity(spatialLinkOpacity)
+    .linkVisibility(spatialLinkVisible)
     .linkDirectionalParticles(spatialLinkParticles)
     .linkDirectionalParticleWidth(spatialLinkParticleWidth)
     .linkDirectionalParticleSpeed(0.004)
@@ -6645,6 +6725,7 @@ function refreshSpatialGraph(){
     configureSpatialForces();
     bindSpatialPillarForce();
     ensureSpatialLights();
+    ensureSpatialPillarGuides();
     refreshSpatialNodeVisuals();
     refreshSpatialLinkStyles();
     updateSpatialHud();
@@ -7061,6 +7142,24 @@ window.__cpnSpatialVisibleLabels = () => {
     if (sprite.visible !== false) visible++;
   });
   return { total: spatialState.labelCache.size, visible };
+};
+window.__cpnSpatialLinkStats = () => {
+  const g = spatialState.graph;
+  if (!g) return null;
+  const links = g.graphData()?.links || [];
+  let visible = 0, hidden = 0;
+  links.forEach(l => {
+    if (spatialLinkVisible(l)) visible++;
+    else hidden++;
+  });
+  return {
+    total: links.length,
+    visible,
+    hidden,
+    preset: spatialState.linkPreset,
+    lensActive: spatialConstellationLens(),
+    selected: selected?.id || null
+  };
 };
 
 // ── Initial mount: read persisted preferences and render the right view.
@@ -8817,7 +8916,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.32.1";
+const APP_VERSION   = "2.32.2";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",

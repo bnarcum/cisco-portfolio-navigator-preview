@@ -68,6 +68,12 @@ try {
       console.error("FAIL: spatial nodes missing icon tiles", tiles);
       exitCode = 1;
     } else {
+      const linksAtRest = await page.evaluate(() => window.__cpnSpatialLinkStats?.());
+      console.log("Links at rest:", linksAtRest);
+      if (!linksAtRest || linksAtRest.lensActive !== true || linksAtRest.visible !== 0) {
+        console.error("FAIL: constellation should hide all links until a family is selected", linksAtRest);
+        exitCode = 1;
+      } else {
       // Filter to Collaboration only — camera must stay in readable range (no zoomToFit blow-out).
       for (const cat of ["networking", "security", "computing", "observability"]) {
         await page.click(`.cp[data-cat="${cat}"]`);
@@ -85,6 +91,7 @@ try {
         exitCode = 1;
       } else {
         console.log("PASS: Spatial view loaded; filtered camera framing OK");
+      }
       }
     }
   }
