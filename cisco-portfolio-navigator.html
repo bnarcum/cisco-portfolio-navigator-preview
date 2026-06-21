@@ -256,7 +256,7 @@
     #spatial-hud kbd{background:var(--surface3);border:1px solid var(--border);border-radius:3px;
       padding:1px 5px;font-size:10px;color:var(--subtle)}
     body.planner-open #spatial-hud{bottom:52px}
-    #spatial-style-bar{position:absolute;top:14px;left:14px;z-index:4;display:flex;align-items:center;gap:6px;
+    #spatial-style-bar{position:absolute;top:14px;left:14px;z-index:6;display:flex;align-items:center;gap:6px;
       flex-wrap:wrap;max-width:min(420px,calc(100% - 28px));padding:6px 8px;border-radius:10px;
       background:rgba(22,27,34,.92);border:1px solid var(--border);box-shadow:0 4px 18px rgba(0,0,0,.35)}
     #spatial-style-bar .ssb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
@@ -267,6 +267,7 @@
     #spatial-style-bar button.active{background:var(--accent);border-color:var(--accent);color:#000}
     #spatial-style-bar button:disabled{opacity:.45;cursor:not-allowed}
     body.spatial-open #hint{display:none !important}
+    body.spatial-open #pillar-legend{display:none !important}
 
     /* TOOLTIP */
     #tip{position:fixed;pointer-events:none;background:var(--surface);
@@ -5520,7 +5521,7 @@ function spatialConstellationCamera(ms = 500){
   const bounds = spatialNodeBounds(nodes);
   if (!bounds) return false;
   const { cx, cy, cz, span } = bounds;
-  const dist = Math.min(455, Math.max(305, span * 1.48 + 125));
+  const dist = Math.min(500, Math.max(340, span * 1.58 + 140));
   spatialState.graph.cameraPosition(
     { x: cx, y: cy + span * 0.07, z: cz + dist },
     { x: cx, y: cy, z: cz },
@@ -6290,11 +6291,15 @@ function loadSpatialLib(){
 
 function ensureSpatialDOM(){
   let wrap = document.getElementById("spatial-wrap");
-  if (wrap) return wrap;
+  if (wrap){
+    const lbl = wrap.querySelector("#spatial-style-bar .ssb-label");
+    if (lbl) lbl.textContent = "Views";
+    return wrap;
+  }
   wrap = document.createElement("div");
   wrap.id = "spatial-wrap";
-  wrap.innerHTML = `<div id="spatial-style-bar" role="group" aria-label="Spatial link style">
-      <span class="ssb-label">Links</span>
+  wrap.innerHTML = `<div id="spatial-style-bar" role="group" aria-label="Spatial view style">
+      <span class="ssb-label">Views</span>
       <button type="button" data-spatial-style="curved" data-title="Curved mesh — all integrations lit">Curved mesh</button>
       <button type="button" data-spatial-style="straight" data-title="Straight spokes — all integrations lit">Straight</button>
       <button type="button" data-spatial-style="focus" data-title="Dim background — click a family to spotlight its links">Focus</button>
@@ -6469,6 +6474,7 @@ function enterSpatialView(){
   spatialState.active = true;
   spatialState.linkPreset = readSpatialLinkPreset();
   document.body.classList.add("spatial-open");
+  updatePillarLegend(false);
   svgEl.style.display = "none";
   const wrap = ensureSpatialDOM();
   wrap.style.display = "block";
@@ -7267,6 +7273,7 @@ function applyFilters() {
     return;
   }
   if (viewMode === "spatial"){
+    updatePillarLegend(false);
     const vis = getFilteredFamilyIds();
     const badge = document.getElementById("fbadge");
     const f = activeUC || activeInd || activeCats.size < Object.keys(CATS).length
@@ -8568,7 +8575,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.18";
+const APP_VERSION   = "2.31.19";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
