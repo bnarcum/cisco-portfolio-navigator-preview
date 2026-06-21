@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 28.3.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 80 80" style="enable-background:new 0 0 80 80;" xml:space="preserve">
+<style type="text/css">
+	.st0{display:none;}
+	.st1{display:inline;opacity:0.75;}
+	.st2{fill:#FFFFFF;}
+	.st3{display:inline;}
+	.st4{fill:none;stroke:#00FFFF;stroke-width:5.000000e-02;stroke-linecap:round;stroke-miterlimit:10;}
+	.st5{fill:none;}
+	.st6{opacity:0.22;fill:none;stroke:#FF0000;stroke-width:5.000000e-02;stroke-linecap:round;stroke-miterlimit:10;}
+	.st7{opacity:0.22;}
+	.st8{fill:none;stroke:#FF0000;stroke-width:5.000000e-02;stroke-linecap:round;stroke-miterlimit:10;}
+	.st9{fill:none;stroke:#000000;stroke-width:1.5;stroke-linejoin:round;stroke-miterlimit:10;}
+</style>
+<g id="border" class="st0">
+	<g class="st1">
+		<path class="st2" d="M72,8v64H8V8H72 M80,0H0v80h80V0L80,0z"/>
+	</g>
+</g>
+<g id="_x38__grid" class="st0">
+	<g class="st3">
+		<rect x="8" y="8" class="st4" width="8" height="64"/>
+		<rect x="16" y="8" class="st4" width="8" height="64"/>
+		<rect x="24" y="8" class="st4" width="8" height="64"/>
+		<rect x="32" y="8" class="st4" width="8" height="64"/>
+		<rect x="40" y="8" class="st4" width="8" height="64"/>
+		<rect x="48" y="8" class="st4" width="8" height="64"/>
+		<rect x="56" y="8" class="st4" width="8" height="64"/>
+		<rect x="64" y="8" class="st4" width="8" height="64"/>
+	</g>
+	<g class="st3">
+		<rect x="36" y="36" transform="matrix(6.123234e-17 -1 1 6.123234e-17 -28 108)" class="st4" width="8" height="64"/>
+		<rect x="36" y="28" transform="matrix(6.123234e-17 -1 1 6.123234e-17 -20 100)" class="st4" width="8" height="64"/>
+		<rect x="36" y="20" transform="matrix(6.123234e-17 -1 1 6.123234e-17 -12 92)" class="st4" width="8" height="64"/>
+		<rect x="36" y="12" transform="matrix(6.123234e-17 -1 1 6.123234e-17 -4 84)" class="st4" width="8" height="64"/>
+		<rect x="36" y="4" transform="matrix(6.123234e-17 -1 1 6.123234e-17 4 76)" class="st4" width="8" height="64"/>
+		<rect x="36" y="-4" transform="matrix(6.123234e-17 -1 1 6.123234e-17 12 68)" class="st4" width="8" height="64"/>
+		<rect x="36" y="-12" transform="matrix(6.123234e-17 -1 1 6.123234e-17 20 60)" class="st4" width="8" height="64"/>
+		<rect x="36" y="-20" transform="matrix(6.123234e-17 -1 1 6.123234e-17 28 52)" class="st4" width="8" height="64"/>
+	</g>
+</g>
+<g id="export_frame" class="st0">
+	<g class="st3">
+		<rect class="st5" width="80" height="80"/>
+	</g>
+</g>
+<g id="guide_shapes" class="st0">
+	<g class="st3">
+		<line class="st6" x1="8" y1="8" x2="72" y2="72"/>
+		<line class="st6" x1="72" y1="8" x2="8" y2="72"/>
+		<line class="st6" x1="8" y1="40" x2="72" y2="40"/>
+		<line class="st6" x1="40" y1="8" x2="40" y2="72"/>
+		<rect x="8" y="8" class="st6" width="64" height="64"/>
+		<circle class="st6" cx="40" cy="40" r="16"/>
+		<circle class="st6" cx="40" cy="40" r="24"/>
+		<rect x="24" y="24" class="st6" width="32" height="32"/>
+		<circle class="st6" cx="40" cy="40" r="30"/>
+		<rect x="12" y="12" class="st6" width="56" height="56"/>
+		<line class="st6" x1="40" y1="40" x2="71.9" y2="31.5"/>
+		<line class="st6" x1="8.1" y1="48.5" x2="40" y2="40"/>
+		<g class="st7">
+			<line class="st8" x1="40" y1="40" x2="71.9" y2="48.5"/>
+			<line class="st8" x1="8.1" y1="31.5" x2="40" y2="40"/>
+		</g>
+		<line class="st6" x1="40" y1="40" x2="48.5" y2="71.9"/>
+		<line class="st6" x1="31.5" y1="8.1" x2="40" y2="40"/>
+		<line class="st6" x1="40" y1="40" x2="31.5" y2="71.9"/>
+		<line class="st6" x1="48.5" y1="8.1" x2="40" y2="40"/>
+		<g class="st7">
+			<line class="st8" x1="40" y1="40" x2="71.9" y2="48.5"/>
+			<line class="st8" x1="8.1" y1="31.5" x2="40" y2="40"/>
+		</g>
+	</g>
+</g>
+<g id="art">
+	<g>
+		<path d="M64,56.8H16c-0.4,0-0.8-0.3-0.8-0.8V40c0-0.4,0.3-0.8,0.8-0.8h15.2V28c0-0.4,0.3-0.8,0.8-0.8h16c0.4,0,0.8,0.3,0.8,0.8
+			v11.2H64c0.4,0,0.8,0.3,0.8,0.8v16C64.8,56.4,64.4,56.8,64,56.8z M16.8,55.2h46.5V40.8H48c-0.4,0-0.8-0.3-0.8-0.8V28.8H32.8V40
+			c0,0.4-0.3,0.8-0.8,0.8H16.8V55.2z"/>
+	</g>
+	<g>
+		<path d="M50,28.8H30c-0.4,0-0.8-0.3-0.8-0.8v-6c0-0.4,0.3-0.8,0.8-0.8h20c0.4,0,0.8,0.3,0.8,0.8v6C50.8,28.4,50.4,28.8,50,28.8z
+			 M30.8,27.2h18.5v-4.5H30.8V27.2z"/>
+	</g>
+	<g>
+		<path d="M70,58.8h-6c-0.4,0-0.8-0.3-0.8-0.8V38c0-0.4,0.3-0.8,0.8-0.8h6c0.4,0,0.8,0.3,0.8,0.8v20C70.8,58.4,70.4,58.8,70,58.8z
+			 M64.8,57.2h4.5V38.8h-4.5V57.2z"/>
+	</g>
+	<g>
+		<path d="M16,58.8h-6c-0.4,0-0.8-0.3-0.8-0.8V38c0-0.4,0.3-0.8,0.8-0.8h6c0.4,0,0.8,0.3,0.8,0.8v20C16.8,58.4,16.4,58.8,16,58.8z
+			 M10.8,57.2h4.5V38.8h-4.5V57.2z"/>
+	</g>
+	<g>
+		<g>
+			<path d="M32.8,52h-1.5v-6.2l-0.7,0.7l-1.1-1.1l2-2c0.2-0.2,0.5-0.3,0.8-0.2c0.3,0.1,0.5,0.4,0.5,0.7V52z"/>
+		</g>
+		<g>
+			<rect x="30" y="51.2" width="4" height="1.5"/>
+		</g>
+	</g>
+	<g>
+		<g>
+			<path d="M48.8,52h-1.5v-6.2l-0.7,0.7l-1.1-1.1l2-2c0.2-0.2,0.5-0.3,0.8-0.2c0.3,0.1,0.5,0.4,0.5,0.7V52z"/>
+		</g>
+		<g>
+			<rect x="46" y="51.2" width="4" height="1.5"/>
+		</g>
+	</g>
+	<g>
+		<g>
+			<path d="M40.8,40h-1.5v-6.2l-0.7,0.7l-1.1-1.1l2-2c0.2-0.2,0.5-0.3,0.8-0.2c0.3,0.1,0.5,0.4,0.5,0.7V40z"/>
+		</g>
+		<g>
+			<rect x="38" y="39.2" width="4" height="1.5"/>
+		</g>
+	</g>
+	<g>
+		<g>
+			<path d="M56.8,52h-1.5v-6.2l-0.7,0.7l-1.1-1.1l2-2c0.2-0.2,0.5-0.3,0.8-0.2c0.3,0.1,0.5,0.4,0.5,0.7V52z"/>
+		</g>
+		<g>
+			<rect x="54" y="51.2" width="4" height="1.5"/>
+		</g>
+	</g>
+	<g>
+		<path d="M24,52.8c-1.5,0-2.8-1.2-2.8-2.8v-4c0-1.5,1.2-2.8,2.8-2.8s2.8,1.2,2.8,2.8v4C26.8,51.5,25.5,52.8,24,52.8z M24,44.8
+			c-0.7,0-1.2,0.6-1.2,1.2v4c0,0.7,0.6,1.2,1.2,1.2s1.2-0.6,1.2-1.2v-4C25.2,45.3,24.7,44.8,24,44.8z"/>
+	</g>
+	<g>
+		<path d="M40,52.8c-1.5,0-2.8-1.2-2.8-2.8v-4c0-1.5,1.2-2.8,2.8-2.8s2.8,1.2,2.8,2.8v4C42.8,51.5,41.5,52.8,40,52.8z M40,44.8
+			c-0.7,0-1.2,0.6-1.2,1.2v4c0,0.7,0.6,1.2,1.2,1.2s1.2-0.6,1.2-1.2v-4C41.2,45.3,40.7,44.8,40,44.8z"/>
+	</g>
+</g>
+</svg>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="art" xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #000;
+        stroke-linejoin: bevel;
+        stroke-width: 1.5px;
+      }
+
+      .cls-2 {
+        stroke-width: 0px;
+      }
+    </style>
+  </defs>
+  <line class="cls-1" x1="62" y1="14" x2="62" y2="62"/>
+  <polygon class="cls-2" points="48.81 62 47.2 62 30 18.06 12.8 62 11.19 62 29.19 16 30.81 16 48.81 62"/>
+  <rect class="cls-2" x="17.97" y="45.09" width="24.05" height="1.5"/>
+  <g>
+    <rect class="cls-2" x="61.25" y="14" width="1.5" height="48"/>
+    <path class="cls-2" d="M29.19,16L11.19,62h1.61l6.03-15.41h22.33l6.03,15.41h1.61L30.81,16h-1.62ZM19.42,45.09l10.58-27.03,10.58,27.03h-21.16Z"/>
+  </g>
+</svg>
