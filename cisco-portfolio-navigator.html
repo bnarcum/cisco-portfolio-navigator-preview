@@ -319,9 +319,9 @@
       0%,100%{stroke-opacity:.7}
       50%{stroke-opacity:1}}
     .nd.nd-hover .node-scaler{transform:scale(1.06);transition:transform .18s ease}
-    .nd.nd-selected .gr{filter:url(#glow)}
-    .nd.nd-selected .mc{stroke:#fff!important;stroke-width:2.5!important}
-    .nd.nd-stack .mc{stroke:#FFD700!important;stroke-width:2.2!important}
+    body:not(.pillar-focus) .nd.nd-selected .gr{filter:url(#glow)}
+    body:not(.pillar-focus) .nd.nd-selected .mc{stroke:#fff!important;stroke-width:2.5!important}
+    body:not(.pillar-focus) .nd.nd-stack .mc{stroke:#FFD700!important;stroke-width:2.2!important}
     #pillar-legend{position:fixed;top:calc(var(--topbar-h) + 12px);left:16px;z-index:50;display:none;max-width:300px;
       padding:9px 11px;background:rgba(7,24,45,.94);border:1px solid rgba(2,200,255,.28);
       border-radius:10px;backdrop-filter:blur(10px);box-shadow:0 10px 36px rgba(0,0,0,.4)}
@@ -550,11 +550,12 @@
     .p-dcloud-entry:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
     .p-dcloud-entry-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
     .p-dcloud-eco{font-size:11px;color:#c4e8f8;margin:0 0 10px;line-height:1.45;font-style:italic}
-    #learn-path-banner{position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:65;
-      display:none;max-width:min(920px,calc(100vw - 40px));padding:10px 14px;border-radius:10px;
+    #learn-path-banner{position:relative;left:auto;transform:none;
+      display:none;width:100%;max-width:min(920px,calc(100vw - 40px));
+      max-height:min(42vh,360px);overflow-y:auto;padding:10px 14px;border-radius:10px;
       background:rgba(0,40,70,.92);border:1px solid rgba(0,212,255,.45);
       box-shadow:0 8px 32px rgba(0,0,0,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-      color:#e8f6ff;font-size:12px;line-height:1.45}
+      color:#e8f6ff;font-size:12px;line-height:1.45;pointer-events:auto}
     #learn-path-banner.show{display:block}
     .lpb-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
     .lpb-title{font-size:13px;font-weight:700;color:#fff}
@@ -2996,6 +2997,13 @@ function pillarColorForFamily(familyId){
   const m = pillarMeta(familyPillar(familyId));
   return m ? m.color : catColor(nodeById[familyId]?.category);
 }
+function pillarNodeAccent(familyId){
+  if (singlePillarFocused()){
+    const z = PILLAR_ZONE_BY_ID[focusedPillarId()];
+    return z?.color || pillarColorForFamily(familyId);
+  }
+  return pillarColorForFamily(familyId);
+}
 const PILLAR_FAMILY_LABEL = {
   "meraki-mx": "Meraki MX SD-WAN"
 };
@@ -4585,24 +4593,25 @@ function updateCanvasFocusState(){
 function applyPillarNodeVisualState(selectedNode){
   if (!ndEl || !usePillarLayout()) return;
   const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
+  const boosted = singlePillarFocused();
   ndEl.each(function(nd){
     const g = d3.select(this);
     const isSel = selectedNode && nd.id === selectedNode.id;
     const isHov = nd.id === pillarHoverId;
-    const inStk = stack.has(nd.id);
     const isConn = selectedNode && conn?.has(nd.id);
     const hot = isSel || isHov || isConn;
+    const accent = pillarNodeAccent(nd.id);
     g.classed("nd-selected", isSel)
       .classed("nd-hover", isHov && !isSel)
-      .classed("nd-stack", inStk && !isSel);
-    const fill = pillarColorForFamily(nd.id);
-    const boosted = singlePillarFocused();
-    g.select(".gr").attr("fill-opacity", hot ? 0.42 : (inStk ? 0.3 : (boosted ? 0.3 : 0.22)));
+      .classed("nd-stack", false);
+    g.select(".gr")
+      .attr("fill", accent)
+      .attr("fill-opacity", hot ? 0.38 : (boosted ? 0.26 : 0.2));
     g.select(".mc")
-      .attr("fill-opacity", hot ? 1 : (inStk ? 1 : (boosted ? 0.94 : 0.72)))
-      .attr("stroke", isSel ? "#ffffff" : (inStk ? "#FFD700" : fill))
-      .attr("stroke-width", isSel ? 2.6 : (inStk ? 2.2 : 2))
-      .attr("stroke-opacity", hot || inStk ? 1 : (boosted ? 0.92 : 0.78));
+      .attr("fill-opacity", hot ? 1 : (boosted ? 0.94 : 0.72))
+      .attr("stroke", accent)
+      .attr("stroke-width", 2)
+      .attr("stroke-opacity", hot ? 1 : (boosted ? 0.9 : 0.78));
     g.select(".node-scaler").attr("transform", (isSel || isHov) ? "scale(1.06)" : null);
   });
   updateCanvasFocusState();
@@ -5251,7 +5260,8 @@ function rebindGraph(opts){
   ndEl.select("circle.gr")
     .attr("r", d => d._r + (pillarMode ? 2 : 9))
     .attr("filter", pillarMode ? null : "url(#glow)")
-    .attr("fill-opacity", d => pillarMode ? 0.35 : 0);
+    .attr("fill", d => pillarMode ? pillarNodeAccent(d.id) : (d._pillarColor || catColor(d.category)))
+    .attr("fill-opacity", d => pillarMode ? 0.26 : 0);
   ndEl.select("circle.mc").attr("r", d => d._r);
   if (viewMode === "families" && !pillarMode){
     viewNodes.forEach(n => { if (nodeById[n.id]) n._r = rscale(degree[n.id] || 0); });
@@ -5263,10 +5273,10 @@ function rebindGraph(opts){
       if (!nodeById[d.id]) return;
       const el = d3.select(this);
       if (pillarMode){
-        const fill = pillarColorForFamily(d.id);
-        el.attr("fill", fill).attr("fill-opacity", 0.88)
-          .attr("stroke", fill)
-          .attr("stroke-width", 2.2).attr("stroke-opacity", 0.95);
+        const accent = pillarNodeAccent(d.id);
+        el.attr("fill", accent).attr("fill-opacity", 0.88)
+          .attr("stroke", accent)
+          .attr("stroke-width", 2).attr("stroke-opacity", 0.9);
       } else {
         el.attr("fill", d._hasImage ? MATRIX_NODE_FILL : catColor(d.category))
           .attr("stroke", d._hasImage ? MATRIX_NODE_RING : "transparent")
@@ -7278,19 +7288,10 @@ function resetHL() {
     return;
   }
   if (usePillarLayout()){
-    ndEl.each(function(nd){
-      const inStk=stack.has(nd.id);
-      d3.select(this).classed("nd-selected", false).classed("nd-hover", false).classed("nd-stack", inStk);
-      d3.select(this).select(".gr").attr("fill-opacity",inStk?.28:0.22);
-      d3.select(this).select(".mc").attr("fill-opacity",inStk?1:.72)
-        .attr("stroke", inStk ? "#FFD700" : pillarColorForFamily(nd.id)).attr("stroke-opacity", inStk ? 1 : 0.78);
-      d3.select(this).select(".icn").attr("opacity",1);
-      d3.select(this).select(".node-scaler").attr("transform", null);
-    });
+    applyPillarNodeVisualState(null);
     if (lviz && singlePillarFocused()) lviz.attr("stroke-opacity", pillarLinkOpacity);
     else if (lviz) lviz.attr("stroke-opacity", l => pillarLinkOpacity(l));
     applyPillarLabelStyles(null);
-    updateCanvasFocusState();
     return;
   }
   ndEl.each(function(nd){
@@ -7329,6 +7330,11 @@ function highlightStack() {
       d3.select(this).attr("stroke",both?"#525E6C":"#0d2847")
         .attr("stroke-opacity",both?.6:.04).attr("stroke-width",both?2:1);
     });
+    return;
+  }
+  if (usePillarLayout()){
+    if (selected) return;
+    applyPillarNodeVisualState(null);
     return;
   }
   if(selected) return; if(!stack.size){ resetHL(); return; }
@@ -8920,7 +8926,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.26";
+const APP_VERSION   = "2.31.29";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -9872,17 +9878,15 @@ STYLE.textContent = `
     border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* Reference architecture badge */
-  .refarch-active{position:fixed;top:62px;left:50%;transform:translateX(-50%);
+  /* Reference architecture badge — stacked under topbar with filter chips */
+  .refarch-active{position:relative;left:auto;transform:none;
     background:var(--accent);color:#000;padding:5px 14px;border-radius:18px;
-    font-size:11px;font-weight:700;z-index:50;cursor:pointer;display:none;
-    box-shadow:0 4px 12px rgba(2,200,255,.4)}
+    font-size:11px;font-weight:700;cursor:pointer;display:none;
+    box-shadow:0 4px 12px rgba(2,200,255,.4);pointer-events:auto;width:100%;
+    max-width:min(920px,calc(100vw - 40px));justify-content:center}
   .refarch-active.show{display:flex;align-items:center;gap:8px}
   .refarch-active::before{content:"⌖";font-size:13px}
   .refarch-active span{background:rgba(0,0,0,.2);padding:1px 6px;border-radius:8px;font-weight:600}
-  body.learn-path-open #learn-path-banner{top:102px}
-  body.refarch-open #learn-path-banner{top:102px}
-  body.learn-path-open.refarch-open #learn-path-banner{top:142px}
 `;
 document.head.appendChild(STYLE);
 
@@ -11899,7 +11903,6 @@ function dcloudEntryMetaHtml(e){
   if (e.duration) chips.push(e.duration);
   if (e.level) chips.push(e.level);
   if (e.demoType === "instant") chips.push("Instant demo");
-  else chips.push("Schedule lab");
   return chips.length ? `<div class="p-dcloud-meta-row">${chips.map(c => `<span class="p-dcloud-chip">${escapeHtml(c)}</span>`).join("")}</div>` : "";
 }
 
@@ -11994,11 +11997,12 @@ function refreshDcloudPanelIfOpen(){
 }
 
 function buildLearningPathBanner(){
+  const host = $("#top-chips") || document.body;
   const b = document.createElement("div");
   b.id = "learn-path-banner";
   b.setAttribute("role", "region");
   b.setAttribute("aria-label", "Recommended dCloud learning path");
-  document.body.appendChild(b);
+  host.appendChild(b);
   b.addEventListener("click", e => {
     if (e.target.closest(".lpb-close")) hideLearningPathBanner();
   });
@@ -12034,7 +12038,6 @@ function renderLearningPathBanner(useCase){
       </div>`;
     }).join("")}</div>`;
   el.classList.add("show");
-  document.body.classList.add("learn-path-open");
   el.querySelectorAll("[data-dcloud-id]").forEach(a => {
     a.addEventListener("click", () => dcloudMarkLabDone(a.dataset.dcloudId, true));
   });
@@ -12042,7 +12045,6 @@ function renderLearningPathBanner(useCase){
 
 function hideLearningPathBanner(){
   $("#learn-path-banner")?.classList.remove("show");
-  document.body.classList.remove("learn-path-open");
 }
 
 function renderPlannerLabs(){
@@ -12067,7 +12069,7 @@ function renderPlannerLabs(){
           <input type="checkbox" class="lab-check" ${isDone ? "checked" : ""} aria-label="Mark complete">
           <div class="lab-name">${escapeHtml(r.label)}</div>
         </div>
-        <div class="lab-meta">${escapeHtml(e.duration || "")}${e.duration && e.level ? " · " : ""}${escapeHtml(e.level || "")}${e.demoType ? " · " + escapeHtml(e.demoType === "instant" ? "Instant" : "Scheduled") : ""}</div>
+        <div class="lab-meta">${escapeHtml(e.duration || "")}${e.duration && e.level ? " · " : ""}${escapeHtml(e.level || "")}${e.demoType === "instant" ? " · Instant" : ""}</div>
         ${objs.length ? `<ul class="lab-objectives">${objs.map(o => `<li>${escapeHtml(o)}</li>`).join("")}</ul>` : (r.hint ? `<div class="lab-meta">${escapeHtml(r.hint.slice(0, 160))}${r.hint.length > 160 ? "…" : ""}</div>` : "")}
         <div class="lab-actions">
           <a class="rc-btn prim" href="${escapeHtml(primary)}" target="_blank" rel="noopener">Launch lab ↗</a>
@@ -12449,11 +12451,14 @@ function renderCompare(){
    ════════════════════════════════════════════════════════════════════════*/
 let activeRefArch = null;
 function buildRefArchBadge(){
+  const host = $("#top-chips") || document.body;
   const b = document.createElement("div");
   b.className = "refarch-active";
   b.id = "refarch-badge";
   b.innerHTML = `<span id="refarch-name"></span> reference architecture · click to clear`;
-  document.body.appendChild(b);
+  const learn = $("#learn-path-banner");
+  if (learn && host === $("#top-chips")) host.insertBefore(b, learn);
+  else host.appendChild(b);
   b.addEventListener("click", clearRefArch);
 }
 function applyRefArch(ucName){
@@ -12478,13 +12483,11 @@ function applyRefArch(ucName){
   const labHint = lab ? ` · Try <strong>${escapeHtml(lab.linkLabel || lab.name)}</strong> in dCloud` : "";
   $("#refarch-name").innerHTML = `${escapeHtml(ucName)}${labHint}`;
   $("#refarch-badge").classList.add("show");
-  document.body.classList.add("refarch-open");
   renderLearningPathBanner(ucName);
 }
 function clearRefArch(){
   activeRefArch = null;
   $("#refarch-badge").classList.remove("show");
-  document.body.classList.remove("refarch-open");
   resetHL(); highlightStack();
   if (!$("#ucs")?.value) hideLearningPathBanner();
 }
@@ -13880,8 +13883,8 @@ function boot(){
   addPlannerTabs();
   buildComparePanel();
   buildRecentPinned();
-  buildRefArchBadge();
   buildLearningPathBanner();
+  buildRefArchBadge();
   buildContextMenu();
   buildTimelineView();
   buildDiffModal();

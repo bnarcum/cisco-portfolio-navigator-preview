@@ -23,7 +23,7 @@ try {
   );
 
   const version = await page.evaluate(() => window.__cpnV2?.APP_VERSION);
-  if (version !== "2.31.26") errors.push(`expected APP_VERSION 2.31.26, got ${version}`);
+  if (version !== "2.31.29") errors.push(`expected APP_VERSION 2.31.29, got ${version}`);
 
   const pathCount = await page.evaluate(() => window.DCLOUD_PATHS?.length || 0);
   if (pathCount < 5) errors.push(`expected >=5 learning paths, got ${pathCount}`);
@@ -37,6 +37,26 @@ try {
 
   const stepCount = await page.locator("#learn-path-banner .lpb-step").count();
   if (stepCount < 2) errors.push(`expected learning path steps, got ${stepCount}`);
+
+  // Banner must sit below app chrome (not clipped) — Contact Center has path but no ref-arch
+  await page.selectOption("#ucs", "Contact Center");
+  await page.selectOption("#inds", "Energy / Utilities");
+  await page.waitForTimeout(400);
+  const clipCheck = await page.evaluate(() => {
+    const chrome = document.getElementById("app-chrome");
+    const banner = document.getElementById("learn-path-banner");
+    if (!chrome || !banner?.classList.contains("show")) return { ok: false, reason: "banner not visible" };
+    const c = chrome.getBoundingClientRect();
+    const b = banner.getBoundingClientRect();
+    return { ok: b.top >= c.bottom - 2, top: b.top, chromeBottom: c.bottom };
+  });
+  if (!clipCheck.ok) errors.push(`learning path clipped under chrome (top=${clipCheck.top}, chromeBottom=${clipCheck.chromeBottom})`);
+  if (clipCheck.reason) errors.push(clipCheck.reason);
+
+  const inTopChips = await page.evaluate(() =>
+    !!document.getElementById("top-chips")?.contains(document.getElementById("learn-path-banner"))
+  );
+  if (!inTopChips) errors.push("learn-path-banner should live inside #top-chips");
 
   await page.click("#planner-btn");
   await page.evaluate(() => window.addToStack("webex-app", "node"));
@@ -68,6 +88,11 @@ try {
     document.querySelectorAll("#pbody .la-dcloud-schedule, #pbody .p-learn-ladder").length
   );
   if (redundantLinks > 0) errors.push("redundant schedule links or step ladder still present");
+
+  const scheduleChips = await page.evaluate(() =>
+    [...document.querySelectorAll(".p-dcloud-chip")].some(el => /schedule lab/i.test(el.textContent))
+  );
+  if (scheduleChips) errors.push("Schedule lab meta chip should not appear");
 
   if (errors.length) {
     console.error("FAIL test-dcloud-learning:");
