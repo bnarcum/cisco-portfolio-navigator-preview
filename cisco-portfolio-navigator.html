@@ -256,6 +256,16 @@
     #spatial-hud kbd{background:var(--surface3);border:1px solid var(--border);border-radius:3px;
       padding:1px 5px;font-size:10px;color:var(--subtle)}
     body.planner-open #spatial-hud{bottom:52px}
+    #spatial-style-bar{position:absolute;top:14px;left:14px;z-index:4;display:flex;align-items:center;gap:6px;
+      flex-wrap:wrap;max-width:min(420px,calc(100% - 28px));padding:6px 8px;border-radius:10px;
+      background:rgba(22,27,34,.92);border:1px solid var(--border);box-shadow:0 4px 18px rgba(0,0,0,.35)}
+    #spatial-style-bar .ssb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--muted);margin-right:2px}
+    #spatial-style-bar button{background:transparent;border:1px solid var(--border);border-radius:6px;
+      color:var(--muted);font-size:11px;font-weight:600;padding:4px 9px;cursor:pointer;transition:all .15s}
+    #spatial-style-bar button:hover:not(.active){border-color:var(--accent);color:var(--text)}
+    #spatial-style-bar button.active{background:var(--accent);border-color:var(--accent);color:#000}
+    #spatial-style-bar button:disabled{opacity:.45;cursor:not-allowed}
     body.spatial-open #hint{display:none !important}
 
     /* TOOLTIP */
@@ -5284,7 +5294,8 @@ function buildCompositionView(familyId){
 // SPATIAL — optional 3D portfolio map
 // ══════════════════════════════════════
 const SPATIAL_LIB = "vendor/3d-force-graph.min.js";
-const spatialState = { graph: null, active: false, libPromise: null, spritePromise: null, resizeObs: null, labelCache: new Map(), tileCache: new Map(), tileLoadGen: 0, focusFamily: null, lastNodeClick: null, hoveredId: null, lightsAdded: false, threeCaptured: false, nodeRendererReady: false, meshTemplate: null, filterBoost: 1, filterActive: false, lastStats: null };
+const SPATIAL_LINK_PRESET_KEY = "cpn-spatial-link-preset-v2";
+const spatialState = { graph: null, active: false, libPromise: null, spritePromise: null, resizeObs: null, labelCache: new Map(), tileCache: new Map(), tileLoadGen: 0, focusFamily: null, lastNodeClick: null, hoveredId: null, lightsAdded: false, threeCaptured: false, nodeRendererReady: false, meshTemplate: null, filterBoost: 1, filterActive: false, lastStats: null, linkPreset: "curved", styleBarReady: false };
 
 function spatialResolveName(id){
   return nodeById[id]?.name || prodById[id]?.name || id;
@@ -5805,14 +5816,63 @@ function refreshSpatialNodeVisuals(){
 
 function spatialLinkHighlightTier(l){
   if (spatialState.focusFamily) return "orbit";
-  if (selected){
+  if (spatialState.linkPreset === "focus" && selected){
     const conn = connectionNodeSet(selected.id, connectionHighlightDepth);
     const s = sid(l), t = tid(l);
     if (!conn.has(s) || !conn.has(t)) return "dim";
     if (s === selected.id || t === selected.id) return "hot";
     return "mid";
   }
-  return spatialState.filterActive ? "all" : "normal";
+  return "all";
+}
+
+function spatialLinkCurvature(){
+  if (spatialState.focusFamily) return 0.06;
+  if (spatialState.linkPreset === "straight") return 0;
+  if (spatialState.filterActive) return 0.12;
+  return 0.24;
+}
+
+function readSpatialLinkPreset(){
+  try{
+    const saved = localStorage.getItem(SPATIAL_LINK_PRESET_KEY);
+    if (saved === "curved" || saved === "straight" || saved === "focus") return saved;
+  }catch(e){}
+  return "curved";
+}
+
+function setSpatialLinkPreset(preset){
+  if (!["curved", "straight", "focus"].includes(preset)) return;
+  spatialState.linkPreset = preset;
+  try{ localStorage.setItem(SPATIAL_LINK_PRESET_KEY, preset); }catch(e){}
+  updateSpatialStyleBar();
+  configureSpatialForces();
+  refreshSpatialLinkStyles();
+  updateSpatialHud();
+}
+
+function updateSpatialStyleBar(){
+  const bar = document.getElementById("spatial-style-bar");
+  if (!bar) return;
+  const inOrbit = !!spatialState.focusFamily;
+  bar.querySelectorAll("button[data-spatial-style]").forEach(btn => {
+    const on = btn.dataset.spatialStyle === spatialState.linkPreset;
+    btn.classList.toggle("active", on);
+    btn.disabled = inOrbit;
+    btn.title = inOrbit ? "Link style applies to the constellation map — exit product orbit first" : btn.dataset.title || "";
+  });
+}
+
+function bindSpatialStyleBar(){
+  if (spatialState.styleBarReady) return;
+  const bar = document.getElementById("spatial-style-bar");
+  if (!bar) return;
+  bar.addEventListener("click", e => {
+    const btn = e.target.closest("button[data-spatial-style]");
+    if (!btn || btn.disabled) return;
+    setSpatialLinkPreset(btn.dataset.spatialStyle);
+  });
+  spatialState.styleBarReady = true;
 }
 
 function spatialLinkOpacity(l){
@@ -5920,11 +5980,7 @@ function refreshSpatialLinkStyles(){
 function configureSpatialForces(){
   if (!spatialState.graph) return;
   const g = spatialState.graph;
-  if (typeof g.linkCurvature === "function"){
-    if (spatialState.focusFamily) g.linkCurvature(0.06);
-    else if (spatialState.filterActive) g.linkCurvature(0.12);
-    else g.linkCurvature(0.24);
-  }
+  if (typeof g.linkCurvature === "function") g.linkCurvature(spatialLinkCurvature());
   if (spatialState.focusFamily){
     g.d3Force("charge").strength(-145);
     g.d3Force("link").distance(l => {
@@ -5944,14 +6000,23 @@ function configureSpatialForces(){
 function updateSpatialHud(){
   const hud = document.getElementById("spatial-hud");
   if (!hud) return;
+  updateSpatialStyleBar();
   if (spatialState.focusFamily){
     const fam = nodeById[spatialState.focusFamily];
     hud.innerHTML = `${fam?.name || "Family"} — click a product for details · <kbd>Esc</kbd> back to Spatial map`;
   } else if (spatialState.filterActive && spatialState.lastStats){
     const s = spatialState.lastStats;
-    hud.innerHTML = `<strong>${s.families}</strong> families · <strong>${s.links}</strong> connections (${s.direct} direct · ${s.adjacent} adjacent) · <span style="opacity:.9">cyan = direct · gold = adjacent</span> · Click a family to highlight its integrations`;
+    const styleHint = spatialState.linkPreset === "focus"
+      ? "Focus mode — click a family to isolate its integrations"
+      : "All connections lit · cyan = direct · gold = adjacent";
+    hud.innerHTML = `<strong>${s.families}</strong> families · <strong>${s.links}</strong> connections (${s.direct} direct · ${s.adjacent} adjacent) · ${styleHint}`;
   } else {
-    hud.innerHTML = `Drag to orbit · Scroll to zoom · Click for details · Double-click a family to explore its products · <kbd>Esc</kbd> back to Families`;
+    const styleHint = spatialState.linkPreset === "straight"
+      ? "Straight spokes · all connections lit"
+      : spatialState.linkPreset === "focus"
+        ? "Curved mesh · click a family to focus its links"
+        : "Curved mesh · all connections lit · cyan = direct · gold = adjacent";
+    hud.innerHTML = `${styleHint} · Double-click a family to explore products · <kbd>Esc</kbd> back to Families`;
   }
 }
 
@@ -6162,9 +6227,18 @@ function ensureSpatialDOM(){
   if (wrap) return wrap;
   wrap = document.createElement("div");
   wrap.id = "spatial-wrap";
-  wrap.innerHTML = `<div id="spatial-hud"></div>
+  wrap.innerHTML = `<div id="spatial-style-bar" role="group" aria-label="Spatial link style">
+      <span class="ssb-label">Links</span>
+      <button type="button" data-spatial-style="curved" data-title="Curved mesh — all integrations lit">Curved mesh</button>
+      <button type="button" data-spatial-style="straight" data-title="Straight spokes — all integrations lit">Straight</button>
+      <button type="button" data-spatial-style="focus" data-title="Dim background — click a family to spotlight its links">Focus</button>
+    </div>
+    <div id="spatial-hud"></div>
     <div id="spatial-graph"></div>`;
   document.getElementById("gw").appendChild(wrap);
+  spatialState.linkPreset = readSpatialLinkPreset();
+  bindSpatialStyleBar();
+  updateSpatialStyleBar();
   updateSpatialHud();
   return wrap;
 }
@@ -6327,6 +6401,7 @@ function resolveFamilyFocus(opts = {}){
 
 function enterSpatialView(){
   spatialState.active = true;
+  spatialState.linkPreset = readSpatialLinkPreset();
   document.body.classList.add("spatial-open");
   svgEl.style.display = "none";
   const wrap = ensureSpatialDOM();
@@ -8428,7 +8503,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.12";
+const APP_VERSION   = "2.31.13";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
