@@ -3891,7 +3891,7 @@ let nodeClickTimer = null;
 
 const MATRIX_SITE = "https://bnarcum.github.io/collaboration-device-matrix/";
 /** Bust iframe cache when Device Matrix deploys — bump with each matrix release. */
-const MATRIX_RELEASE = "20260621q";
+const MATRIX_RELEASE = "20260621r";
 const MATRIX_NODE_FILL = "#ffffff";
 const MATRIX_NODE_RING = "#cbd5e1";
 const MATRIX_IMG_BASE = MATRIX_SITE + "devices/";
@@ -4038,20 +4038,21 @@ function enterMatrixFullShowroom(){
   }
   const frame = document.getElementById("matrix-overlay-frame");
   const ringUrl = matrixDeviceUrl(pid, "showroom", { camera: "ring" });
+  let acked = false;
+  const onAck = (e) => {
+    if (e?.data?.type === "cpn-matrix-camera-ack" && e.data.mode === "ring") {
+      acked = true;
+      window.removeEventListener("message", onAck);
+    }
+  };
+  window.addEventListener("message", onAck);
   try {
     frame?.contentWindow?.postMessage({ type: "cpn-matrix-camera", mode: "ring" }, "*");
   } catch (_) {}
-  if (frame && ringUrl && !String(frame.src).includes("camera=ring")) {
-    setMatrixOverlayLoading(true);
-    const onDone = () => {
-      setMatrixOverlayLoading(false);
-      frame.removeEventListener("load", onDone);
-      frame.removeEventListener("error", onDone);
-    };
-    frame.addEventListener("load", onDone);
-    frame.addEventListener("error", onDone);
-    frame.src = ringUrl;
-  }
+  window.setTimeout(() => {
+    window.removeEventListener("message", onAck);
+    if (!acked && ringUrl) openMatrixEmbed(pid, "showroom", { camera: "ring" });
+  }, 450);
 }
 
 function openMatrixEmbed(productId, view, opts){
