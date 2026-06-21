@@ -6373,6 +6373,25 @@ function spatialLinkOpacity(l){
   return 0.38;
 }
 
+/** Bake per-link opacity into rgba — 3d-force-graph v1.73 uses linkOpacity as a numeric multiplier only. */
+function spatialLinkColorResolved(l){
+  const op = spatialLinkOpacity(l);
+  const raw = spatialLinkColor(l);
+  const rgba = raw.match(/^rgba\(([\d.]+),\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)\)$/);
+  if (rgba){
+    const a = Math.min(1, parseFloat(rgba[4]) * op);
+    return `rgba(${rgba[1]},${rgba[2]},${rgba[3]},${a.toFixed(3)})`;
+  }
+  const hex = raw.match(/^#([0-9a-f]{6})$/i);
+  if (hex){
+    const r = parseInt(hex[1].slice(0, 2), 16);
+    const g = parseInt(hex[1].slice(2, 4), 16);
+    const b = parseInt(hex[1].slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${Math.min(1, op).toFixed(3)})`;
+  }
+  return raw;
+}
+
 function spatialLinkColor(l){
   const tier = spatialLinkHighlightTier(l);
   if (tier === "dim") return "rgba(8,18,32,0.35)";
@@ -6426,39 +6445,39 @@ function spatialLinkParticles(l){
   const tier = spatialLinkHighlightTier(l);
   if (tier === "dim") return 0;
   if (tier === "hot"){
-    if (l.type === "direct") return 7;
-    if (l.type === "adjacent") return 4;
-    return 2;
+    if (l.type === "direct") return 9;
+    if (l.type === "adjacent") return 6;
+    return 3;
   }
-  if (tier === "all" || tier === "mid"){
-    if (l.type === "direct") return 6;
-    if (l.type === "adjacent") return 4;
-    return 2;
+  if (tier === "all" || tier === "mid" || tier === "orbit"){
+    if (l.type === "direct") return 8;
+    if (l.type === "adjacent") return 5;
+    return 3;
   }
-  if (l.type === "direct") return 4;
-  if (l.type === "adjacent") return 2;
-  return 1;
+  if (l.type === "direct") return 5;
+  if (l.type === "adjacent") return 3;
+  return 2;
 }
 
 function spatialLinkParticleWidth(l){
   const tier = spatialLinkHighlightTier(l);
-  if (tier === "hot") return l.type === "direct" ? 3.4 : 2.6;
-  if (tier === "all" || tier === "mid") return l.type === "direct" ? 2.8 : 2.1;
-  return l.type === "direct" ? 2.2 : 1.6;
+  if (tier === "hot") return l.type === "direct" ? 4.2 : 3.2;
+  if (tier === "all" || tier === "mid" || tier === "orbit") return l.type === "direct" ? 3.6 : 2.8;
+  return l.type === "direct" ? 3.0 : 2.2;
 }
 
 /** Tron-style energy pulses — bright cyan cores with amber on adjacent links. */
 function spatialLinkParticleColor(l){
   const tier = spatialLinkHighlightTier(l);
   if (tier === "dim") return "rgba(0,255,240,0)";
-  if (l.type === "adjacent") return tier === "hot" ? "#ffe8a8" : "#ff9a3c";
-  if (l.type === "succession") return tier === "hot" ? "#f3e8ff" : "#c084fc";
+  if (l.type === "adjacent") return tier === "hot" ? "#ffe066" : "#ffb020";
+  if (l.type === "succession") return tier === "hot" ? "#e9d5ff" : "#c084fc";
   if (tier === "hot") return "#ffffff";
   return "#00fff0";
 }
 
 function spatialLinkParticleResolution(){
-  return 5;
+  return 8;
 }
 
 function spatialLinkParticleSpeed(){
@@ -6468,14 +6487,14 @@ function spatialLinkParticleSpeed(){
 function refreshSpatialLinkStyles(){
   if (!spatialState.graph) return;
   const g = spatialState.graph;
-  if (typeof g.linkColor === "function") g.linkColor(g.linkColor());
-  if (typeof g.linkWidth === "function") g.linkWidth(g.linkWidth());
-  if (typeof g.linkOpacity === "function") g.linkOpacity(g.linkOpacity());
-  if (typeof g.linkDirectionalParticles === "function") g.linkDirectionalParticles(g.linkDirectionalParticles());
-  if (typeof g.linkDirectionalParticleWidth === "function") g.linkDirectionalParticleWidth(g.linkDirectionalParticleWidth());
-  if (typeof g.linkDirectionalParticleColor === "function") g.linkDirectionalParticleColor(g.linkDirectionalParticleColor());
-  if (typeof g.linkDirectionalParticleResolution === "function") g.linkDirectionalParticleResolution(g.linkDirectionalParticleResolution());
-  if (typeof g.linkDirectionalParticleSpeed === "function") g.linkDirectionalParticleSpeed(spatialLinkParticleSpeed());
+  g.linkColor(spatialLinkColorResolved);
+  g.linkWidth(spatialLinkWidth);
+  g.linkOpacity(1);
+  g.linkDirectionalParticles(spatialLinkParticles);
+  g.linkDirectionalParticleWidth(spatialLinkParticleWidth);
+  g.linkDirectionalParticleColor(spatialLinkParticleColor);
+  g.linkDirectionalParticleResolution(spatialLinkParticleResolution());
+  g.linkDirectionalParticleSpeed(spatialLinkParticleSpeed());
 }
 
 function configureSpatialForces(){
@@ -6765,9 +6784,9 @@ function initSpatialGraph(){
     .backgroundColor("rgba(0,0,0,0)")
     .showNavInfo(false)
     .nodeVal("val")
-    .linkColor(spatialLinkColor)
+    .linkColor(spatialLinkColorResolved)
     .linkWidth(spatialLinkWidth)
-    .linkOpacity(spatialLinkOpacity)
+    .linkOpacity(1)
     .linkDirectionalParticles(spatialLinkParticles)
     .linkDirectionalParticleWidth(spatialLinkParticleWidth)
     .linkDirectionalParticleColor(spatialLinkParticleColor)
@@ -9033,7 +9052,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.50";
+const APP_VERSION   = "2.31.51";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
