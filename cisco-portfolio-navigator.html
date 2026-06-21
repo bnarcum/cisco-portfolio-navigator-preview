@@ -971,8 +971,8 @@ const ONE_CISCO = {
   pillars: [
     {
       id: "ai-dc",
-      label: "AI-ready data centers",
-      shortLabel: "AI-ready DC",
+      label: "AI-Ready Data Centers",
+      shortLabel: "AI-Ready DC",
       promise: "Transform data centers to power AI workloads anywhere",
       color: "#0A60FF",
       icon: "chip",
@@ -980,7 +980,7 @@ const ONE_CISCO = {
     },
     {
       id: "workplaces",
-      label: "Future-proofed workplaces",
+      label: "Future-Proofed Workplaces",
       shortLabel: "Workplaces",
       promise: "Modernize everywhere people and technology work",
       color: "#2dce5c",
@@ -989,7 +989,7 @@ const ONE_CISCO = {
     },
     {
       id: "resilience",
-      label: "Digital resilience",
+      label: "Digital Resilience",
       shortLabel: "Resilience",
       promise: "Securely up and running through any disruption",
       color: "#FF9000",
@@ -1034,13 +1034,13 @@ const DECK_ICON_URI = {"ai-dc": "data:image/svg+xml,%3Csvg%20width%3D%2281%22%20
 const PILLAR_LAYOUT = {
   hubY: 118,
   zones: [
-    { id: "ai-dc", label: "AI-ready data centers", shortLabel: "AI-ready DC",
+    { id: "ai-dc", label: "AI-Ready Data Centers", shortLabel: "AI-Ready DC",
       color: "#0A60FF", cx: -268, cy: -122, w: 480, h: 400,
       contentInset: { left: 0.08, top: 0.20, right: 0.08, bottom: 0.10 } },
-    { id: "workplaces", label: "Future-proofed workplaces", shortLabel: "Workplaces",
+    { id: "workplaces", label: "Future-Proofed Workplaces", shortLabel: "Workplaces",
       color: "#2dce5c", cx: 268, cy: -122, w: 520, h: 430,
       contentInset: { left: 0.08, top: 0.20, right: 0.08, bottom: 0.10 } },
-    { id: "resilience", label: "Digital resilience", shortLabel: "Resilience",
+    { id: "resilience", label: "Digital Resilience", shortLabel: "Resilience",
       color: "#FF9000", cx: 0, cy: 318, w: 980, h: 320, gradient: true,
       contentInset: { left: 0.06, top: 0.20, right: 0.06, bottom: 0.08 } }
   ]
@@ -4498,38 +4498,22 @@ function appendPillarZoneHeader(zg, z, x, y, w, opacity){
   const accent = OVERVIEW_DECK.accent;
   const headerG = zg.append("g").attr("class", "zone-header").style("pointer-events", "none");
   const iconY = y + padY;
-  const centered = !!z.gradient;
-
-  if (centered){
-    const content = headerG.append("g");
-    const iconImg = content.append("image")
-      .attr("href", DECK_ICON_URI[z.id])
-      .attr("x", x + padX).attr("y", iconY)
-      .attr("width", iconSize).attr("height", iconSize)
-      .attr("opacity", opacity)
-      .attr("preserveAspectRatio", "xMidYMid meet");
-    const textEl = content.append("text").attr("class", "zone-title")
-      .attr("x", x + padX + iconSize + gap).attr("y", iconY + iconSize / 2 + 5)
-      .attr("fill", accent).attr("fill-opacity", opacity)
-      .text(z.label);
-    const tb = textEl.node().getBBox();
-    const totalW = iconSize + gap + tb.width;
-    const contentX = x + (w - totalW) / 2;
-    iconImg.attr("x", contentX);
-    textEl.attr("x", contentX + iconSize + gap);
-  } else {
-    const contentX = x + padX;
-    headerG.append("image")
-      .attr("href", DECK_ICON_URI[z.id])
-      .attr("x", contentX).attr("y", iconY)
-      .attr("width", iconSize).attr("height", iconSize)
-      .attr("opacity", opacity)
-      .attr("preserveAspectRatio", "xMidYMid meet");
-    headerG.append("text").attr("class", "zone-title")
-      .attr("x", contentX + iconSize + gap).attr("y", iconY + iconSize / 2 + 5)
-      .attr("fill", accent).attr("fill-opacity", opacity)
-      .text(z.label);
-  }
+  const content = headerG.append("g");
+  const iconImg = content.append("image")
+    .attr("href", DECK_ICON_URI[z.id])
+    .attr("x", x + padX).attr("y", iconY)
+    .attr("width", iconSize).attr("height", iconSize)
+    .attr("opacity", opacity)
+    .attr("preserveAspectRatio", "xMidYMid meet");
+  const textEl = content.append("text").attr("class", "zone-title")
+    .attr("x", x + padX + iconSize + gap).attr("y", iconY + iconSize / 2 + 5)
+    .attr("fill", accent).attr("fill-opacity", opacity)
+    .text(z.label);
+  const tb = textEl.node().getBBox();
+  const totalW = iconSize + gap + tb.width;
+  const contentX = x + (w - totalW) / 2;
+  iconImg.attr("x", contentX);
+  textEl.attr("x", contentX + iconSize + gap);
 }
 
 function updatePillarGuides(){
@@ -4819,9 +4803,9 @@ function updateOverviewDeck(){
     });
   }
 
-  drawCard({ cx: D.leftCx, cy: D.topY, w: D.topW, h: D.topH, pillarId: "ai-dc", label: "AI-ready data centers" });
-  drawCard({ cx: D.rightCx, cy: D.topY, w: D.topW, h: D.topH, pillarId: "workplaces", label: "Future-proofed workplaces" });
-  drawCard({ cx: 0, cy: D.resY, w: D.resW, h: D.resH, pillarId: "resilience", label: "Digital resilience", gradient: true, centered: true });
+  drawCard({ cx: D.leftCx, cy: D.topY, w: D.topW, h: D.topH, pillarId: "ai-dc", label: PILLAR_ZONE_BY_ID["ai-dc"].label, centered: true });
+  drawCard({ cx: D.rightCx, cy: D.topY, w: D.topW, h: D.topH, pillarId: "workplaces", label: PILLAR_ZONE_BY_ID.workplaces.label, centered: true });
+  drawCard({ cx: 0, cy: D.resY, w: D.resW, h: D.resH, pillarId: "resilience", label: PILLAR_ZONE_BY_ID.resilience.label, gradient: true, centered: true });
 
   const aiG = g.append("g").attr("class", "ov-ai").style("pointer-events", "none");
   [-1, 1].forEach(dir => {
@@ -8245,7 +8229,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.30.2";
+const APP_VERSION   = "2.30.3";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -8536,6 +8520,10 @@ const FIELD_NOTICE_BY_PROD = Object.fromEntries(FIELD_NOTICES.map(f => [f.produc
    [24] Changelog
    ────────────────────────────────────────────────────────────────*/
 const CHANGELOG = [
+  {ver:"2.30.3", date:"2026-06-21", items:[
+    "Families & Overview — pillar frame titles centered on all three cards (AI-Ready Data Centers, Future-Proofed Workplaces, Digital Resilience), matching the Digital Resilience layout.",
+    "Pillar labels — Title Case across ONE_CISCO, pillar guides, and Overview deck."
+  ]},
   {ver:"2.30.2", date:"2026-06-20", items:[
     "Light theme — stronger text/surface contrast, theme-aware Overview deck (connectors, labels, pillar cards), and pillar legend styling.",
     "Overview — fix pillar cards shaking on hover (CSS transform was overriding SVG positioning; hover lift now uses SVG transform + glow filter)."
