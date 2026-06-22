@@ -1018,7 +1018,17 @@
       0%{transform:scale(1);opacity:.8}
       100%{transform:scale(1.6);opacity:0}}
 
-    body.tour-highlight-wizard #gw-overlay.show{z-index:9100}
+    /* Guided Plan tour step: wizard visible but non-interactive; tour UI stays on top */
+    body.tour-highlight-wizard #gw-overlay.show{
+      z-index:9100;background:transparent;backdrop-filter:none;pointer-events:none}
+    body.tour-highlight-wizard #gw-panel{
+      pointer-events:none;
+      border:2px solid rgba(4,159,217,.9);
+      box-shadow:0 0 0 1px rgba(4,159,217,.35),0 0 48px rgba(4,159,217,.45),
+                 0 28px 72px rgba(0,0,0,.72)}
+    body.tour-highlight-wizard #gw-panel *{pointer-events:none}
+    body.tour-highlight-wizard #tour-spotlight{z-index:9200}
+    body.tour-highlight-wizard #tour-popover{z-index:9201}
 
     #tour-backdrop{
       position:fixed;inset:0;z-index:9000;background:transparent;
@@ -1027,30 +1037,32 @@
 
     #tour-spotlight{
       position:fixed;border-radius:8px;z-index:9001;
-      box-shadow:0 0 0 9999px rgba(0,0,0,.72), 0 0 0 3px var(--cisco-blue), 0 0 22px rgba(4,159,217,.6);
+      box-shadow:0 0 0 9999px rgba(0,0,0,.78), 0 0 0 3px var(--cisco-blue), 0 0 28px rgba(4,159,217,.75);
       transition:top .35s cubic-bezier(.4,0,.2,1), left .35s cubic-bezier(.4,0,.2,1),
                  width .35s cubic-bezier(.4,0,.2,1), height .35s cubic-bezier(.4,0,.2,1);
       pointer-events:none;display:none}
     #tour-spotlight.show{display:block}
     #tour-spotlight.centered{
-      box-shadow:0 0 0 9999px rgba(0,0,0,.78);
+      box-shadow:0 0 0 9999px rgba(0,0,0,.82);
       border:none}
 
     #tour-popover{
-      position:fixed;z-index:9002;background:var(--surface);
-      border:1px solid var(--border);border-left:3px solid var(--cisco-blue);
-      border-radius:11px;padding:18px 20px 14px;width:max-content;
+      position:fixed;z-index:9002;background:#182030;
+      border:1px solid rgba(4,159,217,.55);border-left:4px solid var(--cisco-blue);
+      border-radius:12px;padding:18px 20px 14px;width:max-content;
       max-width:min(420px, calc(100vw - 28px));
-      box-shadow:0 14px 40px rgba(0,0,0,.55);
+      box-shadow:0 0 0 1px rgba(4,159,217,.2),0 20px 52px rgba(0,0,0,.72),
+                 0 0 36px rgba(4,159,217,.22);
       font-size:13px;color:var(--text);display:none;overflow:hidden;
-      transition:opacity .25s, transform .25s;opacity:0;transform:translateY(6px)}
+      transition:opacity .25s, transform .25s, top .35s cubic-bezier(.4,0,.2,1),
+                 left .35s cubic-bezier(.4,0,.2,1);opacity:0;transform:translateY(6px)}
     #tour-popover.show{display:block;opacity:1;transform:translateY(0)}
     #tour-popover.center{left:50%;top:50%;transform:translate(-50%,-50%);max-width:460px}
     #tour-popover.center.show{transform:translate(-50%,-50%)}
 
     #tour-popover::before{
       content:"";position:absolute;width:12px;height:12px;
-      background:var(--surface);border:1px solid var(--border);
+      background:#182030;border:1px solid rgba(4,159,217,.55);
       transform:rotate(45deg);display:none}
     #tour-popover.arrow-top::before{display:block;top:-7px;left:24px;
       border-right:none;border-bottom:none}
@@ -9165,7 +9177,7 @@ document.addEventListener("keydown",ev=>{
   // The old "cisco-portfolio-tour-completed-v1" key still suppresses the *first-time* tour
   // for users who already completed v1; they can re-launch the latest via the ? button.
   const STORAGE_KEY = "cisco-portfolio-tour-completed-v1";
-  const TOUR_VERSION = "v3.1";
+  const TOUR_VERSION = "v3.2";
   const STORAGE_KEY_LATEST = "cisco-portfolio-tour-latest-seen";
 
   // Inject DOM
@@ -9202,7 +9214,7 @@ document.addEventListener("keydown",ev=>{
     {
       target: "#gw", place: "bottom",
       title: "Three pillars on Overview",
-      body: `Switch to <strong>Overview</strong> for the One Cisco deck — the same story customers hear at the executive level:
+      body: `Switch to <strong>Overview</strong> for the One Cisco view:
              <ul style="margin:8px 0 0 16px;padding:0;line-height:1.55">
                <li><b style="color:#0A60FF">AI-Ready Data Centers</b> — power AI workloads anywhere</li>
                <li><b style="color:#2dce5c">Future-Proofed Workplaces</b> — modernize how people and technology work</li>
@@ -9416,7 +9428,6 @@ document.addEventListener("keydown",ev=>{
     try {
       document.getElementById("plans-menu")?.classList.remove("show");
       document.getElementById("exp-menu")?.classList.remove("show");
-      document.getElementById("gw-overlay")?.classList.remove("show");
       document.getElementById("cmp-panel")?.classList.remove("open");
       window.__cpnV2?.phases?.closeCompare?.();
       tourResetToOverview();
@@ -9456,8 +9467,10 @@ document.addEventListener("keydown",ev=>{
         </div>
       </div>
     `;
-    // Position spotlight + popover (wait one frame so any before() animations apply)
-    requestAnimationFrame(() => positionStep(step));
+    // Position spotlight + popover (wait for before() DOM/layout — e.g. Guided Plan wizard open)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => positionStep(step));
+    });
   }
   function positionStep(step) {
     // Reset arrow classes
@@ -9607,7 +9620,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.93";
+const APP_VERSION   = "2.31.94";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
