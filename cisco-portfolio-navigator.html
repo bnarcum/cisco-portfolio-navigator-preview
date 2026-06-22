@@ -65,9 +65,16 @@
     .bg-pillar-tint--ai{background:radial-gradient(ellipse 55% 50% at 22% 38%, rgba(10,96,255,.32), transparent 68%)}
     .bg-pillar-tint--wp{background:radial-gradient(ellipse 50% 45% at 78% 38%, rgba(45,206,92,.22), transparent 65%)}
     .bg-pillar-tint--res{background:radial-gradient(ellipse 48% 42% at 50% 82%, rgba(255,144,0,.18), transparent 62%)}
-    #bg-ambient[data-pillar="ai-dc"] .bg-pillar-tint--ai{opacity:1}
-    #bg-ambient[data-pillar="workplaces"] .bg-pillar-tint--wp{opacity:1}
-    #bg-ambient[data-pillar="resilience"] .bg-pillar-tint--res{opacity:1}
+    #bg-ambient{--ambient-intensity:0}
+    #bg-ambient[data-pillar="ai-dc"] .bg-pillar-tint--ai{opacity:var(--ambient-intensity,1)}
+    #bg-ambient[data-pillar="workplaces"] .bg-pillar-tint--wp{opacity:var(--ambient-intensity,1)}
+    #bg-ambient[data-pillar="resilience"] .bg-pillar-tint--res{opacity:var(--ambient-intensity,1)}
+    #bg-ambient[data-tint-ai] .bg-pillar-tint--ai{opacity:calc(var(--ambient-intensity,.55)*.92)}
+    #bg-ambient[data-tint-wp] .bg-pillar-tint--wp{opacity:calc(var(--ambient-intensity,.55)*.88)}
+    #bg-ambient[data-tint-res] .bg-pillar-tint--res{opacity:calc(var(--ambient-intensity,.55)*.85)}
+    #bg-ambient.ambient-filtered .bg-glow{opacity:calc(.94 + var(--ambient-intensity)*.14)}
+    #bg-ambient.ambient-hot .bg-beams{opacity:.24}
+    #bg-ambient.ambient-hot .bg-grid{opacity:1.08}
     .bg-vignette{position:absolute;inset:0;
       background:radial-gradient(ellipse 85% 75% at 50% 48%, transparent 35%, rgba(0,0,0,.45) 100%)}
     .bg-glow{position:absolute;inset:-25%;opacity:1;
@@ -242,8 +249,26 @@
     /* GRAPH */
     #gs{position:relative;z-index:1;width:100%;height:100%;display:block;background:transparent;
       transition:opacity .28s ease,transform .28s ease}
-    #gs.view-exit,#spatial-wrap.view-exit{opacity:0;transform:scale(.985)}
+    #gs.view-exit,#spatial-wrap.view-exit{opacity:0;transform:scale(.985);transition:opacity .28s ease,transform .28s ease,filter .28s ease}
     #gs.view-enter,#spatial-wrap.view-enter{opacity:1;transform:scale(1)}
+    #gs.view-x-expand.view-exit,#spatial-wrap.view-x-expand.view-exit{opacity:0;transform:scale(.94);filter:blur(3px)}
+    #gs.view-x-expand.view-enter{animation:view-enter-expand .34s cubic-bezier(.2,.9,.25,1) forwards}
+    #gs.view-x-contract.view-exit{opacity:0;transform:scale(1.04);filter:blur(2px)}
+    #gs.view-x-contract.view-enter{animation:view-enter-contract .32s ease-out forwards}
+    #gs.view-x-dissolve.view-exit,#spatial-wrap.view-x-dissolve.view-exit{opacity:0;filter:blur(8px) brightness(1.12);transform:scale(.992)}
+    #spatial-wrap.view-x-dissolve.view-enter,#gs.view-x-dissolve.view-enter{animation:view-enter-dissolve .38s ease-out forwards}
+    #gs.view-x-scan.view-exit{opacity:0;transform:translateX(-1.2%) scale(.99)}
+    #gs.view-x-scan.view-enter{animation:view-enter-scan .32s ease-out forwards}
+    #gs.view-x-focus.view-exit{opacity:0;transform:scale(1.012);filter:blur(1.5px)}
+    #gs.view-x-focus.view-enter{animation:view-enter-focus .3s ease-out forwards}
+    body.view-x-dissolve #bg-ambient .bg-glow{opacity:1.28;transition:opacity .35s ease}
+    body.view-x-expand #bg-ambient .bg-glow{transform:scale(1.05);transition:transform .35s ease}
+    body.spatial-selection-active #spatial-graph canvas{filter:saturate(1.12) brightness(1.06)}
+    @keyframes view-enter-expand{from{opacity:0;transform:scale(.965)}to{opacity:1;transform:scale(1)}}
+    @keyframes view-enter-contract{from{opacity:0;transform:scale(1.03)}to{opacity:1;transform:scale(1)}}
+    @keyframes view-enter-dissolve{from{opacity:0;filter:blur(10px) brightness(1.18)}to{opacity:1;filter:none}}
+    @keyframes view-enter-scan{from{opacity:0;transform:translateX(1.4%)}to{opacity:1;transform:none}}
+    @keyframes view-enter-focus{from{opacity:0;transform:scale(.988)}to{opacity:1;transform:scale(1)}}
     body.canvas-focus #gw::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
       background:rgba(0,0,0,.42);transition:opacity .35s ease}
     body.canvas-focus.pillar-focus #gw::after{background:transparent}
@@ -3867,24 +3892,26 @@ function applyAllProductsNodeStyles(selectedNode){
     const isHov = d.id === pillarHoverId;
     const hot = isSel || isHov || isConn;
     const inStk = stack.has(d.id);
+    const dim = selectedNode && !hot && !inStk;
+    g.classed("nd-dim", dim);
     g.select(".gr")
       .attr("r", d._r + (isFamily ? 10 : 5))
       .attr("fill", color)
-      .attr("fill-opacity", hot ? 0.40 : (inStk ? 0.32 : (isFamily ? 0.24 : 0.16)))
-      .attr("filter", "url(#glow)");
+      .attr("fill-opacity", hot ? 0.40 : (dim ? 0.06 : (inStk ? 0.32 : (isFamily ? 0.24 : 0.16))))
+      .attr("filter", hot ? "url(#glow)" : (dim ? null : "url(#glow)"));
     g.select(".mc")
       .attr("r", d._r)
       .attr("fill", color)
-      .attr("fill-opacity", hot || inStk ? 1 : (isFamily ? 0.98 : 0.94))
+      .attr("fill-opacity", hot || inStk ? 1 : (dim ? 0.22 : (isFamily ? 0.98 : 0.94)))
       .attr("stroke", isSel ? "#ffffff" : (inStk ? "#FFD700" : (p?.status === "eol" ? "#ef4444" : p?.status === "eos" ? "#FF9000" : color)))
       .attr("stroke-width", isSel ? 2.6 : (inStk ? 2.2 : (isFamily ? 2.35 : 2)))
-      .attr("stroke-opacity", hot || inStk || isFamily ? 1 : 0.9);
+      .attr("stroke-opacity", hot || inStk || isFamily ? 1 : (dim ? 0.35 : 0.9));
     g.select("image.pimg").remove();
     g.select("circle.mring").attr("stroke", "transparent").attr("stroke-width", 0);
     g.select("use.icn")
       .attr("href", "#icon-" + iconKey(d))
       .style("display", null)
-      .attr("opacity", hot || inStk ? 1 : (isFamily ? 1 : 0.96));
+      .attr("opacity", hot || inStk ? 1 : (dim ? 0.18 : (isFamily ? 1 : 0.96)));
     g.select(".node-scaler").attr("transform", hot ? "scale(1.08)" : null);
   });
   applyAllProductsLabelStyles(selectedNode);
@@ -4729,11 +4756,45 @@ function pillarZoneStats(items){
   return `${families} families · ${cur} current`;
 }
 
+function ambientFilterIntensity(){
+  const totalCats = Object.keys(CATS).length;
+  let n = 0;
+  if (activePillars.size === 1) n = Math.max(n, 0.88);
+  else if (activePillars.size > 0) n = Math.max(n, 0.58);
+  if (activeCats.size < totalCats) n = Math.max(n, 0.46);
+  if (activeUC || activeInd) n = Math.max(n, 0.4);
+  if (facetState.status.size !== 1 || !facetState.status.has("current") || facetState.tier.size > 0) n = Math.max(n, 0.36);
+  if (viewMode === "spatial" && spatialState.filterActive) n = Math.max(n, 0.5);
+  return n;
+}
+
+function syncAmbientReactivity(pillarId){
+  const el = document.getElementById("bg-ambient");
+  if (!el) return;
+  const filterBoost = ambientFilterIntensity();
+  const focusBoost = pillarId ? 1 : (viewMode === "families" && singlePillarFocused() ? 1 : 0);
+  const intensity = Math.min(1, Math.max(filterBoost, focusBoost));
+  el.style.setProperty("--ambient-intensity", String(intensity));
+  el.classList.toggle("ambient-hot", intensity > 0.72);
+  el.classList.toggle("ambient-filtered", filterBoost > 0.05 && !pillarId);
+  if (!pillarId && activePillars.size){
+    if (activePillars.has("ai-dc")) el.dataset.tintAi = "1"; else delete el.dataset.tintAi;
+    if (activePillars.has("workplaces")) el.dataset.tintWp = "1"; else delete el.dataset.tintWp;
+    if (activePillars.has("resilience")) el.dataset.tintRes = "1"; else delete el.dataset.tintRes;
+  } else {
+    delete el.dataset.tintAi;
+    delete el.dataset.tintWp;
+    delete el.dataset.tintRes;
+  }
+  document.body.classList.toggle("spatial-selection-active", viewMode === "spatial" && !!selected);
+}
+
 function setAmbientPillarTint(pillarId){
   const el = document.getElementById("bg-ambient");
   if (!el) return;
   if (pillarId) el.dataset.pillar = pillarId;
   else delete el.dataset.pillar;
+  syncAmbientReactivity(pillarId);
 }
 
 function updateCanvasFocusState(){
@@ -4772,20 +4833,37 @@ function applyPillarNodeVisualState(selectedNode){
   updateCanvasFocusState();
 }
 
-function runViewTransition(callback){
+function viewTransitionClass(from, to){
+  if (to === "spatial" || from === "spatial") return "view-x-dissolve";
+  if (from === "overview" && to === "families") return "view-x-expand";
+  if (from === "families" && to === "overview") return "view-x-contract";
+  if ((from === "families" && to === "all-products") || (from === "all-products" && to === "families")) return "view-x-scan";
+  if (to === "composition" || from === "composition") return "view-x-focus";
+  return "view-x-default";
+}
+
+function runViewTransition(callback, from, to){
   const gs = document.getElementById("gs");
   const sw = document.getElementById("spatial-wrap");
-  const els = [gs, sw].filter(el => el && el.offsetParent !== null || el === gs);
+  const xcls = viewTransitionClass(from, to);
+  const els = [gs, sw].filter(el => el && (el.offsetParent !== null || el === gs));
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduced || els.length === 0){ callback(); return; }
-  els.forEach(el => el.classList.add("view-exit"));
+  document.body.classList.add("view-transitioning", xcls);
+  els.forEach(el => { el.classList.add("view-exit", xcls); });
   setTimeout(() => {
     callback();
     requestAnimationFrame(() => {
-      els.forEach(el => { el.classList.remove("view-exit"); el.classList.add("view-enter"); });
-      setTimeout(() => els.forEach(el => el.classList.remove("view-enter")), 320);
+      els.forEach(el => {
+        el.classList.remove("view-exit");
+        el.classList.add("view-enter", xcls);
+      });
+      setTimeout(() => {
+        els.forEach(el => el.classList.remove("view-enter", xcls));
+        document.body.classList.remove("view-transitioning", xcls);
+      }, 360);
     });
-  }, 160);
+  }, from === "spatial" || to === "spatial" ? 200 : 160);
 }
 
 function updateCompositionOrbitGuide(){
@@ -6349,10 +6427,18 @@ function updateSpatialNodeGroup(group, node){
   const accent = spatialNodeAccent(node);
   const deco = spatialDecoFade();
   const isHot = selected?.id === node.id || spatialState.hoveredId === node.id;
+  const isSel = selected?.id === node.id;
   group.traverse(obj => {
     if (obj.userData?.role === "halo" && obj.material){
       obj.material.color.setHex(accent.glow);
-      obj.material.opacity = (isHot ? accent.glowOp * 1.22 : accent.glowOp * 1.02) * deco;
+      obj.material.opacity = (isHot ? accent.glowOp * 1.28 : accent.glowOp * 1.02) * deco;
+    }
+    if (obj.userData?.role === "bloom" && obj.material){
+      obj.material.color.setHex(accent.glow);
+      const bloomOp = isHot ? accent.glowOp * 0.62 : (isSel ? accent.glowOp * 0.14 : 0);
+      obj.material.opacity = bloomOp * deco;
+      const bloomScale = isHot ? rs * 2.55 : rs * 2.05;
+      obj.scale.set(bloomScale, rs * 0.035, bloomScale);
     }
     if (obj.userData?.role === "label"){
       styleSpatialLabelSprite(obj, node);
@@ -6389,6 +6475,19 @@ function buildSpatialNodeObject(node){
   halo.scale.set(rs * 1.42, rs * 0.08, rs * 1.42);
   halo.rotation.x = Math.PI / 2;
   group.add(halo);
+
+  const bloom = template.clone();
+  bloom.material = new THREE.MeshBasicMaterial({
+    color: accent.glow,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: 2,
+  });
+  bloom.userData.role = "bloom";
+  bloom.scale.set(rs * 2.05, rs * 0.035, rs * 2.05);
+  bloom.rotation.x = Math.PI / 2;
+  group.add(bloom);
 
   ensureSpatialTileOnGroup(group, node, radius, profile);
 
@@ -6444,7 +6543,7 @@ function refreshSpatialNodeVisuals(){
 
 function spatialLinkHighlightTier(l){
   if (spatialState.focusFamily) return "orbit";
-  if (spatialState.linkPreset === "focus" && selected){
+  if (selected){
     const conn = connectionNodeSet(selected.id, connectionHighlightDepth);
     const s = sid(l), t = tid(l);
     if (!conn.has(s) || !conn.has(t)) return "dim";
@@ -6608,7 +6707,7 @@ function spatialLinkParticles(l){
 
 function spatialLinkParticleWidth(l){
   const tier = spatialLinkHighlightTier(l);
-  if (tier === "hot") return l.type === "direct" ? 4.2 : 3.2;
+  if (tier === "hot") return l.type === "direct" ? 5.0 : 3.8;
   if (tier === "all" || tier === "mid" || tier === "orbit") return l.type === "direct" ? 3.6 : 2.8;
   return l.type === "direct" ? 3.0 : 2.2;
 }
@@ -7019,8 +7118,6 @@ function refreshSpatialGraph(){
     refreshSpatialNodeVisuals();
     refreshSpatialLinkStyles();
     updateSpatialHud();
-    ensureSpatialDecor();
-    updateSpatialDecor();
     scheduleSpatialFit(spatialState.filterActive ? 780 : 920);
   };
   requestAnimationFrame(() => requestAnimationFrame(() => applyData(0)));
@@ -7236,7 +7333,7 @@ function applyViewLevel(mode, opts){
   };
 
   if (opts.initial || prev === mode) applySwitch();
-  else runViewTransition(applySwitch);
+  else runViewTransition(applySwitch, prev, mode);
 }
 
 // ── Force-tuning per mode so each view feels right.
@@ -7529,6 +7626,7 @@ function selectNode(d, opts = {}) {
       refreshSpatialNodeVisuals();
       refreshSpatialLinkStyles();
     }
+    syncAmbientReactivity(null);
     return;
   }
   if (viewMode === "composition"){
@@ -7551,6 +7649,7 @@ function resetHL() {
       refreshSpatialNodeVisuals();
       refreshSpatialLinkStyles();
     }
+    syncAmbientReactivity(null);
     return;
   }
   if (viewMode === "all-products"){
@@ -7876,11 +7975,13 @@ function applyFilters() {
     refreshTimelineIfOpen();
     fitCompositionView();
     scheduleGraphFit("composition");
+    updateCanvasFocusState();
     return;
   }
   if (viewMode === "overview"){
     const badge = document.getElementById("fbadge"); if (badge) badge.style.display = "none";
     refreshTimelineIfOpen();
+    updateCanvasFocusState();
     return;
   }
   if (viewMode === "spatial"){
@@ -7895,6 +7996,7 @@ function applyFilters() {
     } else if (badge) badge.style.display = "none";
     refreshSpatialGraph();
     refreshTimelineIfOpen();
+    updateCanvasFocusState();
     return;
   }
   const vis=new Set();
@@ -7950,6 +8052,7 @@ function applyFilters() {
   }
   refreshTimelineIfOpen();
   if (viewMode === "families" || viewMode === "composition") scheduleGraphFit(viewMode);
+  updateCanvasFocusState();
 }
 
 function resetAll() {
@@ -9201,7 +9304,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.63";
+const APP_VERSION   = "2.31.65";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
