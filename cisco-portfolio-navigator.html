@@ -305,6 +305,28 @@
     #tn{font-weight:600;margin-bottom:2px}
     #tc{font-size:11px;color:#cbd5e1;line-height:1.45}
 
+    /* LINK "WHY CONNECTED" CARD */
+    #link-why-card{position:fixed;display:none;z-index:410;pointer-events:none;
+      max-width:min(300px,92vw);padding:11px 13px;border-radius:10px;
+      background:var(--glass-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border:1px solid var(--glass-edge);box-shadow:0 12px 40px rgba(0,0,0,.45)}
+    #link-why-card .lwc-head{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap}
+    #link-why-card .lwc-type{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+      padding:2px 7px;border-radius:4px;background:color-mix(in srgb, var(--ltc,#02C8FF) 22%, transparent);
+      color:var(--ltc,#02C8FF);border:1px solid color-mix(in srgb, var(--ltc,#02C8FF) 40%, transparent)}
+    #link-why-card .lwc-label{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
+    #link-why-card .lwc-nodes{font-size:11px;color:var(--muted);margin-bottom:5px;line-height:1.35}
+    #link-why-card .lwc-why{font-size:10.5px;color:var(--subtle);line-height:1.45;margin-bottom:4px}
+    #link-why-card .lwc-ov-t{display:block;font-size:9px;font-weight:700;text-transform:uppercase;
+      letter-spacing:.06em;color:var(--accent);margin-bottom:4px}
+    #link-why-card .lwc-ov-tags{display:flex;flex-wrap:wrap;gap:4px}
+    #link-why-card .lwc-tag{font-size:9px;padding:2px 6px;border-radius:4px;
+      background:rgba(2,200,255,.1);color:var(--muted);border:1px solid rgba(2,200,255,.18)}
+    @keyframes link-flow{from{stroke-dashoffset:26}to{stroke-dashoffset:0}}
+    line.lv.link-hot{stroke-opacity:1!important;stroke-width:3!important;
+      animation:link-flow 1.1s linear infinite;stroke-dasharray:8 5}
+    @media (prefers-reduced-motion:reduce){line.lv.link-hot{animation:none}}
+
     /* DETAIL PANEL */
     #panel{position:fixed;top:var(--topbar-h);right:0;bottom:0;width:390px;
       background:var(--glass-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
@@ -1084,6 +1106,12 @@
   <svg id="gs"></svg>
 </div>
 <div id="tip"><div id="tn"></div><div id="tc"></div></div>
+<div id="link-why-card" aria-hidden="true">
+  <div class="lwc-head"><span class="lwc-type"></span><span class="lwc-label"></span></div>
+  <div class="lwc-nodes"></div>
+  <div class="lwc-why"></div>
+  <div class="lwc-overlap"></div>
+</div>
 
 <div id="panel">
   <button id="pcl">&#xd7;</button>
@@ -5481,13 +5509,21 @@ function rebindGraph(opts){
     .join(
       enter => enter.append("line").attr("class","lh")
         .attr("stroke","transparent").attr("stroke-width", 12)
-        .on("mouseover", (ev,l) => {
-          document.getElementById("tn").textContent = l.label || "";
-          const sn = nodeById[sid(l)] || prodById[sid(l)] || {name: sid(l)};
-          const tn = nodeById[tid(l)] || prodById[tid(l)] || {name: tid(l)};
-          document.getElementById("tc").textContent = `${sn.name} → ${tn.name}`;
-          document.getElementById("tip").style.display = "block"; moveTip(ev);
-        }).on("mousemove", moveTip).on("mouseout", hideTip),
+        .on("mouseover", (ev,l) => onLinkPointer(ev, l))
+        .on("mousemove", ev => {
+          if (hoveredLinkKey || selectedLinkKey) positionLinkWhyCard(ev);
+          else moveTip(ev);
+        })
+        .on("mouseout", () => {
+          if (selectedLinkKey) return;
+          hoveredLinkKey = null;
+          hideLinkWhyCard();
+          hideTip();
+        })
+        .on("click", (ev, l) => {
+          ev.stopPropagation();
+          selectLink(ev, l);
+        }),
       update => update,
       exit => exit.transition().duration(220).attr("stroke-opacity", 0).remove()
     );
@@ -5692,7 +5728,7 @@ function rebindGraph(opts){
   if (typeof watchDirectNodeClicks === "function") watchDirectNodeClicks();
 }
 
-svg.on("click",() => { selected=null; resetHL(); closePanel(); });
+svg.on("click",() => { selected=null; clearLinkSelection(); resetHL(); closePanel(); });
 sim.on("tick",() => {
   if (viewMode === "composition") syncCompositionPositions();
   if (lviz) lviz.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y)
@@ -5712,6 +5748,162 @@ svg.call(zoom.transform, d3.zoomIdentity.translate(iw/2,ih/2).scale(0.78));
 // ── Helpers
 const sid = l => (typeof l.source==="object" ? l.source.id : l.source);
 const tid = l => (typeof l.target==="object" ? l.target.id : l.target);
+
+let hoveredLinkKey = null;
+let selectedLinkKey = null;
+let lastPointer = { x: 0, y: 0 };
+document.addEventListener("mousemove", e => { lastPointer.x = e.clientX; lastPointer.y = e.clientY; });
+
+function connectionTypeLabel(type){
+  return ({ direct: "Direct", adjacent: "Adjacent", succession: "Succession", composition: "Contains" })[type] || (type || "Connected");
+}
+function connectionTypeDesc(type){
+  return ({
+    direct: "Native integration — policy, telemetry, or control-plane coupling",
+    adjacent: "Complementary pairing — often deployed together",
+    succession: "Migration path — newer capability replaces or succeeds this SKU",
+    composition: "Product belongs to this portfolio family"
+  })[type] || "Mapped relationship in the Cisco portfolio graph";
+}
+function nodeUseCases(id){
+  const fam = nodeById[id];
+  if (fam?.useCases?.length) return fam.useCases;
+  const prod = prodById[id];
+  if (prod) return nodeById[prod.family]?.useCases || [];
+  return [];
+}
+function linkUseCaseOverlap(link){
+  const a = new Set(nodeUseCases(sid(link)));
+  return nodeUseCases(tid(link)).filter(u => a.has(u));
+}
+function linkNodeName(id){
+  return nodeById[id]?.name || prodById[id]?.name || id;
+}
+function linkAccentColor(link){
+  const t = link?.type;
+  if (t === "direct") return "#02C8FF";
+  if (t === "adjacent") return "#FF9000";
+  if (t === "succession") return "#c084fc";
+  if (t === "composition") return "#64748b";
+  return "#94a3b8";
+}
+function activeLinkKey(){ return selectedLinkKey || hoveredLinkKey; }
+function applyLinkHighlight(){
+  if (!lviz) return;
+  const key = activeLinkKey();
+  lviz.each(function(l){
+    const el = d3.select(this);
+    const hot = !!(key && linkKey(l) === key);
+    el.classed("link-hot", hot);
+    if (hot) el.style("--link-hot-color", linkAccentColor(l)).attr("stroke", linkAccentColor(l));
+    else el.style("--link-hot-color", null);
+  });
+}
+function positionLinkWhyCard(ev){
+  const card = document.getElementById("link-why-card");
+  if (!card || card.style.display === "none") return;
+  const { w } = getDims();
+  const cw = card.offsetWidth || 280;
+  const ch = card.offsetHeight || 120;
+  let x = ev.clientX + 16, y = ev.clientY - 12;
+  if (x + cw > w - 12) x = Math.max(8, ev.clientX - cw - 16);
+  if (y + ch > window.innerHeight - 12) y = window.innerHeight - ch - 12;
+  if (y < 72) y = 72;
+  card.style.left = x + "px";
+  card.style.top = y + "px";
+}
+function showLinkWhyCard(ev, link){
+  const card = document.getElementById("link-why-card");
+  if (!card || !link) return;
+  hideTip();
+  const sn = linkNodeName(sid(link)), tn = linkNodeName(tid(link));
+  const overlap = linkUseCaseOverlap(link);
+  const typeEl = card.querySelector(".lwc-type");
+  typeEl.textContent = connectionTypeLabel(link.type);
+  typeEl.style.setProperty("--ltc", linkAccentColor(link));
+  card.querySelector(".lwc-label").textContent = link.label || "";
+  card.querySelector(".lwc-nodes").textContent = `${sn} ↔ ${tn}`;
+  const why = connectionTypeDesc(link.type);
+  card.querySelector(".lwc-why").textContent = link.label ? `${why} — ${link.label}` : why;
+  const ov = card.querySelector(".lwc-overlap");
+  if (overlap.length){
+    ov.style.display = "block";
+    ov.innerHTML = `<span class="lwc-ov-t">Shared use cases</span><span class="lwc-ov-tags">${overlap.map(u => `<span class="lwc-tag">${escapeHtml(u)}</span>`).join("")}</span>`;
+  } else {
+    ov.style.display = "none";
+    ov.innerHTML = "";
+  }
+  card.style.display = "block";
+  card.setAttribute("aria-hidden", "false");
+  positionLinkWhyCard(ev);
+}
+function hideLinkWhyCard(){
+  if (selectedLinkKey) return;
+  hoveredLinkKey = null;
+  const card = document.getElementById("link-why-card");
+  if (card){ card.style.display = "none"; card.setAttribute("aria-hidden", "true"); }
+  applyLinkHighlight();
+}
+function clearLinkSelection(){
+  selectedLinkKey = null;
+  hoveredLinkKey = null;
+  const card = document.getElementById("link-why-card");
+  if (card){ card.style.display = "none"; card.setAttribute("aria-hidden", "true"); }
+  applyLinkHighlight();
+}
+function onLinkPointer(ev, link){
+  if (!link){
+    hoveredLinkKey = null;
+    if (!selectedLinkKey) hideLinkWhyCard();
+    else applyLinkHighlight();
+    return;
+  }
+  hoveredLinkKey = linkKey(link);
+  applyLinkHighlight();
+  showLinkWhyCard(ev, link);
+}
+function selectLink(ev, link){
+  if (!link) return;
+  selectedLinkKey = linkKey(link);
+  showLinkWhyCard(ev, link);
+  applyLinkHighlight();
+}
+function buildStackConnections(){
+  const effSet = new Set([...stack].map(id => getEffectiveNodeId(id)));
+  const conns = [];
+  const seen = new Set();
+  LINKS.forEach(l => {
+    const s = sid(l), t = tid(l);
+    if (!effSet.has(s) || !effSet.has(t)) return;
+    const key = linkKey(l);
+    if (seen.has(key)) return;
+    seen.add(key);
+    conns.push({
+      source: s, target: t,
+      sourceName: linkNodeName(s), targetName: linkNodeName(t),
+      type: l.type, label: l.label || "",
+      typeLabel: connectionTypeLabel(l.type),
+      useCaseOverlap: linkUseCaseOverlap(l)
+    });
+  });
+  [...stack].forEach(id => {
+    if (stackItems.get(id) !== "product") return;
+    const p = prodById[id];
+    if (!p?.successor || !stack.has(p.successor)) return;
+    const l = { source: id, target: p.successor, type: "succession", label: "replaced by" };
+    const key = linkKey(l);
+    if (seen.has(key)) return;
+    seen.add(key);
+    conns.push({
+      source: id, target: p.successor,
+      sourceName: p.name, targetName: linkNodeName(p.successor),
+      type: l.type, label: l.label,
+      typeLabel: connectionTypeLabel(l.type),
+      useCaseOverlap: linkUseCaseOverlap(l)
+    });
+  });
+  return conns;
+}
 
 function connectionNeighborhood(startId, maxDepth = 2, links = LINKS){
   const seen = new Map([[startId, { depth: 0 }]]);
@@ -6853,7 +7045,7 @@ function buildSpatialCompositionData(familyId){
     ...(n._kind === "family" ? { fx: 0, fy: 0, fz: 0 } : {})
   }));
   const links = v.links.map(l => ({
-    source: sid(l), target: tid(l), type: l.type
+    source: sid(l), target: tid(l), type: l.type, label: l.label
   }));
   return { nodes, links };
 }
@@ -7007,7 +7199,7 @@ function buildSpatialGraphData(){
   }));
   const nodeSet = new Set(nodes.map(n => n.id));
   const links = LINKS.filter(l => nodeSet.has(sid(l)) && nodeSet.has(tid(l))).map(l => ({
-    source: sid(l), target: tid(l), type: l.type
+    source: sid(l), target: tid(l), type: l.type, label: l.label
   }));
   return { nodes, links };
 }
@@ -7127,6 +7319,11 @@ function initSpatialGraph(){
         spatialState.hoveredId = next;
         refreshSpatialNodeVisuals();
       }
+    })
+    .onLinkHover(link => {
+      document.body.style.cursor = link ? "pointer" : null;
+      const ev = { clientX: lastPointer.x, clientY: lastPointer.y };
+      onLinkPointer(ev, link);
     })
     .onEngineStop(() => {});
   spatialState.graph.graphData({ nodes: [{ id: "__three_probe__", val: 1 }], links: [] });
@@ -7670,6 +7867,7 @@ function applyConnectionHighlight(d, depth = connectionHighlightDepth){
 
 function selectNode(d, opts = {}) {
   if (opts.connectionDepth) connectionHighlightDepth = opts.connectionDepth;
+  clearLinkSelection();
   selected = d; hideTip();
   applyConnectionHighlight(d, connectionHighlightDepth);
   if (usePillarLayout()) applyPillarNodeVisualState(d);
@@ -9402,7 +9600,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.71";
+const APP_VERSION   = "2.31.73";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -10081,15 +10279,15 @@ STYLE.textContent = `
     50%{r:calc(var(--orig-r,18) * 1.18)}}
   .nd.pulse circle.mc{animation:searchPulse 1.05s ease-in-out infinite}
 
-  /* Timeline view */
-  #tl-wrap{position:fixed;top:var(--topbar-h);left:0;right:0;bottom:0;background:transparent;
+  /* Timeline view — opaque panel so the graph never bleeds through */
+  #tl-wrap{position:fixed;top:var(--topbar-h);left:0;right:0;bottom:0;background:var(--bg);
     display:none;overflow:hidden;z-index:40;flex-direction:column}
   #tl-ambient{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;
-    background:linear-gradient(165deg,#04101f 0%,#07182d 42%,#0b2a4a 100%);opacity:.92}
+    background:linear-gradient(165deg,#04101f 0%,#07182d 42%,#0b2a4a 100%);opacity:1}
   [data-theme="light"] #tl-ambient{background:linear-gradient(165deg,#e8f0fa 0%,#f4f7fb 100%)}
   #tl-head{position:relative;z-index:2;padding:12px 22px;border-bottom:1px solid var(--border);
     display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;flex-wrap:nowrap;
-    background:var(--glass-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    background:var(--surface)}
   /* Lift the timeline so the horizontal scrollbar at the bottom of #tl-canvas
      isn't covered by other fixed chrome (#v2-footer, #tools, #hint), which
      all paint above #tl-wrap (z-index 45–50 vs. tl-wrap's 40). The
@@ -10109,7 +10307,7 @@ STYLE.textContent = `
   #tl-head > div:last-child{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:nowrap}
   #tl-head .tl-title{font-size:14px;font-weight:700}
   #tl-head .tl-sub{font-size:11px;color:var(--muted);margin-top:2px}
-  #tl-canvas{flex:1;position:relative;z-index:1;
+  #tl-canvas{flex:1;position:relative;z-index:1;background:var(--bg);
     /* overflow-x:scroll (vs auto) permanently reserves a track at the bottom.
        We deliberately do NOT set scrollbar-color/scrollbar-width here: in
        Chrome 113+ those properties opt the element into the new "Fluent"
@@ -10148,6 +10346,20 @@ STYLE.textContent = `
   .tl-zoom button:hover:not(:disabled){background:var(--surface3);color:var(--accent)}
   .tl-zoom button:disabled{opacity:.35;cursor:not-allowed}
   .tl-zoom .tl-zoom-lvl{font-size:11px;color:var(--muted);padding:0 8px;border-left:1px solid var(--border);border-right:1px solid var(--border);min-width:46px;text-align:center}
+  .tl-fam-wrap{position:relative;display:inline-flex;align-items:center}
+  .tl-fam-btn{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tl-fam-drop{position:absolute;top:calc(100% + 6px);right:0;width:min(280px,calc(100vw - 40px));
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;
+    box-shadow:0 10px 28px rgba(0,0,0,.55);z-index:20;padding:10px;display:none;
+    max-height:min(340px,50vh);flex-direction:column;gap:8px}
+  .tl-fam-drop.show{display:flex}
+  .tl-fam-search{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);font-size:12px;padding:6px 8px;outline:none;font-family:inherit}
+  .tl-fam-search:focus{border-color:var(--accent)}
+  .tl-fam-list{overflow-y:auto;display:flex;flex-direction:column;gap:2px;min-height:0;flex:1}
+  .tl-fam-list .fac-row{padding:3px 2px;border-radius:4px}
+  .tl-fam-list .fac-row:hover{background:var(--surface2)}
+  .tl-fam-drop .fac-clr{align-self:flex-start;margin-top:2px}
   /* Inner sized container that scales with zoom. Width is explicitly set by
      renderTimeline() in pixels (= LABEL_W + GAP + dataW + RIGHT_GUTTER) so
      the canvas's overflow:auto produces a horizontal scrollbar whenever the
@@ -11096,15 +11308,40 @@ function exportPPTX(){
   sl = pp.addSlide();
   sl.background = { color: "0D1117" };
   sl.addText("Current Stack", { x:0.5, y:0.4, w:12, h:0.5, fontSize:24, bold:true, color:"00BCEB" });
-  const rows = [[{text:"Product",options:{bold:true,color:"FFFFFF",fill:"21262D"}},{text:"Category",options:{bold:true,color:"FFFFFF",fill:"21262D"}},{text:"Status",options:{bold:true,color:"FFFFFF",fill:"21262D"}},{text:"Tier",options:{bold:true,color:"FFFFFF",fill:"21262D"}}]];
+  const rows = [[{text:"Product",options:{bold:true,color:"FFFFFF",fill:"21262D"}},{text:"Pillar",options:{bold:true,color:"FFFFFF",fill:"21262D"}},{text:"Category",options:{bold:true,color:"FFFFFF",fill:"21262D"}},{text:"Status",options:{bold:true,color:"FFFFFF",fill:"21262D"}},{text:"Tier",options:{bold:true,color:"FFFFFF",fill:"21262D"}}]];
   sm.items.slice(0, 18).forEach(it => rows.push([
-    {text:it.name, options:{color:"E6EDF3"}}, {text:it.category||"-",options:{color:"8B949E"}},
+    {text:it.name, options:{color:"E6EDF3"}},
+    {text:it.pillar?.shortLabel || it.pillar?.label || "-", options:{color: it.pillar?.color?.replace("#","") || "8B949E", fontSize:10}},
+    {text:it.category||"-",options:{color:"8B949E"}},
     {text:it.status.toUpperCase(), options:{color: it.status==="eol"?"EF4444":it.status==="eos"?"F59E0B":"2DCE5C"}},
     {text:it.tier||"-", options:{color:"8B949E", fontSize:10}}
   ]));
   sl.addTable(rows, { x:0.4, y:1.0, w:12.5, fontSize:11, color:"E6EDF3", border:{type:"solid",pt:0.5,color:"30363D"} });
 
-  // Slide 3: Recommendations
+  // Slide: One Cisco framing
+  sl = pp.addSlide();
+  sl.background = { color: "0D1117" };
+  sl.addText("One Cisco Framing", { x:0.5, y:0.4, w:12, h:0.5, fontSize:24, bold:true, color:"00BCEB" });
+  sl.addText(sm.connectivityLabel || "Secure global connectivity", { x:0.6, y:1.0, w:12, h:0.4, fontSize:14, bold:true, color:"FFFFFF" });
+  sm.pillars.forEach((p, i) => {
+    const y = 1.55 + i * 0.72;
+    const hex = (p.color || "02C8FF").replace("#", "");
+    sl.addShape(pp.ShapeType.roundRect, { x:0.6, y, w:0.35, h:0.35, fill:{color:hex}, rectRadius:0.08 });
+    sl.addText(p.shortLabel, { x:1.1, y, w:4, h:0.35, fontSize:14, bold:true, color:"FFFFFF" });
+    sl.addText(p.covered ? "Represented in stack" : "Gap — not in current stack", {
+      x:5.2, y, w:7, h:0.35, fontSize:11, color: p.covered ? "2DCE5C" : "8B949E"
+    });
+  });
+  if (sm.stackConnections.length){
+    sl.addText(`Stack integrations (${sm.stackConnections.length})`, { x:0.6, y:3.85, w:12, h:0.3, fontSize:11, bold:true, color:"00BCEB" });
+    sm.stackConnections.slice(0, 5).forEach((c, i) => {
+      const y = 4.2 + i * 0.42;
+      sl.addText(`${c.sourceName} ↔ ${c.targetName}`, { x:0.75, y, w:12, h:0.22, fontSize:10, color:"E6EDF3" });
+      sl.addText(`${c.typeLabel}${c.label ? " · " + c.label : ""}`, { x:0.85, y: y + 0.2, w:11.5, h:0.18, fontSize:9, color:"8B949E" });
+    });
+  }
+
+  // Slide: Recommendations
   if (sm.recs.length){
     sl = pp.addSlide();
     sl.background = { color: "0D1117" };
@@ -13354,7 +13591,7 @@ function buildContextMenu(){
    need. yearSpan is refreshed by every renderTimeline() pass; minZoom is
    recomputed each render so the user can always zoom out to fit-to-data even
    if their window is wider than the default 1620 px (18yrs × 90 px/yr). */
-const TL = { zoom: 1.0, minZoom: 0.2, maxZoom: 6, onlyStack: false, yearSpan: 0 };
+const TL = { zoom: 1.0, minZoom: 0.2, maxZoom: 6, onlyStack: false, families: new Set(), yearSpan: 0 };
 
 /* Layout constants used by both the renderer and the zoom math. Keep these in
    sync with the .tl-axis / .tl-row CSS: column 1 is TL_LABEL_W wide, gap is
@@ -13387,6 +13624,14 @@ function buildTimelineView(){
           <button id="tl-zoom-in" title="Zoom in (+)">+</button>
           <button id="tl-zoom-fit" title="Fit data span to viewport (no horizontal scroll)" style="border-left:1px solid var(--border);font-size:10px;letter-spacing:.04em">FIT</button>
         </div>
+        <div class="tl-fam-wrap">
+          <button type="button" class="tbs tl-fam-btn" id="tl-fam-btn" title="Filter by product family" aria-haspopup="true" aria-expanded="false">All families ▾</button>
+          <div id="tl-fam-drop" class="tl-fam-drop" role="dialog" aria-label="Family filter">
+            <input type="search" id="tl-fam-search" class="tl-fam-search" placeholder="Search families…" autocomplete="off">
+            <div id="tl-fam-list" class="tl-fam-list"></div>
+            <button type="button" class="fac-clr" id="tl-fam-clr" hidden>Clear family filter</button>
+          </div>
+        </div>
         <button class="rc-btn" id="tl-only-stack">Show only stack items</button>
         <button class="rc-btn" id="tl-close">Close</button>
       </div>
@@ -13394,6 +13639,75 @@ function buildTimelineView(){
     <div id="tl-canvas"><div id="tl-inner"></div></div>
   `;
   document.body.appendChild(tl);
+
+  const tlFamBtn   = $("#tl-fam-btn");
+  const tlFamDrop  = $("#tl-fam-drop");
+  const tlFamList  = $("#tl-fam-list");
+  const tlFamSearch = $("#tl-fam-search");
+  const tlFamClr   = $("#tl-fam-clr");
+
+  function timelineFamiliesForFilter(){
+    const ids = new Set();
+    PRODUCTS.forEach(p => {
+      if (TL.onlyStack && !stack.has(p.id) && !stack.has(p.family)) return;
+      if (!productVisibleInTimeline(p)) return;
+      ids.add(p.family);
+    });
+    return [...ids].sort((a, b) => (nodeById[a]?.name || "").localeCompare(nodeById[b]?.name || ""));
+  }
+
+  function updateTimelineFamilyBtn(){
+    const n = TL.families.size;
+    if (n === 0) tlFamBtn.textContent = "All families ▾";
+    else if (n === 1){
+      const id = [...TL.families][0];
+      tlFamBtn.textContent = (nodeById[id]?.name || id) + " ▾";
+    } else tlFamBtn.textContent = `${n} families ▾`;
+    tlFamClr.hidden = n === 0;
+  }
+
+  function populateTimelineFamilyList(q = ""){
+    const query = q.trim().toLowerCase();
+    const famIds = timelineFamiliesForFilter();
+    tlFamList.innerHTML = famIds.map(famId => {
+      const n = nodeById[famId]; if (!n) return "";
+      if (query && !n.name.toLowerCase().includes(query)) return "";
+      const checked = TL.families.has(famId) ? "checked" : "";
+      return `<label class="fac-row"><input type="checkbox" data-fam="${famId}" ${checked}>
+        <span class="ld" style="width:7px;height:7px;border-radius:50%;background:${catColor(n.category)};flex-shrink:0"></span>
+        ${escapeHtml(n.name)}</label>`;
+    }).join("") || `<div style="font-size:11px;color:var(--subtle);padding:6px 2px">No matching families</div>`;
+    tlFamList.querySelectorAll("input[data-fam]").forEach(inp => {
+      inp.addEventListener("change", () => {
+        const id = inp.dataset.fam;
+        if (inp.checked) TL.families.add(id); else TL.families.delete(id);
+        updateTimelineFamilyBtn();
+        renderTimeline();
+      });
+    });
+  }
+
+  function openTimelineFamilyDrop(open){
+    const show = open ?? !tlFamDrop.classList.contains("show");
+    tlFamDrop.classList.toggle("show", show);
+    tlFamBtn.setAttribute("aria-expanded", show ? "true" : "false");
+    if (show){ populateTimelineFamilyList(tlFamSearch.value); tlFamSearch.focus(); }
+    else tlFamSearch.value = "";
+  }
+
+  tlFamBtn.addEventListener("click", ev => { ev.stopPropagation(); openTimelineFamilyDrop(); });
+  tlFamSearch.addEventListener("input", () => populateTimelineFamilyList(tlFamSearch.value));
+  tlFamSearch.addEventListener("keydown", ev => { if (ev.key === "Escape") openTimelineFamilyDrop(false); });
+  tlFamClr.addEventListener("click", () => {
+    TL.families.clear();
+    updateTimelineFamilyBtn();
+    populateTimelineFamilyList();
+    renderTimeline();
+  });
+  document.addEventListener("click", ev => {
+    if (tlFamDrop.classList.contains("show") && !tlFamDrop.contains(ev.target) && ev.target !== tlFamBtn)
+      openTimelineFamilyDrop(false);
+  });
 
   $("#tl-only-stack").addEventListener("click", () => {
     TL.onlyStack = !TL.onlyStack;
@@ -13484,6 +13798,8 @@ function openTimelineView(){
   $("#tl-wrap").classList.add("show");
   document.body.classList.add("tl-open");
   $("#tools-timeline")?.classList.add("active");
+  $("#tl-fam-drop")?.classList.remove("show");
+  $("#tl-fam-btn")?.setAttribute("aria-expanded", "false");
   setTimelineZoom(TL.zoom);
 }
 function closeTimelineView(){
@@ -13610,6 +13926,7 @@ function renderTimeline(){
   // source of truth so timeline + graph can never disagree.
   const visibleProducts = PRODUCTS.filter(p => {
     if (TL.onlyStack && !stack.has(p.id) && !stack.has(p.family)) return false;
+    if (TL.families.size > 0 && !TL.families.has(p.family)) return false;
     return productVisibleInTimeline(p);
   });
 
