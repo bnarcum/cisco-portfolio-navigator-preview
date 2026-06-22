@@ -303,19 +303,29 @@
     .p-pillar{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;
       font-size:10px;font-weight:700;letter-spacing:.02em;margin-left:6px;border:1px solid var(--pc, var(--border));
       background:color-mix(in srgb, var(--pc, #888) 18%, transparent);color:var(--text)}
-    .pillar-guides .zone-rect{stroke-width:1.5}
+    .pillar-guides .zone-rect{stroke-width:2.25}
     .pillar-guides .zone-header image{pointer-events:none}
-    .pillar-guides .zone-title{font-size:15px;font-weight:600;fill:#02C8FF;letter-spacing:.01em}
-    .pillar-guides .zone-dim .zone-header{opacity:.28}
-    .pillar-guides .zone-count{font-size:10px;font-weight:500;fill:#94a3b8;text-anchor:middle}
-    .pillar-guides .zone-spine{stroke-dasharray:6 5;opacity:.55}
+    .pillar-guides .zone-title{font-size:16px;font-weight:700;fill:#7eeaff;letter-spacing:.02em}
+    .pillar-guides .zone-dim .zone-header{opacity:.35}
+    .pillar-guides .zone-count{font-size:10px;font-weight:600;fill:#cbd5e1;text-anchor:middle}
+    .pillar-guides .zone-spine{stroke-dasharray:6 5;opacity:.72}
     .pillar-guides .zone-hit{cursor:pointer}
-    .pillar-guides .zone-dim .zone-fill{fill-opacity:.008}
-    .pillar-guides .zone-dim .zone-border{stroke-opacity:.08}
-    .pillar-guides .zone-dim .zone-stats{opacity:.25}
-    .pillar-guides .zone-hot .zone-fill{fill-opacity:.09}
-    .pillar-guides .zone-stats{font-size:10px;font-weight:500;fill:#64748b}
-    .pillar-guides .zone-spine-label{font-size:11px;font-weight:500;fill:#94a3b8;text-anchor:middle}
+    .pillar-guides .zone-dim .zone-fill{fill-opacity:.35}
+    .pillar-guides .zone-dim .zone-tint{fill-opacity:.015}
+    .pillar-guides .zone-dim .zone-border{stroke-opacity:.12}
+    .pillar-guides .zone-dim .zone-stats{opacity:.35}
+    .pillar-guides .zone-hot .zone-fill{fill-opacity:.92}
+    .pillar-guides .zone-hot .zone-tint{fill-opacity:.16}
+    .pillar-guides .zone-border{filter:url(#pillar-zone-glow)}
+    .pillar-guides .zone-stats{font-size:10px;font-weight:600;fill:#94a3b8}
+    .pillar-guides .zone-spine-label{font-size:12px;font-weight:600;fill:#e8f6ff;text-anchor:middle}
+    body.families-mode .bg-glow{
+      background:
+        radial-gradient(ellipse 58% 48% at 22% 32%, rgba(10,96,255,.16) 0%, transparent 68%),
+        radial-gradient(ellipse 52% 44% at 78% 68%, rgba(2,200,255,.12) 0%, transparent 65%),
+        radial-gradient(ellipse 46% 38% at 50% 88%, rgba(255,144,0,.08) 0%, transparent 62%);
+    }
+    body.families-mode.pillar-focus .bg-glow{opacity:.72}
     .overview-deck .ov-card rect{transition:stroke-opacity .15s ease, filter .15s ease;filter:url(#ov-card-glow)}
     @keyframes nodeRingPulse{
       0%,100%{stroke-opacity:.7}
@@ -3725,8 +3735,8 @@ function pillarLinkOpacity(l, k){
     if (sp !== tp || sp !== pid) return 0;
     return l.type === "direct" ? 0.32 : 0.16;
   }
-  if (sp !== tp) return l.type === "direct" ? 0.12 : 0.05;
-  return l.type === "direct" ? 0.04 : 0.02;
+  if (sp !== tp) return l.type === "direct" ? 0.22 : 0.1;
+  return l.type === "direct" ? 0.1 : 0.05;
 }
 function applyPillarLinkStyles(k){
   if (!lviz || !usePillarLayout()) return;
@@ -3760,8 +3770,8 @@ function applyPillarLabelStyles(selectedNode){
     .attr("lengthAdjust", null)
     .style("opacity", d => pillarLabelShown(d, selectedNode, conn, zoomFade) ? 1 : 0)
     .style("font-size", d => `${pillarLabelFontPx(k)}px`)
-    .style("font-weight", focusedPillar ? "700" : "600")
-    .style("fill", focusedPillar ? "#ffffff" : "#f1f5f9")
+    .style("font-weight", focusedPillar ? "700" : "700")
+    .style("fill", focusedPillar ? "#ffffff" : "#f8fcff")
     .style("letter-spacing", focusedPillar ? "0.015em" : "0.01em")
     .style("stroke", focusedPillar ? "rgba(3,8,18,0.55)" : "rgba(7,15,28,0.82)")
     .style("stroke-width", focusedPillar ? "2px" : "3px")
@@ -4539,7 +4549,7 @@ function fitOverviewDeckView(){
 }
 
 function fitPillarLayoutView(){
-  const pad = singlePillarFocused() ? 48 : 56;
+  const pad = singlePillarFocused() ? 28 : 22;
   const vis = new Set();
   NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
   const buckets = pillarLayoutBuckets(vis);
@@ -4563,7 +4573,7 @@ function fitPillarLayoutView(){
   const { w, h } = getDims();
   const pw = panelOffsetW();
   const bw = maxX - minX, bh = maxY - minY;
-  const k = Math.min(singlePillarFocused() ? 1.15 : 1.02, Math.max(0.42, Math.min((w - pw - 56) / bw, (h - 108) / bh)));
+  const k = Math.min(singlePillarFocused() ? 1.38 : 1.78, Math.max(0.65, Math.min((w - pw - 36) / bw, (h - 64) / bh) * 0.97));
   applyGraphTransform(0, (minY + maxY) / 2, k);
 }
 
@@ -4641,12 +4651,12 @@ function applyPillarNodeVisualState(selectedNode){
       .classed("nd-stack", false);
     g.select(".gr")
       .attr("fill", accent)
-      .attr("fill-opacity", hot ? 0.38 : (boosted ? 0.26 : 0.2));
+      .attr("fill-opacity", hot ? 0.44 : (boosted ? 0.34 : 0.3));
     g.select(".mc")
-      .attr("fill-opacity", hot ? 1 : (boosted ? 0.94 : 0.72))
+      .attr("fill-opacity", hot ? 1 : (boosted ? 0.98 : 0.9))
       .attr("stroke", accent)
-      .attr("stroke-width", 2)
-      .attr("stroke-opacity", hot ? 1 : (boosted ? 0.9 : 0.78));
+      .attr("stroke-width", hot ? 2.5 : 2.25)
+      .attr("stroke-opacity", hot ? 1 : (boosted ? 1 : 0.94));
     g.select(".node-scaler").attr("transform", (isSel || isHov) ? "scale(1.06)" : null);
   });
   updateCanvasFocusState();
@@ -4804,12 +4814,50 @@ function updateCompositionHint(){
   hint.textContent = `${cur} current${leg ? ` · ${leg} EoL` : ""} · Click a product for details · Purple dashed = upgrade path · Esc to go back`;
 }
 
+function pillarGuidesTheme(){
+  if (isLightTheme()){
+    return {
+      accent: "#006e8f",
+      cardBorder: "#006e8f",
+      cardFill: "rgba(255,255,255,0.58)",
+      connStroke: "#334155",
+      connLabel: "#07182d",
+      spineStroke: "#64748b",
+      zoneBorder: "#006e8f",
+      glowOpacity: 0.14
+    };
+  }
+  return {
+    accent: "#7eeaff",
+    cardBorder: "#02C8FF",
+    cardFill: "rgba(2,14,32,0.82)",
+    connStroke: "#f0fbff",
+    connLabel: "#ffffff",
+    spineStroke: "#e2eaf4",
+    zoneBorder: "#02C8FF",
+    glowOpacity: 0.38
+  };
+}
+
+function ensurePillarZoneDefs(){
+  const T = pillarGuidesTheme();
+  if (!defs.select("#pillar-zone-glow").size()){
+    const f = defs.append("filter").attr("id", "pillar-zone-glow").attr("x", "-18%").attr("y", "-18%").attr("width", "136%").attr("height", "136%");
+    f.append("feDropShadow").attr("dx", 0).attr("dy", 4).attr("stdDeviation", 8)
+      .attr("flood-color", isLightTheme() ? "#07182d" : "#02C8FF").attr("flood-opacity", T.glowOpacity);
+  } else {
+    defs.select("#pillar-zone-glow feDropShadow")
+      .attr("flood-color", isLightTheme() ? "#07182d" : "#02C8FF")
+      .attr("flood-opacity", T.glowOpacity);
+  }
+}
+
 function appendPillarZoneHeader(zg, z, x, y, w, opacity){
-  const iconSize = 32;
+  const iconSize = 34;
   const gap = 12;
   const padX = 20;
   const padY = 16;
-  const accent = OVERVIEW_DECK.accent;
+  const accent = pillarGuidesTheme().accent;
   const headerG = zg.append("g").attr("class", "zone-header").style("pointer-events", "none");
   const iconY = y + padY;
   const content = headerG.append("g");
@@ -4835,6 +4883,8 @@ function updatePillarGuides(){
   lyr.select("g.pillar-guides").remove();
   updatePillarLegend(show);
   if (!show) return;
+  ensurePillarZoneDefs();
+  const T = pillarGuidesTheme();
   if (!defs.select("#pillar-resilience-grad").size()){
     const lg = defs.append("linearGradient").attr("id", "pillar-resilience-grad")
       .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%");
@@ -4867,10 +4917,10 @@ function updatePillarGuides(){
     [ [aiBot.x, aiBot.y, hubX, hubY], [wpBot.x, wpBot.y, hubX, hubY], [hubX, hubY, resTop.x, resTop.y] ]
       .forEach(([x1, y1, x2, y2]) => {
         connG.append("line").attr("class", "zone-spine").attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2)
-          .attr("stroke", "#02C8FF").attr("stroke-opacity", 0.32).attr("stroke-width", 1.2);
+          .attr("stroke", T.connStroke).attr("stroke-opacity", 0.58).attr("stroke-width", 1.75);
       });
-    connG.append("circle").attr("cx", hubX).attr("cy", hubY).attr("r", 3)
-      .attr("fill", "#02C8FF").attr("fill-opacity", 0.45);
+    connG.append("circle").attr("cx", hubX).attr("cy", hubY).attr("r", 3.5)
+      .attr("fill", T.cardBorder).attr("fill-opacity", 0.75);
     const spineY = hubY - 18;
     const leftX = ai.cx + ai.w / 2;
     const rightX = wp.cx - wp.w / 2;
@@ -4880,12 +4930,12 @@ function updatePillarGuides(){
     const midX = (leftX + rightX) / 2;
     connG.append("line").attr("class", "zone-spine")
       .attr("x1", leftX).attr("y1", spineY).attr("x2", midX - gapHalf).attr("y2", spineY)
-      .attr("stroke", "#94a3b8").attr("stroke-opacity", 0.45).attr("stroke-width", 1);
+      .attr("stroke", T.spineStroke).attr("stroke-opacity", 0.62).attr("stroke-width", 1.5);
     connG.append("line").attr("class", "zone-spine")
       .attr("x1", midX + gapHalf).attr("y1", spineY).attr("x2", rightX).attr("y2", spineY)
-      .attr("stroke", "#94a3b8").attr("stroke-opacity", 0.45).attr("stroke-width", 1);
+      .attr("stroke", T.spineStroke).attr("stroke-opacity", 0.62).attr("stroke-width", 1.5);
     connG.append("text").attr("class", "zone-spine-label")
-      .attr("x", midX).attr("y", spineY + 4).text(connLabel);
+      .attr("x", midX).attr("y", spineY + 4).attr("fill", T.connLabel).text(connLabel);
   }
   PILLAR_LAYOUT.zones.forEach(z => {
     if (!pillarIsVisible(z.id)) return;
@@ -4896,20 +4946,28 @@ function updatePillarGuides(){
     const lz = laidOut[z.id] || layoutZoneForItems(z, items);
     const zg = g.append("g").attr("class", "zone zone-" + z.id + (dim ? " zone-dim" : "") + (hot ? " zone-hot" : ""));
     const x = lz.cx - lz.w / 2, y = lz.cy - lz.h / 2;
-    const headerOp = dim ? 0.45 : hot ? 1 : 0.9;
+    const headerOp = dim ? 0.4 : hot ? 1 : 0.96;
     zg.append("rect").attr("class", "zone-rect zone-fill")
       .attr("x", x).attr("y", y).attr("width", lz.w).attr("height", lz.h)
       .attr("rx", z.gradient ? 8 : 6)
-      .attr("fill", z.color).attr("fill-opacity", hot ? 0.07 : 0.045)
+      .attr("fill", T.cardFill)
+      .attr("fill-opacity", hot ? 0.92 : 0.86)
+      .attr("stroke", "none")
+      .style("pointer-events", "none");
+    zg.append("rect").attr("class", "zone-rect zone-tint")
+      .attr("x", x).attr("y", y).attr("width", lz.w).attr("height", lz.h)
+      .attr("rx", z.gradient ? 8 : 6)
+      .attr("fill", z.color)
+      .attr("fill-opacity", hot ? 0.14 : 0.1)
       .attr("stroke", "none")
       .style("pointer-events", "none");
     zg.append("rect").attr("class", "zone-rect zone-border")
       .attr("x", x).attr("y", y).attr("width", lz.w).attr("height", lz.h)
       .attr("rx", z.gradient ? 8 : 6)
       .attr("fill", "none")
-      .attr("stroke", z.gradient ? "url(#pillar-resilience-grad)" : "#5eb8d4")
-      .attr("stroke-width", z.gradient ? 2 : 1.5)
-      .attr("stroke-opacity", hot ? (z.gradient ? 1 : 0.95) : (z.gradient ? 0.88 : 0.78))
+      .attr("stroke", z.gradient ? "url(#pillar-resilience-grad)" : T.zoneBorder)
+      .attr("stroke-width", z.gradient ? 2.75 : 2.25)
+      .attr("stroke-opacity", 1)
       .style("pointer-events", "none");
     appendPillarZoneHeader(zg, z, x, y, lz.w, headerOp);
     const statsPad = 16;
@@ -5308,7 +5366,7 @@ function rebindGraph(opts){
     .attr("r", d => d._r + (pillarMode ? 2 : 9))
     .attr("filter", pillarMode ? null : "url(#glow)")
     .attr("fill", d => pillarMode ? pillarNodeAccent(d.id) : (d._pillarColor || catColor(d.category)))
-    .attr("fill-opacity", d => pillarMode ? 0.26 : 0);
+    .attr("fill-opacity", d => pillarMode ? 0.32 : 0);
   ndEl.select("circle.mc").attr("r", d => d._r);
   if (viewMode === "families" && !pillarMode){
     viewNodes.forEach(n => { if (nodeById[n.id]) n._r = rscale(degree[n.id] || 0); });
@@ -5321,9 +5379,9 @@ function rebindGraph(opts){
       const el = d3.select(this);
       if (pillarMode){
         const accent = pillarNodeAccent(d.id);
-        el.attr("fill", accent).attr("fill-opacity", 0.88)
+        el.attr("fill", accent).attr("fill-opacity", 0.94)
           .attr("stroke", accent)
-          .attr("stroke-width", 2).attr("stroke-opacity", 0.9);
+          .attr("stroke-width", 2.25).attr("stroke-opacity", 0.96);
       } else {
         el.attr("fill", d._hasImage ? MATRIX_NODE_FILL : catColor(d.category))
           .attr("stroke", d._hasImage ? MATRIX_NODE_RING : "transparent")
@@ -7180,6 +7238,8 @@ function updateViewModeUI(){
     el.style.opacity = muted ? 0.45 : 1;
     el.style.pointerEvents = muted ? "none" : "auto";
   });
+  document.body.classList.toggle("families-mode", viewMode === "families");
+  document.body.classList.toggle("overview-mode", viewMode === "overview");
 }
 
 // ── Breadcrumb chip rendering (used by Phase-3 polish; built in now so
@@ -9064,7 +9124,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.54";
+const APP_VERSION   = "2.31.55";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
