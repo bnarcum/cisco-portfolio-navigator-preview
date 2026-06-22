@@ -695,6 +695,10 @@
     .p-dcloud-browse-all{background:transparent;border:1px dashed rgba(0,212,255,.35);color:#8ecae0}
     .p-dcloud-browse-all:hover{border-color:#00d4ff;color:#fff}
     .p-dcloud-eco{font-size:11px;color:#c4e8f8;margin:0 0 10px;line-height:1.45;font-style:italic}
+    .p-dcloud--starter .dcloud-badge{background:rgba(124,58,237,.2);color:#e9d5ff;border-color:rgba(192,132,252,.35)}
+    .p-dcloud-starter-note{font-size:10px;color:#94c8e0;margin:8px 0 0;line-height:1.45;font-style:italic}
+    .p-dcloud-entry--starter .p-dcloud-entry-head{padding-left:0}
+    .p-learn--starter .p-learn-hint{font-size:10.5px}
     .p-learn{margin-top:0}
     .p-learn-card{background:rgba(6,20,38,.72);border:1px solid rgba(168,85,247,.22);border-radius:10px;padding:12px 14px}
     .p-learn-skills .p-learn-card{border-color:rgba(124,58,237,.35)}
@@ -9392,8 +9396,8 @@ document.addEventListener("keydown",ev=>{
              <ul style="margin:6px 0 0 16px;padding:0">
                <li><b>Explore N products →</b> — drills into Composition (2D) or Spatial composition (3D) for this family</li>
                <li><b>Learn &amp; Try on dCloud</b> — hands-on labs with learning objectives</li>
-               <li><b>Build skills</b> — Cisco U and Webex Academy courses matched to the family or product</li>
-               <li><b>Partner enablement</b> — Black Belt tracks when relevant</li>
+               <li><b>Family panels</b> — starter dCloud lab, one overview course, and Black Belt when relevant</li>
+               <li><b>Product panels</b> — full lab list, progress tracking, and SKU-matched courses</li>
                <li><b>Device Matrix 3D</b> — built-in showroom for collaboration devices</li>
                <li><b>Breadcrumbs</b> — back/forward navigation through visited items</li>
                <li><b>Licensing tier badge</b> — DNA / Advantage / Premier and similar</li>
@@ -9713,7 +9717,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.89";
+const APP_VERSION   = "2.31.90";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -12887,6 +12891,8 @@ function learningScoreEntry(e, ctx){
     else if (multiHit === 1 && !familyHit) score += 1;
   }
 
+  if (!productIds.length && nProd > 0) score -= 15;
+
   return score;
 }
 
@@ -12933,13 +12939,39 @@ function dcloudRankEntries({ familyIds = [], productIds = [], useCases = [], lim
   return out;
 }
 
-function dcloudLinksFor({ familyId, productId, kind = "node" } = {}){
+const PANEL_LEARNING_TIER = {
+  family: {
+    dcloudLimit: 1,
+    skillsLimit: 1,
+    partnerLimit: 1,
+    starter: true,
+    dcloudHint: "Recommended starting point for this family — open a product below for SKU-specific labs.",
+    skillsHint: "Foundational course for this portfolio area.",
+    dcloudNote: "Open a product in this family for hands-on labs matched to that device or platform."
+  },
+  product: {
+    dcloudLimit: 4,
+    skillsLimit: 2,
+    partnerLimit: 1,
+    starter: false,
+    dcloudHint: null,
+    skillsHint: null,
+    dcloudNote: null
+  }
+};
+
+function panelLearningTier(kind){
+  return kind === "product" ? PANEL_LEARNING_TIER.product : PANEL_LEARNING_TIER.family;
+}
+
+function dcloudLinksFor({ familyId, productId, kind = "node", limit } = {}){
   const product = productId ? prodById[productId] : null;
   const fam = familyId || product?.family;
+  const tier = panelLearningTier(kind);
   return dcloudRankEntries({
     familyIds: fam ? [fam] : [],
     productIds: productId ? [productId] : [],
-    limit: 4,
+    limit: limit ?? tier.dcloudLimit,
     requireProductOrFamily: true
   });
 }
@@ -13041,17 +13073,18 @@ function learningRankEntries({ familyIds = [], productIds = [], sources = [], li
   return out;
 }
 
-function learningLinksFor({ familyId, productId } = {}){
+function learningLinksFor({ familyId, productId, kind = "node" } = {}){
   const product = productId ? prodById[productId] : null;
   const fam = familyId || product?.family;
   const familyIds = fam ? [fam] : [];
   const productIds = productId ? [productId] : [];
+  const tier = panelLearningTier(kind);
   return {
     skills: learningRankEntries({
-      familyIds, productIds, sources: SKILLS_SOURCES, limit: 2, requireProductOrFamily: true
+      familyIds, productIds, sources: SKILLS_SOURCES, limit: tier.skillsLimit, requireProductOrFamily: true
     }),
     partner: learningRankEntries({
-      familyIds, productIds, sources: PARTNER_SOURCES, limit: 1, requireProductOrFamily: true
+      familyIds, productIds, sources: PARTNER_SOURCES, limit: tier.partnerLimit, requireProductOrFamily: true
     })
   };
 }
@@ -13120,8 +13153,9 @@ function insertLearningSections(id, kind){
 
   const product = kind === "product" ? prodById[id] : null;
   const familyId = kind === "product" ? product?.family : id;
+  const tier = panelLearningTier(kind);
   const { skills, partner } = learningLinksFor(
-    kind === "product" ? { productId: id, familyId } : { familyId: id }
+    kind === "product" ? { productId: id, familyId, kind: "product" } : { familyId: id, kind: "node" }
   );
   if (!skills.length && !partner.length) return;
 
@@ -13133,22 +13167,23 @@ function insertLearningSections(id, kind){
     else pb.appendChild(node);
   };
 
+  const skillsHint = tier.skillsHint || LEARNING_DEFAULTS.skillsHint;
   let last = anchor;
   if (skills.length){
     const sec = document.createElement("div");
-    sec.className = "p-sec p-learn p-learn-skills";
+    sec.className = "p-sec p-learn p-learn-skills" + (tier.starter ? " p-learn--starter" : "");
     sec.innerHTML = `<div class="p-learn-card">${renderLearningSectionBody(skills, {
       title: LEARNING_DEFAULTS.skillsTitle,
-      hint: LEARNING_DEFAULTS.skillsHint,
+      hint: skillsHint,
       note: LEARNING_DEFAULTS.skillsNote,
-      badge: "Self-paced"
+      badge: tier.starter ? "Overview" : "Self-paced"
     })}</div>`;
     insertAfter(last, sec);
     last = sec;
   }
   if (partner.length){
     const sec = document.createElement("div");
-    sec.className = "p-sec p-learn p-learn-partner";
+    sec.className = "p-sec p-learn p-learn-partner" + (tier.starter ? " p-learn--starter" : "");
     sec.innerHTML = `<div class="p-learn-card">${renderLearningSectionBody(partner, {
       title: LEARNING_DEFAULTS.partnerTitle,
       hint: LEARNING_DEFAULTS.partnerHint,
@@ -13260,20 +13295,24 @@ function dcloudLogoHtml(){
   </span>`;
 }
 
-function dcloudHeaderHtml(compact){
+function dcloudHeaderHtml(compact, opts = {}){
+  const badge = opts.starter ? "Family starter" : "Hands-on lab";
   return `<div class="p-dcloud-header${compact ? " p-dcloud-header-compact" : ""}">
     ${dcloudLogoHtml()}
-    <span class="dcloud-badge">Hands-on lab</span>
+    <span class="dcloud-badge">${badge}</span>
   </div>`;
 }
 
 function dcloudEntryMetaHtml(e, opts = {}){
   const chips = [];
-  if (opts.bestMatch) chips.push({ label: "Best match", cls: "p-dcloud-chip--rec" });
+  if (opts.bestMatch) chips.push({
+    label: opts.starter ? "Starting point" : "Best match",
+    cls: "p-dcloud-chip--rec"
+  });
   if (opts.ecosystem) chips.push({ label: "Ecosystem", cls: "p-dcloud-chip--eco" });
   if (e.duration) chips.push({ label: e.duration, cls: "" });
   if (e.level) chips.push({ label: e.level, cls: "" });
-  if (e.demoType === "instant") chips.push({ label: "Instant demo", cls: "p-dcloud-chip--instant" });
+  if (!opts.starter && e.demoType === "instant") chips.push({ label: "Instant demo", cls: "p-dcloud-chip--instant" });
   if (!chips.length) return "";
   return `<div class="p-dcloud-meta-row">${chips.map(c =>
     `<span class="p-dcloud-chip${c.cls ? " " + c.cls : ""}">${escapeHtml(c.label)}</span>`
@@ -13305,13 +13344,14 @@ function dcloudPanelProgressHtml(entries){
 }
 
 function renderDcloudPanelEntry(e, opts = {}){
-  const isDone = dcloudLabsDoneSet().has(e.id);
+  const isDone = !opts.starter && dcloudLabsDoneSet().has(e.id);
   const objectiveMax = opts.objectiveMax ?? 1;
-  return `<div class="p-dcloud-entry${opts.primary ? " is-primary" : ""}${isDone ? " is-done" : ""}" data-lab-id="${escapeHtml(e.id)}">
-    <div class="p-dcloud-entry-head">
-      <input type="checkbox" class="p-dcloud-done" data-lab-id="${escapeHtml(e.id)}" ${isDone ? "checked" : ""} aria-label="Mark lab complete"/>
-      <div class="p-dcloud-entry-title">${escapeHtml(e.linkLabel || e.name)}</div>
-    </div>
+  const headInner = opts.starter
+    ? `<div class="p-dcloud-entry-title">${escapeHtml(e.linkLabel || e.name)}</div>`
+    : `<input type="checkbox" class="p-dcloud-done" data-lab-id="${escapeHtml(e.id)}" ${isDone ? "checked" : ""} aria-label="Mark lab complete"/>
+      <div class="p-dcloud-entry-title">${escapeHtml(e.linkLabel || e.name)}</div>`;
+  return `<div class="p-dcloud-entry${opts.primary ? " is-primary" : ""}${opts.starter ? " p-dcloud-entry--starter" : ""}${isDone ? " is-done" : ""}" data-lab-id="${escapeHtml(e.id)}">
+    <div class="p-dcloud-entry-head">${headInner}</div>
     ${dcloudEntryMetaHtml(e, opts)}
     ${dcloudEntryObjectivesHtml(e, objectiveMax)}
     <div class="p-dcloud-entry-actions">${dcloudEntryActionsHtml(e)}</div>
@@ -13321,8 +13361,8 @@ function renderDcloudPanelEntry(e, opts = {}){
 function renderDcloudPanelEntries(entries, opts = {}){
   if (!entries.length) return "";
   const primary = entries[0];
-  const rest = entries.slice(1);
-  let html = dcloudPanelProgressHtml(entries);
+  const rest = opts.starter ? [] : entries.slice(1);
+  let html = opts.starter ? "" : dcloudPanelProgressHtml(entries);
   html += renderDcloudPanelEntry(primary, { ...opts, bestMatch: true, primary: true, objectiveMax: 1 });
   if (rest.length){
     html += `<div class="p-dcloud-more" hidden>${rest.map(e => renderDcloudPanelEntry(e, { ...opts, objectiveMax: 1 })).join("")}</div>`;
@@ -13330,6 +13370,9 @@ function renderDcloudPanelEntries(entries, opts = {}){
   }
   if (opts.browseLabel){
     html += `<button type="button" class="p-dcloud-browse-all" data-dcloud-browse="1">Browse all labs for ${escapeHtml(opts.browseLabel)}</button>`;
+  }
+  if (opts.starterNote){
+    html += `<div class="p-dcloud-starter-note">${escapeHtml(opts.starterNote)}</div>`;
   }
   return html;
 }
@@ -13400,17 +13443,18 @@ function renderDcloudSectionBody(entries, opts = {}){
   const loginNote = opts.loginNote ?? DCLOUD_DEFAULTS.loginNote;
   const compact = !!opts.compact;
   const panel = !!opts.panel;
+  const starter = !!opts.starter;
   const links = panel
     ? renderDcloudPanelEntries(entries, opts)
     : entries.map(e => renderDcloudEntryBlock(e, opts)).join("");
   const eco = opts.ecosystemNote ? `<div class="p-dcloud-eco">${escapeHtml(opts.ecosystemNote)}</div>` : "";
-  return `${dcloudHeaderHtml(compact && !panel)}
+  return `${dcloudHeaderHtml(compact && !panel, opts)}
     ${compact && !panel ? `<div class="gw-dcloud-title">Hands-on labs for this plan</div>` : `<div class="p-dcloud-tagline">${escapeHtml(DCLOUD_DEFAULTS.sectionTitle)}</div>`}
     ${compact || panel ? "" : `<div class="p-dcloud-hint">${escapeHtml(hint)}</div>`}
     ${panel ? `<div class="p-dcloud-hint p-dcloud-hint--panel">${escapeHtml(hint)}</div>` : ""}
     ${eco}
     <div class="lb la-dcloud-list">${links}</div>
-    ${loginNote ? `<div class="p-dcloud-note">${escapeHtml(loginNote)}</div>` : ""}`;
+    ${loginNote && !starter ? `<div class="p-dcloud-note">${escapeHtml(loginNote)}</div>` : ""}`;
 }
 
 function dcloudGuidedRecommendationsHtml(){
@@ -13424,6 +13468,7 @@ function insertDcloudLinks(id, kind){
   const pb = $("#pbody"); if (!pb || pb.querySelector(".p-dcloud")) return;
   const product = kind === "product" ? prodById[id] : null;
   const familyId = kind === "product" ? product?.family : id;
+  const tier = panelLearningTier(kind);
   const entries = dcloudLinksFor(
     kind === "product"
       ? { productId: id, familyId, kind: "product" }
@@ -13433,10 +13478,18 @@ function insertDcloudLinks(id, kind){
     const browseLabel = (kind === "product" ? product?.name : nodeById[id]?.name) ||
       nodeById[familyId]?.name || "this family";
     const browseQuery = nodeById[familyId]?.name || browseLabel;
+    const panelOpts = {
+      panel: true,
+      browseLabel,
+      browseQuery,
+      starter: tier.starter,
+      sectionHint: tier.dcloudHint || DCLOUD_DEFAULTS.sectionHint,
+      starterNote: tier.dcloudNote || ""
+    };
 
     const sec = document.createElement("div");
-    sec.className = "p-sec p-dcloud";
-    sec.innerHTML = `<div class="p-dcloud-card">${renderDcloudSectionBody(entries, { panel: true, browseLabel, browseQuery })}</div>`;
+    sec.className = "p-sec p-dcloud" + (tier.starter ? " p-dcloud--starter" : "");
+    sec.innerHTML = `<div class="p-dcloud-card">${renderDcloudSectionBody(entries, panelOpts)}</div>`;
 
     wireDcloudPanelSection(sec, entries, browseQuery);
 

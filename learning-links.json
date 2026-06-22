@@ -2,6 +2,7 @@
   "defaults": {
     "skillsTitle": "Build skills",
     "skillsHint": "Self-paced courses and learning paths — understand the solution before you lab.",
+    "familySkillsHint": "Foundational course for this portfolio area.",
     "partnerTitle": "Partner enablement",
     "partnerHint": "Black Belt tracks for Cisco partners (CCO ID required).",
     "skillsNote": "Cisco ID login may be required · Free and subscription content on Cisco U",
