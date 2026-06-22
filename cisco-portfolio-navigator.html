@@ -263,7 +263,7 @@
     #gs.view-x-focus.view-enter{animation:view-enter-focus .3s ease-out forwards}
     body.view-x-dissolve #bg-ambient .bg-glow{opacity:1.28;transition:opacity .35s ease}
     body.view-x-expand #bg-ambient .bg-glow{transform:scale(1.05);transition:transform .35s ease}
-    body.spatial-selection-active #spatial-graph canvas{filter:saturate(1.12) brightness(1.06)}
+    body.spatial-selection-active #spatial-graph canvas{filter:saturate(1.18) brightness(1.1) contrast(1.06)}
     body.view-transitioning #spatial-wrap,
     body.view-transitioning #spatial-graph{pointer-events:none}
     @keyframes view-enter-expand{from{opacity:0;transform:scale(.965)}to{opacity:1;transform:scale(1)}}
@@ -6299,7 +6299,7 @@ function spatialMakeTexture(source){
   return tex;
 }
 
-const SPATIAL_NODE_REL = 4.2;
+const SPATIAL_NODE_REL = 5.2;
 
 function spatialNodeRadius(node){
   return Math.cbrt(node.val || 1) * SPATIAL_NODE_REL;
@@ -6501,13 +6501,13 @@ function spatialNodeCategory(node){
 function spatialNodeVisualProfile(node){
   const inOrbit = !!spatialState.focusFamily;
   const isHub = inOrbit && node.id === spatialState.focusFamily;
-  if (!inOrbit) return { mode: "constellation", tileScale: 2.72, tileMin: 14.5, labelGap: 1.55, ringScale: 1.12 };
-  if (isHub || node.kind === "family") return { mode: "hub", tileScale: 1.55, tileMin: 10.5, labelGap: 1.45, ringScale: 1.22 };
-  return { mode: "product", tileScale: 1.18, tileMin: 8.5, labelGap: 1.25, ringScale: 1.14 };
+  if (!inOrbit) return { mode: "constellation", tileScale: 3.25, tileMin: 18, labelGap: 1.55, ringScale: 1.22 };
+  if (isHub || node.kind === "family") return { mode: "hub", tileScale: 2.15, tileMin: 14.5, labelGap: 1.45, ringScale: 1.38 };
+  return { mode: "product", tileScale: 1.72, tileMin: 12.5, labelGap: 1.25, ringScale: 1.32 };
 }
 
 function spatialTileWorldSize(radius, profile){
-  const scaled = radius * profile.tileScale * 1.12;
+  const scaled = radius * profile.tileScale * 1.32;
   return Math.max(scaled, profile.tileMin || scaled);
 }
 
@@ -6551,7 +6551,7 @@ function spatialTileCacheKey(node){
   return [
     node.id,
     photoUrl ? "matrix:" + photoUrl : "icon:" + spatialIconKeyForNode(node),
-    "tile-v6",
+    "tile-v7",
     profile.mode,
     accent.core,
     selected?.id === node.id ? "sel" : "",
@@ -6568,7 +6568,7 @@ function buildSpatialTileSvg(node){
   const isSel = selected?.id === node.id;
   const isStk = stack.has(node.id);
   const stroke = isSel ? "#66e0ff" : (isStk ? "#02C8FF" : "#02C8FF");
-  const strokeW = isSel ? 5.5 : (isStk ? 4.5 : 3.75);
+  const strokeW = isSel ? 6 : (isStk ? 5 : 4.25);
   const coreDark = "#040c18";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
     <defs>
@@ -6578,18 +6578,19 @@ function buildSpatialTileSvg(node){
         <stop offset="100%" stop-color="${coreDark}" stop-opacity="0.92"/>
       </radialGradient>
       <filter id="halo" x="-35%" y="-35%" width="170%" height="170%">
-        <feGaussianBlur stdDeviation="6.5" result="b"/>
+        <feGaussianBlur stdDeviation="7" result="b"/>
         <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
-      <filter id="iconPop" x="-40%" y="-40%" width="180%" height="180%">
-        <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.55"/>
-        <feDropShadow dx="0" dy="0" stdDeviation="0.6" flood-color="#ffffff" flood-opacity="0.35"/>
+      <filter id="iconPop" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="2.5" stdDeviation="2.8" flood-color="#000000" flood-opacity="0.82"/>
+        <feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#ffffff" flood-opacity="0.55"/>
       </filter>
     </defs>
-    <circle cx="128" cy="128" r="116" fill="${glow}" opacity="0.34" filter="url(#halo)"/>
-    <circle cx="128" cy="128" r="96" fill="url(#core)" stroke="${stroke}" stroke-width="${strokeW}" stroke-opacity="1"/>
-    <circle cx="128" cy="128" r="54" fill="${coreDark}" opacity="0.42"/>
-    <g transform="translate(128,128) scale(0.76) translate(-128,-128)" fill="#ffffff" stroke="none" filter="url(#iconPop)">${inner}</g>
+    <circle cx="128" cy="128" r="118" fill="${glow}" opacity="0.42" filter="url(#halo)"/>
+    <circle cx="128" cy="128" r="98" fill="url(#core)" stroke="${stroke}" stroke-width="${strokeW}" stroke-opacity="1"/>
+    <circle cx="128" cy="128" r="52" fill="${coreDark}" opacity="0.9"/>
+    <circle cx="128" cy="128" r="50" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.22"/>
+    <g transform="translate(128,128) scale(1.12) translate(-128,-128)" fill="#ffffff" stroke="#07182d" stroke-width="1.35" stroke-opacity="0.72" paint-order="stroke fill" filter="url(#iconPop)">${inner}</g>
   </svg>`;
 }
 
@@ -9611,7 +9612,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.78";
+const APP_VERSION   = "2.31.79";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
