@@ -315,13 +315,16 @@
       padding:2px 7px;border-radius:4px;background:color-mix(in srgb, var(--ltc,#02C8FF) 22%, transparent);
       color:var(--ltc,#02C8FF);border:1px solid color-mix(in srgb, var(--ltc,#02C8FF) 40%, transparent)}
     #link-why-card .lwc-label{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
-    #link-why-card .lwc-nodes{font-size:11px;color:var(--muted);margin-bottom:5px;line-height:1.35}
-    #link-why-card .lwc-why{font-size:10.5px;color:var(--subtle);line-height:1.45;margin-bottom:4px}
+    #link-why-card .lwc-nodes{font-size:11px;color:#cbd5e1;margin-bottom:5px;line-height:1.35}
+    #link-why-card .lwc-why{font-size:10.5px;color:#c8d0da;line-height:1.45;margin-bottom:4px}
     #link-why-card .lwc-ov-t{display:block;font-size:9px;font-weight:700;text-transform:uppercase;
       letter-spacing:.06em;color:var(--accent);margin-bottom:4px}
     #link-why-card .lwc-ov-tags{display:flex;flex-wrap:wrap;gap:4px}
     #link-why-card .lwc-tag{font-size:9px;padding:2px 6px;border-radius:4px;
-      background:rgba(2,200,255,.1);color:var(--muted);border:1px solid rgba(2,200,255,.18)}
+      background:rgba(2,200,255,.1);color:#cbd5e1;border:1px solid rgba(2,200,255,.18)}
+    [data-theme="light"] #link-why-card .lwc-nodes,
+    [data-theme="light"] #link-why-card .lwc-why{color:var(--muted)}
+    [data-theme="light"] #link-why-card .lwc-tag{color:#475569}
     @keyframes link-flow{from{stroke-dashoffset:26}to{stroke-dashoffset:0}}
     line.lv.link-hot{stroke-opacity:1!important;stroke-width:3!important;
       animation:link-flow 1.1s linear infinite;stroke-dasharray:8 5}
@@ -11091,7 +11094,12 @@ function planSummary(){
 
   const pillarHit = stackPillarCoverage();
   const pillars = ONE_CISCO.pillars.map(p => ({ ...p, covered: !!pillarHit[p.id] }));
-  const stackConnections = buildStackConnections();
+  let stackConnections = [];
+  try {
+    stackConnections = typeof buildStackConnections === "function" ? buildStackConnections() : [];
+  } catch (e) {
+    console.warn("planSummary: stack connections unavailable", e);
+  }
 
   return {
     acct, date, profile, items, legacy, recs, stackUCs, allUC, bundles, dcloudDemos,
