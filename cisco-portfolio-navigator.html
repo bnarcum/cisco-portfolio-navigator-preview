@@ -316,7 +316,7 @@
     .pillar-guides .zone-hot .zone-fill{fill-opacity:.09}
     .pillar-guides .zone-stats{font-size:10px;font-weight:500;fill:#64748b}
     .pillar-guides .zone-spine-label{font-size:11px;font-weight:500;fill:#94a3b8;text-anchor:middle}
-    .overview-deck .ov-card rect{transition:stroke-opacity .15s ease, filter .15s ease}
+    .overview-deck .ov-card rect{transition:stroke-opacity .15s ease, filter .15s ease;filter:url(#ov-card-glow)}
     @keyframes nodeRingPulse{
       0%,100%{stroke-opacity:.7}
       50%{stroke-opacity:1}}
@@ -4525,7 +4525,7 @@ function fitVisibleGraphView(fallbackScale){
 
 function fitOverviewDeckView(){
   const D = OVERVIEW_DECK;
-  const pad = 40;
+  const pad = 22;
   const minX = -D.resW / 2 - pad;
   const maxX = D.resW / 2 + pad;
   const minY = D.topY - D.topH / 2 - pad;
@@ -4534,7 +4534,7 @@ function fitOverviewDeckView(){
   const pw = panelOffsetW();
   const bw = maxX - minX;
   const bh = maxY - minY;
-  const k = Math.min(1.08, Math.max(0.55, Math.min((w - pw - 56) / bw, (h - 108) / bh)));
+  const k = Math.min(1.82, Math.max(0.65, Math.min((w - pw - 36) / bw, (h - 64) / bh) * 0.97));
   applyGraphTransform(0, (minY + maxY) / 2, k);
 }
 
@@ -4979,14 +4979,14 @@ function overviewDeckTheme(){
     };
   }
   return {
-    accent: OVERVIEW_DECK.accent,
-    cardBorder: "#5eb8d4",
-    connStroke: "#fff",
-    connLabel: "#fff",
-    aiText: "#fff",
-    chevron: "#fff",
-    chevronOpacity: [0.25, 0.47, 0.69],
-    cardFill: "transparent"
+    accent: "#7eeaff",
+    cardBorder: "#02C8FF",
+    connStroke: "#f0fbff",
+    connLabel: "#ffffff",
+    aiText: "#e8f6ff",
+    chevron: "#02C8FF",
+    chevronOpacity: [0.42, 0.62, 0.86],
+    cardFill: "rgba(2,14,32,0.82)"
   };
 }
 
@@ -5001,12 +5001,12 @@ function ensureOverviewDefs(){
   }
   if (!defs.select("#ov-card-glow").size()){
     const f = defs.append("filter").attr("id", "ov-card-glow").attr("x", "-20%").attr("y", "-20%").attr("width", "140%").attr("height", "140%");
-    f.append("feDropShadow").attr("dx", 0).attr("dy", 4).attr("stdDeviation", 6)
-      .attr("flood-color", isLightTheme() ? "#07182d" : "#02C8FF").attr("flood-opacity", isLightTheme() ? 0.12 : 0.22);
+    f.append("feDropShadow").attr("dx", 0).attr("dy", 4).attr("stdDeviation", 8)
+      .attr("flood-color", isLightTheme() ? "#07182d" : "#02C8FF").attr("flood-opacity", isLightTheme() ? 0.14 : 0.42);
   } else {
     defs.select("#ov-card-glow feDropShadow")
       .attr("flood-color", isLightTheme() ? "#07182d" : "#02C8FF")
-      .attr("flood-opacity", isLightTheme() ? 0.12 : 0.22);
+      .attr("flood-opacity", isLightTheme() ? 0.14 : 0.42);
   }
   const mk = (id, orient) => {
     let m = defs.select(`#${id}`);
@@ -5031,6 +5031,18 @@ function updateOverviewDeck(){
   const T = overviewDeckTheme();
   const g = lyr.append("g").attr("class", "overview-deck");
 
+  g.append("rect").attr("class", "ov-backdrop")
+    .attr("x", -D.resW / 2 - 28)
+    .attr("y", D.topY - D.topH / 2 - 32)
+    .attr("width", D.resW + 56)
+    .attr("height", D.aiY + 32 - (D.topY - D.topH / 2 - 32))
+    .attr("rx", 14)
+    .attr("fill", isLightTheme() ? "rgba(255,255,255,0.62)" : "rgba(1,10,24,0.68)")
+    .attr("stroke", T.cardBorder)
+    .attr("stroke-width", 1.25)
+    .attr("stroke-opacity", isLightTheme() ? 0.45 : 0.55)
+    .style("pointer-events", "none");
+
   const connG = g.append("g").attr("class", "ov-conn").style("pointer-events", "none");
   const span = D.resW / 2;
   const connLabel = ONE_CISCO.connectivityLabel;
@@ -5039,19 +5051,19 @@ function updateOverviewDeck(){
   connG.append("line")
     .attr("x1", -span).attr("y1", D.connY)
     .attr("x2", -gapHalf).attr("y2", D.connY)
-    .attr("stroke", T.connStroke).attr("stroke-width", 1)
+    .attr("stroke", T.connStroke).attr("stroke-width", 1.75)
     .attr("marker-start", "url(#ov-arrow-l)");
   connG.append("line")
     .attr("x1", gapHalf).attr("y1", D.connY)
     .attr("x2", span).attr("y2", D.connY)
-    .attr("stroke", T.connStroke).attr("stroke-width", 1)
+    .attr("stroke", T.connStroke).attr("stroke-width", 1.75)
     .attr("marker-end", "url(#ov-arrow-r)");
   connG.append("text")
     .attr("x", 0).attr("y", D.connY + 5)
     .attr("text-anchor", "middle")
     .attr("fill", T.connLabel)
-    .style("font-size", "13px")
-    .style("font-weight", "500")
+    .style("font-size", "14px")
+    .style("font-weight", "600")
     .text(connLabel);
 
   function drawCard(spec){
@@ -5067,11 +5079,11 @@ function updateOverviewDeck(){
       .attr("rx", gradient ? 6 : 4)
       .attr("fill", T.cardFill)
       .attr("stroke", gradient ? "url(#overview-resilience-grad)" : T.cardBorder)
-      .attr("stroke-width", gradient ? 2 : 1.5)
-      .attr("stroke-opacity", gradient ? 1 : 0.85);
-    const iconSize = 40;
+      .attr("stroke-width", gradient ? 2.75 : 2.25)
+      .attr("stroke-opacity", 1);
+    const iconSize = 44;
     const gap = 16;
-    const textSize = centered ? 18 : 17;
+    const textSize = centered ? 19 : 18;
     let contentX = centered ? 0 : 24;
     const content = card.append("g").attr("class", "ov-card-content").style("pointer-events", "none");
     const iconImg = content.append("image")
@@ -5083,7 +5095,7 @@ function updateOverviewDeck(){
       .attr("x", contentX + iconSize + gap).attr("y", h / 2 + 6)
       .attr("fill", T.accent)
       .style("font-size", `${textSize}px`)
-      .style("font-weight", "600")
+      .style("font-weight", "700")
       .text(label);
     if (centered){
       const tb = textEl.node().getBBox();
@@ -5112,7 +5124,7 @@ function updateOverviewDeck(){
     card.on("mousemove", moveTip);
     card.on("mouseout", () => {
       card.attr("transform", baseTransform).attr("filter", null);
-      border.attr("stroke-opacity", gradient ? 1 : 0.85);
+      border.attr("stroke-opacity", 1);
       hideTip();
     });
   }
@@ -5139,8 +5151,8 @@ function updateOverviewDeck(){
     .attr("x", 0).attr("y", D.aiY + 5)
     .attr("text-anchor", "middle")
     .attr("fill", T.aiText)
-    .style("font-size", "14px")
-    .style("font-weight", "500")
+    .style("font-size", "15px")
+    .style("font-weight", "600")
     .text(ONE_CISCO.aiLabel);
 }
 
@@ -9052,7 +9064,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.53";
+const APP_VERSION   = "2.31.54";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
