@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cisco Portfolio Navigator</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000/svg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'6'%20fill%3D'%230d1117'%2F%3E%3Ccircle%20cx%3D'16'%20cy%3D'4'%20r%3D'3'%20fill%3D'%2300bceb'%2F%3E%3Ccircle%20cx%3D'16'%20cy%3D'28'%20r%3D'3'%20fill%3D'%2300bceb'%2F%3E%3Ccircle%20cx%3D'4'%20cy%3D'16'%20r%3D'3'%20fill%3D'%2300bceb'%2F%3E%3Ccircle%20cx%3D'28'%20cy%3D'16'%20r%3D'3'%20fill%3D'%2300bceb'%2F%3E%3Ccircle%20cx%3D'7'%20cy%3D'7'%20r%3D'2.2'%20fill%3D'%2300bceb'%20opacity%3D'.65'%2F%3E%3Ccircle%20cx%3D'25'%20cy%3D'7'%20r%3D'2.2'%20fill%3D'%2300bceb'%20opacity%3D'.65'%2F%3E%3Ccircle%20cx%3D'7'%20cy%3D'25'%20r%3D'2.2'%20fill%3D'%2300bceb'%20opacity%3D'.65'%2F%3E%3Ccircle%20cx%3D'25'%20cy%3D'25'%20r%3D'2.2'%20fill%3D'%2300bceb'%20opacity%3D'.65'%2F%3E%3Cline%20x1%3D'16'%20y1%3D'7'%20x2%3D'16'%20y2%3D'25'%20stroke%3D'%2300bceb'%20stroke-width%3D'1'%20opacity%3D'.25'%2F%3E%3Cline%20x1%3D'7'%20y1%3D'16'%20x2%3D'25'%20y2%3D'16'%20stroke%3D'%2300bceb'%20stroke-width%3D'1'%20opacity%3D'.25'%2F%3E%3C%2Fsvg%3E"/>
+  <link rel="icon" type="image/svg+xml" href="assets/cpn-favicon.svg"/>
   <meta name="theme-color" content="#07182D"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <style>
@@ -134,7 +134,7 @@
     .actionbar-end{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
     .logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;
       color:var(--accent);white-space:nowrap;flex-shrink:0}
-    .logo svg{width:28px;height:28px}
+    .logo img,.logo svg{width:28px;height:28px;flex-shrink:0}
     .dv{width:1px;height:26px;background:var(--border);flex-shrink:0}
     .sw{position:relative;flex:1 1 480px;min-width:280px;max-width:none}
     @media (max-width: 720px){
@@ -957,18 +957,7 @@
 <div id="app-chrome">
 <div id="topbar">
   <div class="logo">
-    <svg viewBox="0 0 32 32" fill="none">
-      <circle cx="16" cy="4"  r="3" fill="#02C8FF"/>
-      <circle cx="16" cy="28" r="3" fill="#02C8FF"/>
-      <circle cx="4"  cy="16" r="3" fill="#02C8FF"/>
-      <circle cx="28" cy="16" r="3" fill="#02C8FF"/>
-      <circle cx="7"  cy="7"  r="2.2" fill="#02C8FF" opacity=".65"/>
-      <circle cx="25" cy="7"  r="2.2" fill="#02C8FF" opacity=".65"/>
-      <circle cx="7"  cy="25" r="2.2" fill="#02C8FF" opacity=".65"/>
-      <circle cx="25" cy="25" r="2.2" fill="#02C8FF" opacity=".65"/>
-      <line x1="16" y1="7" x2="16" y2="25" stroke="#02C8FF" stroke-width="1" opacity=".25"/>
-      <line x1="7"  y1="16" x2="25" y2="16" stroke="#02C8FF" stroke-width="1" opacity=".25"/>
-    </svg>
+    <img src="assets/cpn-logo.svg" alt="" width="28" height="28"/>
     Cisco Portfolio Navigator
   </div>
   <div class="dv"></div>
@@ -9316,7 +9305,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.31.66";
+const APP_VERSION   = "2.31.67";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
