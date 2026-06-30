@@ -21,7 +21,7 @@ try {
   await page.waitForFunction(() => window.__cpnV2?.APP_VERSION, { timeout: 60000 });
 
   const version = await page.evaluate(() => window.__cpnV2.APP_VERSION);
-  if (version !== "2.79.6") errors.push(`expected version 2.79.6, got ${version}`);
+  if (version !== "2.79.7") errors.push(`expected version 2.79.7, got ${version}`);
 
   await page.click("#design-studio-btn");
   await page.waitForSelector("#design-studio.open", { timeout: 8000 });

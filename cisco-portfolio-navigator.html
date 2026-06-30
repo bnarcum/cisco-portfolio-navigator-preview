@@ -14,7 +14,8 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="design-studio.css?v=2.79.6"/>
+  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.79.7"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.79.7"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -188,31 +189,8 @@
     .tbs{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
       color:var(--text);font-size:12px;padding:5px 7px;outline:none;cursor:pointer}
     .tbs option{background:var(--surface)}
-    #theme-toggle{flex-shrink:0;background:transparent;border:1px solid var(--border);border-radius:6px;
-      color:var(--muted);font-size:12px;padding:5px 9px;cursor:pointer;
-      transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
-    #theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
-    #rst{background:transparent;border:1px solid var(--border);border-radius:6px;
-      color:var(--muted);font-size:12px;padding:5px 9px;cursor:pointer;
-      transition:all .15s;white-space:nowrap;flex-shrink:0}
-    #rst:hover{border-color:var(--accent);color:var(--accent)}
-    #guided-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
-      background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:7px;
-      font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:all .15s;white-space:nowrap}
-    #guided-btn:hover{background:rgba(2,200,255,.12)}
-    #ai-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
-      background:linear-gradient(135deg,rgba(10,96,255,.14),rgba(2,200,255,.12));
-      color:#fff;border:1px solid rgba(2,200,255,.5);border-radius:7px;
-      font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:all .15s;white-space:nowrap;
-      box-shadow:0 0 14px rgba(10,96,255,.12)}
-    #ai-btn:hover{background:linear-gradient(135deg,rgba(10,96,255,.24),rgba(2,200,255,.2));
-      border-color:var(--accent);box-shadow:0 0 18px rgba(2,200,255,.22)}
-    #ai-btn.active{background:var(--surface2);color:var(--accent);border-color:var(--accent);box-shadow:none}
-    #planner-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
-      background:var(--accent);color:#000;border:none;border-radius:7px;
-      font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:opacity .15s;white-space:nowrap}
-    #planner-btn:hover{opacity:.85}
-    #planner-btn.active{background:var(--surface2);color:var(--accent);border:1px solid var(--accent)}
+    #planner-btn,#guided-btn,#ai-btn,#design-studio-btn,#theme-toggle,#rst{
+      flex-shrink:0}
 
     /* VIEW-MODE SEGMENTED CONTROL */
     .vm-seg{display:inline-flex;background:var(--surface2);border:1px solid var(--border);
@@ -9627,7 +9605,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.79.6";
+const APP_VERSION   = "2.79.7";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -10604,18 +10582,18 @@ STYLE.textContent = `
   .ai-cfg-fix:hover{border-color:var(--accent);background:var(--surface3)}
   .ai-cfg-box details summary::marker{color:var(--subtle)}
 
-  /* Bottom footer */
+  /* Bottom footer — layout tokens in assets/cpn-ui.css */
+  :root{--cpn-footer-h:54px}
   #v2-footer{position:fixed;bottom:0;left:0;right:0;
-    background:var(--surface);border-top:1px solid var(--border);padding:6px 18px;
-    font-size:10.5px;color:var(--subtle);display:flex;align-items:center;
-    justify-content:space-between;gap:14px;z-index:45;height:28px}
+    background:var(--surface);border-top:1px solid var(--border);
+    font-size:10.5px;color:var(--subtle);display:flex;z-index:45}
   body.planner-open #v2-footer{right:490px}
   body.cmp-open #v2-footer{display:none}
   #v2-footer a{color:var(--accent);background:none;border:none;cursor:pointer;font:inherit;padding:0}
   #v2-footer a:hover{text-decoration:underline}
   #v2-footer .sep{color:var(--border)}
-  #tools{bottom:42px}
-  #hint{bottom:42px}
+  #tools{bottom:calc(var(--cpn-footer-h) + 10px)}
+  #hint{bottom:calc(var(--cpn-footer-h) + 10px)}
 
   /* Keyboard shortcuts modal */
   #shortcuts-modal{position:fixed;inset:0;z-index:10060;display:none;
@@ -15253,18 +15231,30 @@ function buildFooter(){
   const f = document.createElement("div");
   f.id = "v2-footer";
   f.innerHTML = `
-    <div>
-      <strong style="color:var(--text)">v${APP_VERSION}</strong>
-      <span class="sep"> · </span>
-      Portfolio data current as of <strong style="color:var(--text)">${DATA_UPDATED}</strong>
+    <div class="ft-row">
+      <div>
+        <strong style="color:var(--text)">v${APP_VERSION}</strong>
+        <span class="sep"> · </span>
+        Portfolio data current as of <strong style="color:var(--text)">${DATA_UPDATED}</strong>
+      </div>
+      <div>
+        <span style="color:var(--subtle)">Press <kbd style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:10px">?</kbd> for tour</span>
+        <span class="sep"> · </span>
+        <a id="ft-shortcuts">Shortcuts</a>
+      </div>
     </div>
-    <div>
-      <span style="color:var(--subtle)">Press <kbd style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:10px">?</kbd> for tour</span>
-      <span class="sep"> · </span>
-      <a id="ft-shortcuts">Shortcuts</a>
+    <div class="ft-legal" id="ft-legal">
+      <strong>Disclaimer.</strong>
+      Personal educational project — not affiliated with or endorsed by Cisco.
+      Cisco® trademarks are the property of Cisco Systems, Inc.
     </div>
   `;
   document.body.appendChild(f);
+  const syncFooterH = () => {
+    document.documentElement.style.setProperty("--cpn-footer-h", f.offsetHeight + "px");
+  };
+  syncFooterH();
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(syncFooterH).observe(f);
   $("#ft-shortcuts").addEventListener("click", () => openShortcuts());
 }
 const SHORTCUT_GROUPS = [
@@ -15590,18 +15580,18 @@ window.__cpnV2 = {
 <script>window.__DS_ASSET_V="2.51.0";</script>
 <script src="design-studio-photos.js?v=2.58.2"></script>
 <script src="design-studio-stencils.js?v=2.58.2"></script>
-<script src="design-studio-templates.js?v=2.79.6"></script>
+<script src="design-studio-templates.js?v=2.79.7"></script>
 <script src="design-studio-rules.js?v=2.58.2"></script>
-<script src="design-studio-intent.js?v=2.79.6"></script>
+<script src="design-studio-intent.js?v=2.79.7"></script>
 <script src="design-studio-explore.js?v=2.58.2"></script>
-<script src="design-studio-premium.js?v=2.79.6"></script>
+<script src="design-studio-premium.js?v=2.79.7"></script>
 <script src="design-studio-expert.js?v=2.58.2"></script>
-<script src="design-studio-walk-layout.js?v=2.79.6"></script>
-<script src="design-studio-walk-voxel.js?v=2.79.6"></script>
-<script src="design-studio-field-panel.js?v=2.79.6"></script>
-<script src="design-studio-walk-audio.js?v=2.79.6"></script>
-<script src="design-studio-walk-models.js?v=2.79.6"></script>
-<script src="design-studio-walk.js?v=2.79.6"></script>
-<script src="design-studio.js?v=2.79.6"></script>
+<script src="design-studio-walk-layout.js?v=2.79.7"></script>
+<script src="design-studio-walk-voxel.js?v=2.79.7"></script>
+<script src="design-studio-field-panel.js?v=2.79.7"></script>
+<script src="design-studio-walk-audio.js?v=2.79.7"></script>
+<script src="design-studio-walk-models.js?v=2.79.7"></script>
+<script src="design-studio-walk.js?v=2.79.7"></script>
+<script src="design-studio.js?v=2.79.7"></script>
 </body>
 </html>

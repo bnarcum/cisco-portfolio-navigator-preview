@@ -1,15 +1,8 @@
 /* Design Studio — Cisco Portfolio Navigator v3 */
-#design-studio-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;
-  background:linear-gradient(135deg,rgba(255,144,0,.16),rgba(2,200,255,.1));
-  color:var(--accent);border:1px solid rgba(255,144,0,.55);border-radius:7px;
-  font-size:12px;font-weight:700;padding:6px 13px;cursor:pointer;transition:all .15s;white-space:nowrap}
-#design-studio-btn:hover{background:linear-gradient(135deg,rgba(255,144,0,.28),rgba(2,200,255,.18));
-  border-color:var(--orange);box-shadow:0 0 16px rgba(255,144,0,.2)}
+#design-studio-btn{flex-shrink:0}
 
 #design-studio{position:fixed;inset:0;z-index:500;display:none;flex-direction:column;
-  background:var(--bg);color:var(--text);font-family:inherit;
-  --muted:#c8d4e0;--subtle:#a8b8ca}
-[data-theme="light"] #design-studio{--muted:#3d4f63;--subtle:#4a5c72}
+  background:var(--bg);color:var(--text);font-family:inherit}
 #design-studio.open{display:flex}
 #design-studio.ds-present-mode #ds-sidebar,#design-studio.ds-present-mode #ds-toolbar{display:none}
 #design-studio.ds-present-mode #ds-header button:not(#ds-present):not(#ds-close){display:none}
@@ -32,25 +25,8 @@
   background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer}
 #ds-tabs button.active{background:var(--surface2);color:var(--accent);border-color:var(--accent)}
 #ds-header .ds-spacer{flex:1;min-width:8px}
-/* Global button baseline — applies everywhere (#ds-header rules below override for the toolbar) */
-.ds-btn{padding:7px 13px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);
-  color:var(--text);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;line-height:1.15;
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  transition:border-color .15s,color .15s,background .15s,transform .1s,box-shadow .15s,filter .15s;
-  -webkit-appearance:none;appearance:none}
-.ds-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(2,200,255,.06)}
-.ds-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.ds-btn:active{transform:translateY(1px)}
-.ds-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
-.ds-btn.primary{background:linear-gradient(135deg,#02C8FF 0%,#0A60FF 100%);color:#04101f;border-color:transparent;
-  box-shadow:0 4px 16px rgba(2,200,255,.26)}
-.ds-btn.primary:hover{color:#04101f;filter:brightness(1.07);box-shadow:0 6px 22px rgba(2,200,255,.4)}
-
-#ds-header button.ds-btn{padding:6px 11px;border-radius:6px;border:1px solid var(--border);
-  background:var(--surface2);color:var(--text);font-size:11px;font-weight:600;cursor:pointer}
-#ds-header button.ds-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* Header button variants — base .ds-btn from assets/cpn-ui.css */
 #ds-header button.ds-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(2,200,255,.08)}
-#ds-header button.ds-btn.primary{background:var(--accent);color:#07182d;border-color:var(--accent)}
 #ds-header button.ds-btn.warn{border-color:var(--orange);color:var(--orange)}
 #ds-header button.ds-btn.ds-export-ccw{
   background:linear-gradient(135deg,#ff9000 0%,#ffc766 100%);color:#07182d;border-color:#ff9000;
