@@ -203,78 +203,183 @@
     },
     {
       sel: "#ds-one-cisco-deck",
+      place: "bottom",
       text: "Start from a One Cisco pillar or starter phrase. Parsed chips preview room mix and architecture before you generate.",
       before: (studio) => studio.setTab("intent")
     },
     {
       sel: "#ds-generate",
+      place: "top",
       text: "Generate Draft builds the full topology and collaboration spaces. Quickstart loads a sample and opens the 3D walk.",
       before: (studio) => studio.setTab("intent")
     },
     {
       sel: "#ds-tabs",
+      place: "bottom",
       text: "Network and Room tabs hold your diagrams. Drag stencils from Build, wire ports, and launch 3D Walk from the canvas toolbar.",
       before: (studio) => studio.setTab("network")
     },
     {
       sel: "#ds-sidebar-modes",
+      place: "left",
       text: "Quote covers BOM, validation, and suggestions. Learn surfaces CVD guides and dCloud labs matched to your design.",
       before: (studio) => { studio.setTab("network"); studio.setSidebarMode("quote"); }
     },
     {
       sel: "#ds-export-ccw",
+      place: "bottom",
       text: "Export to CCW when validation passes. Use Gallery for reference architectures anytime — re-run Tour from the header when you need a refresher.",
       before: (studio) => studio.setTab("intent")
     }
   ];
 
-  let tourRingEl = null;
+  let tourActive = false;
+  let tourStepIdx = 0;
+  let tourStudio = null;
+  let tourUi = null;
 
-  function clearTourRing() {
-    tourRingEl?.classList.remove("ds-tour-target-ring");
-    tourRingEl = null;
+  function ensureTourUi() {
+    document.getElementById("ds-tour-overlay")?.remove();
+    if (tourUi) return tourUi;
+    const root = document.createElement("div");
+    root.id = "ds-tour-root";
+    root.innerHTML = `<div id="ds-tour-spotlight" aria-hidden="true"></div><div id="ds-tour-popover" role="dialog" aria-live="polite"></div>`;
+    document.getElementById("design-studio")?.appendChild(root);
+    const popover = root.querySelector("#ds-tour-popover");
+    popover.addEventListener("click", (ev) => {
+      const skip = ev.target.closest("[data-tour='skip']");
+      const next = ev.target.closest("[data-tour='next']");
+      if (skip) endTour(true);
+      else if (next) runTour(tourStudio, tourStepIdx + 1);
+    });
+    window.addEventListener("resize", () => {
+      if (tourActive) positionTourStep(TOUR_STEPS[tourStepIdx]);
+    });
+    tourUi = {
+      root,
+      spotlight: root.querySelector("#ds-tour-spotlight"),
+      popover
+    };
+    return tourUi;
+  }
+
+  function endTour(completed) {
+    tourActive = false;
+    tourStepIdx = 0;
+    tourStudio = null;
+    if (completed) {
+      try { localStorage.setItem(TOUR_KEY, "1"); } catch (e) { /* ignore */ }
+    }
+    tourUi?.root.classList.remove("show");
+    tourUi?.spotlight.classList.remove("show", "centered");
+    tourUi?.popover.classList.remove("show", "center", "arrow-top", "arrow-bottom", "arrow-left", "arrow-right");
+  }
+
+  function positionTourStep(step) {
+    const ui = ensureTourUi();
+    const { spotlight, popover } = ui;
+    popover.className = "";
+    popover.style.visibility = "";
+
+    if (!step?.sel || step.center) {
+      spotlight.classList.remove("show");
+      spotlight.classList.add("centered");
+      popover.classList.add("center", "show");
+      popover.innerHTML = renderTourCard(tourStepIdx);
+      return;
+    }
+
+    spotlight.classList.remove("centered");
+    const el = document.querySelector(step.sel);
+    if (!el) {
+      spotlight.classList.remove("show");
+      popover.classList.add("center", "show");
+      popover.innerHTML = renderTourCard(tourStepIdx);
+      return;
+    }
+
+    const pad = 8;
+    const placeRect = () => {
+      const r = el.getBoundingClientRect();
+      spotlight.style.top = `${Math.max(4, r.top - pad)}px`;
+      spotlight.style.left = `${Math.max(4, r.left - pad)}px`;
+      spotlight.style.width = `${Math.max(24, r.width + pad * 2)}px`;
+      spotlight.style.height = `${Math.max(24, r.height + pad * 2)}px`;
+      spotlight.classList.add("show");
+
+      popover.innerHTML = renderTourCard(tourStepIdx);
+      popover.style.visibility = "hidden";
+      popover.classList.add("show");
+      const pr = popover.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const gap = 14;
+      let place = step.place;
+      if (!place) {
+        const room = { bottom: vh - r.bottom, top: r.top, right: vw - r.right, left: r.left };
+        place = Object.entries(room).sort((a, b) => b[1] - a[1])[0][0];
+      }
+      let top;
+      let left;
+      if (place === "bottom") {
+        top = r.bottom + gap;
+        left = Math.max(12, Math.min(vw - pr.width - 12, r.left + r.width / 2 - 28));
+        popover.classList.add("arrow-top");
+      } else if (place === "top") {
+        top = r.top - pr.height - gap;
+        left = Math.max(12, Math.min(vw - pr.width - 12, r.left + r.width / 2 - 28));
+        popover.classList.add("arrow-bottom");
+      } else if (place === "left") {
+        left = r.left - pr.width - gap;
+        top = Math.max(12, Math.min(vh - pr.height - 12, r.top + r.height / 2 - 24));
+        popover.classList.add("arrow-right");
+      } else {
+        left = r.right + gap;
+        top = Math.max(12, Math.min(vh - pr.height - 12, r.top + r.height / 2 - 24));
+        popover.classList.add("arrow-left");
+      }
+      top = Math.max(12, Math.min(vh - pr.height - 12, top));
+      left = Math.max(12, Math.min(vw - pr.width - 12, left));
+      popover.style.top = `${top}px`;
+      popover.style.left = `${left}px`;
+      popover.style.visibility = "";
+    };
+
+    if (el.getBoundingClientRect().top < 0 || el.getBoundingClientRect().bottom > window.innerHeight) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      setTimeout(placeRect, 280);
+    } else {
+      placeRect();
+    }
+  }
+
+  function renderTourCard(step) {
+    return `
+      <span class="ds-tour-step">Step ${step + 1} of ${TOUR_STEPS.length}</span>
+      <p>${esc(TOUR_STEPS[step].text)}</p>
+      <div class="ds-tour-actions">
+        <button type="button" class="ds-btn" data-tour="skip">Skip tour</button>
+        <button type="button" class="ds-btn primary" data-tour="next">${step < TOUR_STEPS.length - 1 ? "Next" : "Done"}</button>
+      </div>`;
   }
 
   function runTour(studio, step = 0) {
     if (step >= TOUR_STEPS.length) {
-      clearTourRing();
-      try { localStorage.setItem(TOUR_KEY, "1"); } catch (e) { /* ignore */ }
-      document.getElementById("ds-tour-overlay")?.remove();
+      endTour(true);
       return;
     }
     const s = TOUR_STEPS[step];
+    tourActive = true;
+    tourStepIdx = step;
+    tourStudio = studio;
     if (s.before) {
       try { s.before(studio); } catch (e) { /* ignore */ }
     }
-    let overlay = document.getElementById("ds-tour-overlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "ds-tour-overlay";
-      document.getElementById("design-studio")?.appendChild(overlay);
-    }
-    overlay.classList.toggle("ds-tour-centered", !!s.center);
-    clearTourRing();
-    const target = s.sel ? document.querySelector(s.sel) : null;
-    if (target) {
-      tourRingEl = target;
-      target.classList.add("ds-tour-target-ring");
-      target.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-    overlay.innerHTML = `
-      <div class="ds-tour-card">
-        <span class="ds-tour-step">${step + 1} / ${TOUR_STEPS.length}</span>
-        <p>${esc(s.text)}</p>
-        <div class="ds-tour-actions">
-          <button type="button" class="ds-btn" data-tour="skip">Skip tour</button>
-          <button type="button" class="ds-btn primary" data-tour="next">${step < TOUR_STEPS.length - 1 ? "Next" : "Done"}</button>
-        </div>
-      </div>`;
-    overlay.querySelector("[data-tour='skip']")?.addEventListener("click", () => {
-      clearTourRing();
-      try { localStorage.setItem(TOUR_KEY, "1"); } catch (e) { /* ignore */ }
-      overlay.remove();
+    const ui = ensureTourUi();
+    ui.root.classList.add("show");
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => positionTourStep(s));
     });
-    overlay.querySelector("[data-tour='next']")?.addEventListener("click", () => runTour(studio, step + 1));
   }
 
   function validationPanelExtras(design, val, score) {
