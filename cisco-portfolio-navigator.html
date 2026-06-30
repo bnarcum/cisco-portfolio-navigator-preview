@@ -14,9 +14,9 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.79.10"/>
-  <link rel="stylesheet" href="assets/cpn-light.css?v=2.79.10"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.79.10"/>
+  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.79.11"/>
+  <link rel="stylesheet" href="assets/cpn-light.css?v=2.79.11"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.79.11"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -9634,7 +9634,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.79.10";
+const APP_VERSION   = "2.79.11";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -15504,25 +15504,46 @@ function refreshThemeVisuals(){
   } else resetStandardLabelStyles();
 }
 
+const CPN_THEME_KEY = "cpn-theme-v1";
+
+function syncCpnThemeButtons(){
+  const theme = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  const label = theme === "light" ? "🌙 Dark" : "☀ Light";
+  const title = theme === "light" ? "Switch to dark theme" : "Switch to light theme (presentations)";
+  document.querySelectorAll("#theme-toggle, #ds-theme-toggle").forEach(btn => {
+    if (!btn) return;
+    btn.textContent = label;
+    btn.title = title;
+    btn.setAttribute("aria-label", title);
+  });
+}
+
+function applyCpnTheme(theme){
+  if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
+  else document.documentElement.removeAttribute("data-theme");
+  syncCpnThemeButtons();
+  refreshThemeVisuals();
+  window.DesignStudio?.instance?.onThemeChange?.();
+}
+
+function toggleCpnTheme(){
+  const theme = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  applyCpnTheme(theme);
+  try { localStorage.setItem(CPN_THEME_KEY, theme); } catch (e){}
+}
+
 function wireThemeToggle(){
   const btn = document.getElementById("theme-toggle");
   if (!btn) return;
-  const KEY = "cpn-theme-v1";
-  const apply = (theme) => {
-    if (theme === "light") document.documentElement.setAttribute("data-theme", "light");
-    else document.documentElement.removeAttribute("data-theme");
-    btn.textContent = theme === "light" ? "🌙 Dark" : "☀ Light";
-    btn.title = theme === "light" ? "Switch to dark theme" : "Switch to light theme (presentations)";
-    refreshThemeVisuals();
-  };
   let theme = "dark";
-  try { theme = localStorage.getItem(KEY) || "dark"; } catch (e){}
-  apply(theme);
-  btn.addEventListener("click", () => {
-    theme = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
-    apply(theme);
-    try { localStorage.setItem(KEY, theme); } catch (e){}
-  });
+  try { theme = localStorage.getItem(CPN_THEME_KEY) || "dark"; } catch (e){}
+  applyCpnTheme(theme);
+  btn.addEventListener("click", () => toggleCpnTheme());
+  const dsBtn = document.getElementById("ds-theme-toggle");
+  if (dsBtn && !dsBtn.dataset.wired) {
+    dsBtn.dataset.wired = "1";
+    dsBtn.addEventListener("click", () => toggleCpnTheme());
+  }
 }
 
 function boot(){
@@ -15602,6 +15623,7 @@ else window.addEventListener("load", boot);
 
 window.__cpnV2 = {
   APP_VERSION, DATA_UPDATED, STORAGE_KEYS, ALL_LEGACY, TIERS, COMPAT_RULES,
+  applyCpnTheme, toggleCpnTheme, syncCpnThemeButtons,
   REF_ARCH, INDUSTRY_TEMPLATES, FIELD_NOTICES, FIELD_NOTICE_BY_PROD,
   helpers: { $, $$, lsGet, lsSet, lsDel, nameOf, catOf, downloadBlob, escapeHtml, relTime },
   phases: { readState, applyState, encodeShareableUrl, decodeShareableUrl,
@@ -15621,18 +15643,18 @@ window.__cpnV2 = {
 <script>window.__DS_ASSET_V="2.51.0";</script>
 <script src="design-studio-photos.js?v=2.58.2"></script>
 <script src="design-studio-stencils.js?v=2.58.2"></script>
-<script src="design-studio-templates.js?v=2.79.10"></script>
+<script src="design-studio-templates.js?v=2.79.11"></script>
 <script src="design-studio-rules.js?v=2.58.2"></script>
-<script src="design-studio-intent.js?v=2.79.10"></script>
+<script src="design-studio-intent.js?v=2.79.11"></script>
 <script src="design-studio-explore.js?v=2.58.2"></script>
-<script src="design-studio-premium.js?v=2.79.10"></script>
+<script src="design-studio-premium.js?v=2.79.11"></script>
 <script src="design-studio-expert.js?v=2.58.2"></script>
-<script src="design-studio-walk-layout.js?v=2.79.10"></script>
-<script src="design-studio-walk-voxel.js?v=2.79.10"></script>
-<script src="design-studio-field-panel.js?v=2.79.10"></script>
-<script src="design-studio-walk-audio.js?v=2.79.10"></script>
-<script src="design-studio-walk-models.js?v=2.79.10"></script>
-<script src="design-studio-walk.js?v=2.79.10"></script>
-<script src="design-studio.js?v=2.79.10"></script>
+<script src="design-studio-walk-layout.js?v=2.79.11"></script>
+<script src="design-studio-walk-voxel.js?v=2.79.11"></script>
+<script src="design-studio-field-panel.js?v=2.79.11"></script>
+<script src="design-studio-walk-audio.js?v=2.79.11"></script>
+<script src="design-studio-walk-models.js?v=2.79.11"></script>
+<script src="design-studio-walk.js?v=2.79.11"></script>
+<script src="design-studio.js?v=2.79.11"></script>
 </body>
 </html>

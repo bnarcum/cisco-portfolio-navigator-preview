@@ -227,7 +227,7 @@
         <h2 class="ds-oc-headline" id="ds-oc-title">${escapeHtml(S.headline)}</h2>
         <p class="ds-oc-sub">${escapeHtml(S.subhead)}</p>
         <div class="ds-oc-deck" id="ds-one-cisco-deck">
-          <div class="ds-oc-row ds-oc-top">
+          <div class="ds-oc-top">
             ${top.map(p => oneCiscoPillarCard(p, false)).join("")}
           </div>
           <div class="ds-oc-spine" aria-hidden="true">
@@ -665,6 +665,7 @@
           <button type="button" class="ds-btn" id="ds-start-over" title="Clear canvas, rooms, and BOM">Start Over</button>
           <button type="button" class="ds-btn ds-export-ccw" id="ds-export-ccw">Export to CCW</button>
           <button type="button" class="ds-btn" id="ds-ai-design">Ask AI</button>
+          <button type="button" class="ds-btn" id="ds-theme-toggle" title="Toggle light / dark theme" aria-label="Toggle theme">☀ Light</button>
           <button type="button" class="ds-btn primary" id="ds-close">Close</button>
         </header>
         <div id="ds-body">
@@ -848,6 +849,12 @@
     wireEvents() {
       const $ = id => document.getElementById(id);
       $("ds-close").onclick = () => this.close();
+      const dsTheme = $("ds-theme-toggle");
+      if (dsTheme && !dsTheme.dataset.wired) {
+        dsTheme.dataset.wired = "1";
+        dsTheme.onclick = () => window.__cpnV2?.toggleCpnTheme?.();
+      }
+      window.__cpnV2?.syncCpnThemeButtons?.();
       $("ds-tabs").onclick = e => { const b = e.target.closest("[data-tab]"); if (b) this.setTab(b.dataset.tab); };
       $("ds-sidebar-modes")?.addEventListener("click", e => {
         const b = e.target.closest("[data-sidebar-mode]");
@@ -1234,6 +1241,7 @@
 
     open() {
       this.mount();
+      window.__cpnV2?.syncCpnThemeButtons?.();
       NETWORK_STENCILS = buildNetworkStencils();
       ROOM_STENCILS = buildRoomStencils();
       this.design = loadDesign();
@@ -1282,6 +1290,11 @@
       if (!btn) return;
       btn.classList.add("ds-qs-spotlight");
       setTimeout(() => btn.classList.remove("ds-qs-spotlight"), 6000);
+    }
+
+    onThemeChange() {
+      if (!this.el?.classList.contains("open")) return;
+      this.render();
     }
 
     close() {

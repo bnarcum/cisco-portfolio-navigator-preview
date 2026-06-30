@@ -88,7 +88,7 @@
   --ds-explore-launch-text:#fff}
 #design-studio.open{display:flex}
 #design-studio.ds-present-mode #ds-sidebar,#design-studio.ds-present-mode #ds-toolbar{display:none}
-#design-studio.ds-present-mode #ds-header button:not(#ds-present):not(#ds-close){display:none}
+#design-studio.ds-present-mode #ds-header button:not(#ds-present):not(#ds-close):not(#ds-theme-toggle){display:none}
 #design-studio.ds-present-mode #ds-minimap,#design-studio.ds-present-mode #ds-legend{display:none}
 #design-studio.ds-present-mode .ds-ports{display:none}
 #design-studio.ds-present-mode #ds-room-guide .ds-room-view-toggle{display:none}
@@ -111,6 +111,8 @@
 /* Header button variants — base .ds-btn from assets/cpn-ui.css */
 #ds-header button.ds-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(2,200,255,.08)}
 #ds-header button.ds-btn.warn{border-color:var(--orange);color:var(--orange)}
+#ds-header button.ds-btn#ds-theme-toggle,
+#ds-header button.ds-btn#ds-theme-toggle:hover{color:var(--muted)}
 #ds-header button.ds-btn.ds-export-ccw{
   background:linear-gradient(135deg,#ff9000 0%,#ffc766 100%);color:#07182d;border-color:#ff9000;
   font-weight:800;letter-spacing:.01em;box-shadow:0 0 0 1px rgba(255,144,0,.4),0 4px 16px rgba(255,144,0,.24)}
@@ -454,6 +456,14 @@
   background:var(--ds-oc-deck);
   box-shadow:0 10px 40px var(--ds-shadow),inset 0 1px 0 rgba(255,255,255,.05)}
 [data-theme="light"] .ds-oc-deck{border-color:rgba(0,110,143,.18);box-shadow:0 10px 32px var(--ds-shadow)}
+[data-theme="light"] .ds-oc-pillar-label{color:#07182d}
+[data-theme="light"] .ds-oc-pillar-promise{color:#475569}
+[data-theme="light"] .ds-oc-spine-label{color:#006e8f;text-shadow:none}
+[data-theme="light"] .ds-oc-spine-line{background:linear-gradient(90deg,transparent 0%,#006e8f 18%,#006e8f 82%,transparent 100%)}
+[data-theme="light"] .ds-oc-chevron{color:#006e8f}
+[data-theme="light"] .ds-oc-ai-label{color:#64748b}
+.ds-oc-deck .ds-oc-pillar-label{color:var(--text);-webkit-text-fill-color:currentColor}
+.ds-oc-deck .ds-oc-pillar-promise{color:var(--muted)}
 .ds-oc-top{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .ds-oc-pillar{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border-radius:8px;
   border:2px solid color-mix(in srgb,var(--pillar-color,#02C8FF) 55%,var(--border));
@@ -965,8 +975,8 @@
   border:1px solid rgba(111,66,193,.4);box-shadow:0 8px 24px rgba(10,31,51,.32);color:#eaf3ff}
 .ds-walk-outcomes[hidden]{display:none!important}
 .ds-oc-head{font-size:9px;font-weight:800;letter-spacing:.12em;color:#c9a7ff;margin-bottom:5px}
-.ds-oc-row{display:flex;align-items:center;gap:7px;font-size:11px;line-height:1.7;color:#dCEAF7}
-.ds-oc-row strong{color:#fff;font-size:12px}
+.ds-walk-outcomes .ds-oc-row{display:flex;align-items:center;gap:7px;font-size:11px;line-height:1.7;color:#dCEAF7}
+.ds-walk-outcomes .ds-oc-row strong{color:#fff;font-size:12px}
 .ds-oc-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 6px currentColor}
 .ds-walk-canvas-wrap{flex:1;position:relative;min-height:0;height:auto}
 .ds-room-view-toggle .ds-view-btn[data-view="walk"]{border-color:rgba(0,212,255,.35);color:#7ee8ff}
