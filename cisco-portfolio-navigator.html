@@ -82,7 +82,7 @@
     #bg-ambient[data-tint-res] .bg-pillar-tint--res{opacity:calc(var(--ambient-intensity,.55)*.85)}
     #bg-ambient.ambient-filtered .bg-glow{opacity:calc(.94 + var(--ambient-intensity)*.14)}
     #bg-ambient.ambient-hot .bg-beams{opacity:.24}
-    #bg-ambient.ambient-hot .bg-grid{opacity:1.08}
+    #bg-ambient.ambient-hot .bg-grid{opacity:1}
     .bg-vignette{position:absolute;inset:0;
       background:radial-gradient(ellipse 85% 75% at 50% 48%, transparent 35%, rgba(0,0,0,.45) 100%)}
     .bg-glow{position:absolute;inset:-25%;opacity:1;
@@ -91,7 +91,7 @@
         radial-gradient(ellipse 52% 44% at 78% 68%, rgba(2,200,255,.22) 0%, transparent 65%),
         radial-gradient(ellipse 46% 38% at 50% 88%, rgba(255,144,0,.12) 0%, transparent 62%),
         radial-gradient(ellipse 40% 35% at 50% 42%, rgba(2,200,255,.10) 0%, transparent 70%);
-      animation:bg-glow-drift 20s ease-in-out infinite alternate}
+      animation:bg-glow-drift 32s ease-in-out infinite}
     .bg-beams{position:absolute;inset:-50%;opacity:.14;
       background:conic-gradient(from 210deg at 50% 50%,
         transparent 0deg, rgba(2,200,255,.55) 32deg, transparent 64deg,
@@ -109,9 +109,9 @@
     #bg-mesh{position:absolute;inset:0;width:100%;height:100%;display:block}
     body.spatial-open #bg-mesh{opacity:0}
     @keyframes bg-glow-drift{
-      0%{transform:translate(0,0) scale(1);opacity:.92}
-      50%{transform:translate(2.5%,-2%) scale(1.04);opacity:1}
-      100%{transform:translate(-2%,2.5%) scale(1.02);opacity:.95}
+      0%,100%{transform:translate(0,0) scale(1)}
+      33%{transform:translate(2.5%,-2%) scale(1.04)}
+      66%{transform:translate(-2%,2.5%) scale(1.02)}
     }
     @keyframes bg-beams-spin{
       0%{transform:rotate(0deg)}
@@ -15370,8 +15370,8 @@ function initAmbientBackground(){
   if (!ctx) return;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const NODE_COUNT = 28;
-  const LINK_DIST = 190;
+  const NODE_COUNT = 34;
+  const LINK_DIST = 228;
   let w = 0, h = 0;
   let nodes = [];
   let rafId = null;
@@ -15393,8 +15393,8 @@ function initAmbientBackground(){
     nodes = Array.from({length: NODE_COUNT}, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
-      vx: (Math.random() - 0.5) * (reducedMotion ? 0 : 0.11),
-      vy: (Math.random() - 0.5) * (reducedMotion ? 0 : 0.11),
+      vx: (Math.random() - 0.5) * (reducedMotion ? 0 : 0.13),
+      vy: (Math.random() - 0.5) * (reducedMotion ? 0 : 0.13),
       phase: Math.random() * Math.PI * 2
     }));
   }
@@ -15433,7 +15433,7 @@ function initAmbientBackground(){
         const dx = a.x - b.x, dy = a.y - b.y;
         const dist = Math.hypot(dx, dy);
         if (dist < LINK_DIST){
-          const alpha = (1 - dist / LINK_DIST) * 0.22;
+          const alpha = (1 - dist / LINK_DIST) * 0.26;
           ctx.strokeStyle = `rgba(2,200,255,${alpha})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -15445,9 +15445,9 @@ function initAmbientBackground(){
     }
 
     for (const n of nodes){
-      const pulse = 0.5 + 0.5 * Math.sin(t * 0.85 + n.phase);
-      const alpha = 0.26 + pulse * 0.14;
-      const radius = 1.45 + pulse * 0.35;
+      const pulse = 0.5 + 0.5 * Math.sin(t * 0.68 + n.phase);
+      const alpha = 0.28 + pulse * 0.11;
+      const radius = 1.5 + pulse * 0.32;
       ctx.fillStyle = `rgba(2,200,255,${alpha})`;
       ctx.beginPath();
       ctx.arc(n.x, n.y, radius, 0, Math.PI * 2);
