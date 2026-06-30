@@ -14,7 +14,7 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="design-studio.css?v=2.79.2"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.79.3"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -80,24 +80,23 @@
     #bg-ambient[data-tint-ai] .bg-pillar-tint--ai{opacity:calc(var(--ambient-intensity,.55)*.92)}
     #bg-ambient[data-tint-wp] .bg-pillar-tint--wp{opacity:calc(var(--ambient-intensity,.55)*.88)}
     #bg-ambient[data-tint-res] .bg-pillar-tint--res{opacity:calc(var(--ambient-intensity,.55)*.85)}
-    #bg-ambient.ambient-filtered .bg-glow{opacity:calc(.94 + var(--ambient-intensity)*.14)}
-    #bg-ambient.ambient-hot .bg-beams{opacity:.24}
+    #bg-ambient.ambient-hot .bg-beams{opacity:.16}
     #bg-ambient.ambient-hot .bg-grid{opacity:1}
     .bg-vignette{position:absolute;inset:0;
       background:radial-gradient(ellipse 85% 75% at 50% 48%, transparent 35%, rgba(0,0,0,.45) 100%)}
-    .bg-glow{position:absolute;inset:-25%;opacity:1;
+    .bg-glow{position:absolute;inset:-25%;opacity:1;will-change:transform;
       background:
         radial-gradient(ellipse 58% 48% at 22% 32%, rgba(10,96,255,.28) 0%, transparent 68%),
         radial-gradient(ellipse 52% 44% at 78% 68%, rgba(2,200,255,.22) 0%, transparent 65%),
         radial-gradient(ellipse 46% 38% at 50% 88%, rgba(255,144,0,.12) 0%, transparent 62%),
         radial-gradient(ellipse 40% 35% at 50% 42%, rgba(2,200,255,.10) 0%, transparent 70%);
-      animation:bg-glow-drift 32s ease-in-out infinite}
-    .bg-beams{position:absolute;inset:-50%;opacity:.14;
+      animation:bg-glow-drift 40s ease-in-out infinite}
+    .bg-beams{position:absolute;inset:-50%;opacity:.10;will-change:transform;
       background:conic-gradient(from 210deg at 50% 50%,
-        transparent 0deg, rgba(2,200,255,.55) 32deg, transparent 64deg,
-        rgba(10,96,255,.45) 128deg, transparent 168deg,
-        rgba(2,200,255,.35) 248deg, transparent 300deg);
-      animation:bg-beams-spin 100s linear infinite}
+        transparent 0deg, rgba(2,200,255,.40) 32deg, transparent 64deg,
+        rgba(10,96,255,.32) 128deg, transparent 168deg,
+        rgba(2,200,255,.26) 248deg, transparent 300deg);
+      animation:bg-beams-spin 180s linear infinite}
     .bg-grid{position:absolute;inset:0;opacity:1;
       background-image:
         linear-gradient(rgba(2,200,255,.06) 1px, transparent 1px),
@@ -272,7 +271,7 @@
     #gs.view-x-scan.view-enter{animation:view-enter-scan .32s ease-out forwards}
     #gs.view-x-focus.view-exit{opacity:0;transform:scale(1.012);filter:blur(1.5px)}
     #gs.view-x-focus.view-enter{animation:view-enter-focus .3s ease-out forwards}
-    body.view-x-dissolve #bg-ambient .bg-glow{opacity:1.28;transition:opacity .35s ease}
+    body.view-x-dissolve #bg-ambient .bg-glow{transform:scale(1.03);transition:transform .35s ease}
     body.view-x-expand #bg-ambient .bg-glow{transform:scale(1.05);transition:transform .35s ease}
     body.spatial-selection-active #spatial-graph canvas{filter:saturate(1.18) brightness(1.1) contrast(1.06)}
     body.view-transitioning #spatial-wrap,
@@ -9641,7 +9640,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.79.2";
+const APP_VERSION   = "2.79.3";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -15400,7 +15399,6 @@ function initAmbientBackground(){
   }
 
   function drawMesh(now){
-    const t = now * 0.001;
     const dt = lastTs ? Math.min(0.032, (now - lastTs) / 1000) : 1 / 60;
     lastTs = now;
     ctx.clearRect(0, 0, w, h);
@@ -15445,9 +15443,8 @@ function initAmbientBackground(){
     }
 
     for (const n of nodes){
-      const pulse = 0.5 + 0.5 * Math.sin(t * 0.68 + n.phase);
-      const alpha = 0.28 + pulse * 0.11;
-      const radius = 1.5 + pulse * 0.32;
+      const alpha = 0.32;
+      const radius = 1.65;
       ctx.fillStyle = `rgba(2,200,255,${alpha})`;
       ctx.beginPath();
       ctx.arc(n.x, n.y, radius, 0, Math.PI * 2);
@@ -15606,18 +15603,18 @@ window.__cpnV2 = {
 <script>window.__DS_ASSET_V="2.51.0";</script>
 <script src="design-studio-photos.js?v=2.58.2"></script>
 <script src="design-studio-stencils.js?v=2.58.2"></script>
-<script src="design-studio-templates.js?v=2.79.2"></script>
+<script src="design-studio-templates.js?v=2.79.3"></script>
 <script src="design-studio-rules.js?v=2.58.2"></script>
-<script src="design-studio-intent.js?v=2.79.2"></script>
+<script src="design-studio-intent.js?v=2.79.3"></script>
 <script src="design-studio-explore.js?v=2.58.2"></script>
-<script src="design-studio-premium.js?v=2.79.2"></script>
+<script src="design-studio-premium.js?v=2.79.3"></script>
 <script src="design-studio-expert.js?v=2.58.2"></script>
-<script src="design-studio-walk-layout.js?v=2.79.2"></script>
-<script src="design-studio-walk-voxel.js?v=2.79.2"></script>
-<script src="design-studio-field-panel.js?v=2.79.2"></script>
-<script src="design-studio-walk-audio.js?v=2.79.2"></script>
-<script src="design-studio-walk-models.js?v=2.79.2"></script>
-<script src="design-studio-walk.js?v=2.79.2"></script>
-<script src="design-studio.js?v=2.79.2"></script>
+<script src="design-studio-walk-layout.js?v=2.79.3"></script>
+<script src="design-studio-walk-voxel.js?v=2.79.3"></script>
+<script src="design-studio-field-panel.js?v=2.79.3"></script>
+<script src="design-studio-walk-audio.js?v=2.79.3"></script>
+<script src="design-studio-walk-models.js?v=2.79.3"></script>
+<script src="design-studio-walk.js?v=2.79.3"></script>
+<script src="design-studio.js?v=2.79.3"></script>
 </body>
 </html>
