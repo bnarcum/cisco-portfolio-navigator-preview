@@ -1,0 +1,31 @@
+---
+description: After pushing to GitHub Pages, always verify the live site serves the expected APP_VERSION.
+alwaysApply: true
+---
+
+# GitHub Pages deploy verification
+
+Production and preview use **legacy GitHub Pages** builds that take **1–6 minutes** after `git push`. The live URL may still serve the old `APP_VERSION` while `status=building`.
+
+## After every push to `origin/main` and/or `preview`
+
+Run and **do not tell the user deploy is complete** until this passes:
+
+```bash
+npm run deploy:verify
+```
+
+Or full push + verify from `dev`:
+
+```bash
+npm run deploy
+```
+
+## URLs
+
+- Production: https://bnarcum.github.io/cisco-portfolio-navigator/cisco-portfolio-navigator.html
+- Preview: https://bnarcum.github.io/cisco-portfolio-navigator-preview/cisco-portfolio-navigator.html
+
+## If verification times out
+
+Report the timeout, last live version seen, and link to repo Pages settings. Suggest hard refresh (Cmd+Shift+R). Do not claim the fix is live until `deploy:verify` succeeds.

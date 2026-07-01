@@ -38,7 +38,28 @@ When preview looks good:
 git checkout main
 git merge dev
 git push origin main         # updates production GitHub Pages
+git push preview dev:main    # if you also need preview updated
 ```
+
+Or from `dev`, push everything and **wait until live** (recommended):
+
+```bash
+npm run deploy
+```
+
+This merges `dev` → `main`, pushes `origin` + `preview`, then polls GitHub Pages until the live HTML serves the local `APP_VERSION` (usually 1–6 minutes).
+
+### Verify without pushing
+
+If you already pushed:
+
+```bash
+npm run deploy:verify
+```
+
+CI also runs `.github/workflows/verify-github-pages.yml` on every push to `main` and fails the check if production is still serving an old version after the timeout.
+
+**Why it feels “not live yet”:** GitHub Pages legacy builds are asynchronous. `git push` returns before the site updates. Always run `deploy:verify` before telling anyone a version is live.
 
 Keep experimenting on `dev` — production stays untouched until you merge and push `main`.
 

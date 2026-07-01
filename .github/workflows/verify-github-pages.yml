@@ -1,0 +1,28 @@
+name: Verify GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: read
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read expected version
+        id: ver
+        run: |
+          V=$(grep -oE 'const APP_VERSION[[:space:]]*=[[:space:]]*"[^"]+"' cisco-portfolio-navigator.html | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Expecting v$V on production Pages"
+
+      - name: Wait for production Pages
+        run: node scripts/wait-for-github-pages.mjs --targets production --version "${{ steps.ver.outputs.version }}" --timeout 480
