@@ -1021,11 +1021,11 @@
     const pad = 10;
     const w = Math.max(bounds.maxX - bounds.minX + pad * 2, 20);
     const d = Math.max(bounds.maxZ - bounds.minZ + pad * 2, 20);
-    const h = 3.38;
+    const h = 3.55;
     const cx = (bounds.minX + bounds.maxX) / 2;
     const cz = (bounds.minZ + bounds.maxZ) / 2;
     setSkyBackground(THREE, scene, "room");
-    scene.fog = new THREE.FogExp2(0x1a2838, 0.022);
+    scene.fog = new THREE.FogExp2(0x1a2838, 0.016);
 
     const floorTex = makeCarpetTexture(THREE);
     floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
@@ -2364,8 +2364,11 @@
     const bob = spd > 0.25 ? Math.sin(state.bobPhase) * 0.038 : 0;
 
     if (state.thirdPerson && state.avatar) {
-      const dist = 5.4;
-      const camY = state.pos.y + 2.35 + bob * 0.4;
+      const room = state.graph?.kind === "room";
+      // Room shell ceiling is ~3.4m — keep third-person cam below it (default cam ~4m clips through ceiling).
+      const dist = room ? 3.5 : 5.4;
+      const camLift = room ? 1.35 : 2.35;
+      const camY = state.pos.y + camLift + bob * 0.4;
       const cx = state.pos.x - Math.sin(state.yaw) * dist;
       const cz = state.pos.z - Math.cos(state.yaw) * dist;
       cam.position.set(cx, camY, cz);
@@ -2374,7 +2377,7 @@
       const stride = moving ? Math.abs(Math.sin(state.bobPhase)) * 0.05 : 0;
       state.avatar.position.set(state.pos.x, state.pos.y - EYE_HEIGHT + stride, state.pos.z);
       state.avatar.rotation.y = state.facing;
-      state.avatar.visible = true;
+      state.avatar.visible = !state.presentationMode;
       animateAvatar(moving);
       if (state.viewmodel) state.viewmodel.visible = false;
     } else {
