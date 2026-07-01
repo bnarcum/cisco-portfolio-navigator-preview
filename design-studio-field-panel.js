@@ -98,15 +98,12 @@
   }
 
   function citationFor(ch, studio, graph) {
-    const part = ch.campusPart || (graph?.kind === "room" ? "room" : null);
-    if (part === "room" || graph?.kind === "room") {
-      const node = studio.design?.nodes?.find(n => n.id === ch.id);
-      const roomId = node?.roomId || studio.activeRoomId || graph?.campusRoomId;
-      const room = studio.design?.rooms?.find(r => r.id === roomId);
+    if (graph?.kind === "room" && studio) {
+      const room = studio.design?.rooms?.find(r => r.id === studio.activeRoomId);
       const tpl = room ? window.__DS_TEMPLATES?.ROOM_TEMPLATES?.[room.template] : null;
       if (tpl?.ctUrl) return { label: tpl.ct || "Workspace design guide", url: tpl.ctUrl };
     }
-    if (graph?.kind === "network" || (graph?.kind === "campus" && part !== "room")) {
+    if (graph?.kind === "network") {
       const keys = Object.keys(window.__DS_TEMPLATES?.NETWORK_TEMPLATES || {});
       const hit = keys.find(k => (studio?.design?.nodes || []).some(n =>
         !n.roomId && window.__DS_TEMPLATES?.NETWORK_TEMPLATES?.[k]?.nodes?.some(tn => tn.label === n.label)));
@@ -119,8 +116,8 @@
   function render(ch, studio, graph) {
     const panel = document.getElementById("ds-field-panel");
     if (!panel || !ch) return;
-    const mode = ch.campusPart || (graph?.kind === "room" ? "room" : graph?.kind === "campus" ? (ch.canvas === "room" ? "room" : "network") : "network");
-    const def = window.__DS_STENCILS?.getDef?.(ch.stencilId, mode === "room" ? "room" : "network");
+    const mode = graph?.kind === "room" ? "room" : "network";
+    const def = window.__DS_STENCILS?.getDef?.(ch.stencilId, mode);
     const edu = eduFor(ch, def, graph);
     const links = linksForChamber(ch, graph);
     const linkRows = links.map(l => {
@@ -139,8 +136,7 @@
     const ciscoUrl = pid && !/^N\/A/i.test(pid)
       ? `https://www.cisco.com/c/en/us/search.html?q=${encodeURIComponent(pid)}` : "";
 
-    const exploreCtx = studio ? window.__DS_EXPLORE?.resolveContextForChamber?.(ch, studio) : null;
-    const dcloudSection = exploreCtx ? window.__DS_EXPLORE?.renderDcloudFieldSection?.(exploreCtx) : "";
+    const exploreCtx = studio ? window.__DS_EXPLORE?.resolveContext?.(studio) : null;
     const docLink = exploreCtx?.docs?.[0];
     const cite = citationFor(ch, studio, graph);
     const whyHere = ch.semantic?.why || edu.zoneNote;
@@ -179,7 +175,6 @@
           </div>
         </section>` : ""}
         ${ports ? `<section class="ds-fp-section"><h4>Ports</h4><div class="ds-fp-ports">${ports}</div></section>` : ""}
-        ${dcloudSection}
         <section class="ds-fp-section">
           <h4>Network path (${links.length})</h4>
           <ul class="ds-fp-links">${linkRows}</ul>
@@ -205,7 +200,6 @@
         if (id) window.__DS_WALK?.flyToChamberById?.(id);
       });
     });
-    window.__DS_EXPLORE?.wireDcloudRoot?.(panel);
   }
 
   function close() {
