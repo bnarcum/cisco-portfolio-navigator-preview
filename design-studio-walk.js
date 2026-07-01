@@ -2645,7 +2645,8 @@
     return `<div class="ds-walk-hud">
       <div class="ds-walk-hud-top">
         <strong class="ds-walk-title">3D WALKTHROUGH</strong>
-        <span class="ds-walk-hint">WASD move · G layout · E inspect · Esc exit</span>
+        <span class="ds-walk-hint">WASD move · G layout · Shift fine · Esc exit</span>
+        <span class="ds-walk-layout-hint" id="ds-walk-layout-hint" hidden>Middle-drag orbit · table / wall / ceiling surfaces</span>
         <button type="button" class="ds-walk-close" title="Exit walkthrough">✕</button>
       </div>
       <div class="ds-walk-hud-mid">
@@ -2835,6 +2836,7 @@
       }
       if (!canvas.contains(e.target) && e.target !== canvas) return;
       if (window.__DS_WALK_LAYOUT_MODE?.handleDown?.(e, canvas, pickDeviceAt)) return;
+      if (window.__DS_WALK_LAYOUT_MODE?.isActive?.()) return;
       window.__DS_WALK_AUDIO?.start?.();
       state.lookDrag = true;
       downPos = { x: e.clientX, y: e.clientY };
@@ -2851,7 +2853,7 @@
       state.lookLast = { x: e.clientX, y: e.clientY };
     };
     const onUp = e => {
-      if (window.__DS_WALK_LAYOUT_MODE?.handleUp?.()) {
+      if (window.__DS_WALK_LAYOUT_MODE?.handleUp?.(e)) {
         state.lookDrag = false;
         downPos = null;
         return;
@@ -2898,7 +2900,11 @@
       const id = e.dataTransfer?.getData?.("text/stencil");
       if (!id || !state.studio) return;
       e.preventDefault();
-      const hit = window.__DS_WALK_LAYOUT_MODE?.floorHit?.(e.clientX, e.clientY, canvas);
+      const kind = window.__DS_WALK_LAYOUT?.deviceKind?.(id, "", "table");
+      const zone = window.__DS_WALK_LAYOUT?.defaultZoneForKind?.(kind) || "table";
+      const stub = { stencilId: id, label: id, zone, pos: { x: 0, y: 0.82, z: 0 } };
+      const hit = window.__DS_WALK_LAYOUT_MODE?.placementHit?.(e.clientX, e.clientY, canvas, stub)
+        || window.__DS_WALK_LAYOUT_MODE?.floorHit?.(e.clientX, e.clientY, canvas, { forLayout: true });
       if (hit) state.studio.addStencilFromWalk?.(id, hit.x, hit.z);
       else state.studio.addStencil(id);
     };
@@ -3152,7 +3158,9 @@
     makeCableRun,
     applyPacketVisibility,
     buildConnectedNav,
-    snapToWalkable
+    snapToWalkable,
+    applyCamera,
+    podFaceYaw
   });
 
   window.__DS_WALK = {

@@ -1875,7 +1875,7 @@ Account: ${this.design.account}`;
     addStencilFromWalk(stencilId, wx, wz) {
       const node = this.addStencil(stencilId, undefined, undefined, { skipWalkSync: true });
       if (!node?.id) return;
-      const place = () => window.__DS_WALK_LAYOUT_MODE?.placeNodeAtWorld?.(node.id, wx, wz);
+      const place = () => window.__DS_WALK_LAYOUT_MODE?.placeNodeAtWorld?.(node.id, wx, wz, stencilId);
       Promise.resolve(this.syncWalkIfOpen()).then(place);
     }
 

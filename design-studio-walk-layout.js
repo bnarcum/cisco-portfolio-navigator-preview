@@ -146,6 +146,303 @@
     return out;
   }
 
+  function clampRel(v) {
+    return Math.max(0.06, Math.min(0.94, v));
+  }
+
+  function roomSpread(frame) {
+    return {
+      spread: Math.max(frame.tableSpread, 4),
+      depth: Math.max(frame.tableDepth, 2.4)
+    };
+  }
+
+  function defaultZoneForKind(kind) {
+    const m = {
+      display: "display", camera: "display", touch: "table", "touch-wall": "display",
+      "table-mic": "table", "ceiling-mic": "ceiling", ap: "ceiling",
+      codec: "rack", switch: "rack", firewall: "security", logical: "wan"
+    };
+    return m[kind] || "table";
+  }
+
+  function zonesAllowedForKind(kind) {
+    const m = {
+      display: ["display", "wall"],
+      camera: ["display", "wall"],
+      touch: ["table", "desk", "display", "rack", "wall"],
+      "touch-wall": ["display", "wall"],
+      "table-mic": ["table"],
+      "ceiling-mic": ["ceiling"],
+      ap: ["ceiling"],
+      codec: ["rack"],
+      switch: ["rack"]
+    };
+    return m[kind] || ["table", "desk", "rack", "display", "ceiling", "wall"];
+  }
+
+  /** Drag surface for layout mode raycasts. */
+  function placementSurface(kind, zone) {
+    const z = (zone || "").toLowerCase();
+    if (kind === "display" || kind === "camera") return "wall";
+    if (kind === "touch-wall") return "wall";
+    if (kind === "touch" && (z === "table" || z === "desk")) return "table";
+    if (kind === "touch" && z === "rack") return "rack";
+    if (kind === "touch" && (z === "display" || z === "wall")) return "wall";
+    if (kind === "table-mic") return "table";
+    if (kind === "ceiling-mic" || kind === "ap") return "ceiling";
+    if (kind === "codec" || (kind === "switch" && z === "rack")) return "rack";
+    if (z === "table" || z === "desk") return "table";
+    if (z === "ceiling") return "ceiling";
+    if (z === "rack") return "rack";
+    if (z === "display" || z === "wall") return "wall";
+    return "floor";
+  }
+
+  function placementProfile(ch) {
+    const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
+    const zone = ch.zone || defaultZoneForKind(kind);
+    return { kind, zone, surface: placementSurface(kind, zone) };
+  }
+
+  function buildRoomVolumes(frame) {
+    const { spread, depth } = roomSpread(frame);
+    const halfW = frame.tableSpread / 2;
+    const halfD = frame.tableDepth / 2;
+    return [
+      {
+        zone: "table", surface: "table",
+        minX: frame.tableCx - halfW, maxX: frame.tableCx + halfW,
+        minZ: frame.tableCz - halfD, maxZ: frame.tableCz + halfD
+      },
+      {
+        zone: "display", surface: "wall",
+        minX: frame.tableCx - spread / 2, maxX: frame.tableCx + spread / 2,
+        minZ: frame.frontZ - 0.35, maxZ: frame.frontZ + 0.85
+      },
+      {
+        zone: "ceiling", surface: "ceiling",
+        minX: frame.tableCx - halfW, maxX: frame.tableCx + halfW,
+        minZ: frame.tableCz - halfD, maxZ: frame.tableCz + halfD
+      },
+      {
+        zone: "rack", surface: "rack",
+        minX: frame.tableCx - 2.2, maxX: frame.tableCx + 2.2,
+        minZ: frame.credenzaZ - 2.2, maxZ: frame.credenzaZ + 0.6
+      }
+    ];
+  }
+
+  function inferZoneFromWorld(wx, wz, kind, frame) {
+    const allowed = zonesAllowedForKind(kind);
+    const pref = defaultZoneForKind(kind);
+    const volumes = buildRoomVolumes(frame);
+    let best = pref;
+    let bestScore = Infinity;
+    volumes.forEach(v => {
+      if (!allowed.includes(v.zone)) return;
+      const dx = wx < v.minX ? v.minX - wx : wx > v.maxX ? wx - v.maxX : 0;
+      const dz = wz < v.minZ ? v.minZ - wz : wz > v.maxZ ? wz - v.maxZ : 0;
+      const dist = Math.hypot(dx, dz);
+      const score = dist + (v.zone === pref ? 0 : 1.5);
+      if (score < bestScore) {
+        bestScore = score;
+        best = v.zone;
+      }
+    });
+    return best;
+  }
+
+  function clampToVolume(wx, wz, zone, frame) {
+    const vol = buildRoomVolumes(frame).find(v => v.zone === zone);
+    if (!vol) return { x: wx, z: wz };
+    return {
+      x: Math.max(vol.minX, Math.min(vol.maxX, wx)),
+      z: Math.max(vol.minZ, Math.min(vol.maxZ, wz))
+    };
+  }
+
+  /** Single chamber: placement record → world pos (authoritative). */
+  function applyChamberFromPlacement(ch, placement, frame) {
+    const zone = placement.zone || ch.zone || "table";
+    const rx = placement.relX ?? 0.5;
+    const ry = placement.relY ?? 0.5;
+    const kind = deviceKind(ch.stencilId, ch.label, zone);
+    const { spread, depth } = roomSpread(frame);
+
+    ch.zone = zone;
+    ch.relX = rx;
+    ch.relY = ry;
+    ch.semantic = { kind, mode: "room", why: placementWhy(kind, zone, null, "room") };
+    ch.anchored = !/conf-table/.test(ch.stencilId || "");
+
+    if (kind === "display") {
+      ch.zone = "display";
+      ch.pos.z = frame.frontZ + 0.12;
+      ch.pos.y = 1.55 + ry * 1.1;
+      ch.pos.x = frame.tableCx + (rx - 0.5) * spread;
+      ch.faceYaw = 0;
+    } else if (kind === "camera") {
+      ch.zone = "display";
+      ch.pos.z = frame.frontZ + 0.18;
+      ch.pos.y = 2.1 + ry * 0.9;
+      ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
+      ch.faceYaw = 0;
+    } else if (kind === "touch" && (zone === "table" || zone === "desk")) {
+      ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+      ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
+      ch.pos.y = zone === "desk" ? 0.78 : 0.82;
+    } else if (kind === "touch" || kind === "touch-wall") {
+      if (zone === "rack") {
+        ch.pos.z = frame.credenzaZ - 1;
+        ch.pos.y = 1.05;
+        ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
+      } else {
+        ch.zone = "display";
+        ch.pos.z = frame.frontZ + 0.22;
+        ch.pos.y = 1.1 + ry * 1.0;
+        ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
+        ch.faceYaw = 0;
+      }
+    } else if (kind === "ceiling-mic" || kind === "ap") {
+      ch.zone = "ceiling";
+      ch.pos.y = 2.85;
+      ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+      ch.pos.z = frame.tableCz + (ry - 0.5) * depth;
+    } else if (kind === "table-mic") {
+      ch.zone = "table";
+      ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+      ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
+      ch.pos.y = 0.86;
+    } else if (kind === "codec" || (kind === "switch" && zone === "rack")) {
+      ch.zone = "rack";
+      ch.pos.z = frame.credenzaZ - 1;
+      ch.pos.y = 1.05;
+      ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
+    } else if (zone === "table" && /conf-table/.test(ch.stencilId || "")) {
+      ch.pos.x = frame.tableCx;
+      ch.pos.z = frame.tableCz;
+      ch.pos.y = 0.4;
+      ch.anchored = false;
+    } else if (zone === "table" || zone === "desk") {
+      ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+      ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
+      ch.pos.y = zone === "desk" ? 0.78 : 0.82;
+    } else {
+      ch.pos.x = frame.tableCx + (rx - 0.5) * spread;
+      ch.pos.z = frame.frontZ + 2 + ry * depth;
+      ch.pos.y = zone === "ceiling" ? 2.85 : (zone === "rack" ? 1.05 : 0.9);
+    }
+    return ch;
+  }
+
+  /** World hit → placement record (inverse of applyChamberFromPlacement). */
+  function placementFromWorld(wx, wy, wz, ch, frame, opts = {}) {
+    const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
+    const zone = opts.inferZone !== false
+      ? inferZoneFromWorld(wx, wz, kind, frame)
+      : (ch.zone || defaultZoneForKind(kind));
+    const clamped = clampToVolume(wx, wz, zone, frame);
+    wx = clamped.x;
+    wz = clamped.z;
+    const { spread, depth } = roomSpread(frame);
+    const surface = placementSurface(kind, zone);
+    let relX = 0.5;
+    let relY = 0.5;
+
+    if (surface === "table") {
+      relX = (wx - frame.tableCx) / frame.tableSpread + 0.5;
+      relY = (wz - frame.tableCz) / frame.tableDepth + 0.5;
+    } else if (surface === "wall") {
+      relX = (wx - frame.tableCx) / spread + 0.5;
+      relY = wy != null ? clampRel((wy - 1.2) / 1.8) : 0.5;
+    } else if (surface === "ceiling") {
+      relX = (wx - frame.tableCx) / frame.tableSpread + 0.5;
+      relY = (wz - frame.tableCz) / depth + 0.5;
+    } else if (surface === "rack") {
+      relX = (wx - frame.tableCx) / 4 + 0.5;
+      relY = 0.5;
+    } else {
+      relX = (wx - frame.tableCx) / spread + 0.5;
+      relY = (wz - frame.tableCz) / depth + 0.5;
+    }
+    return { zone, relX: clampRel(relX), relY: clampRel(relY), surface };
+  }
+
+  function inferNetworkLayer(wz, frame) {
+    let best = "access";
+    let bestD = Infinity;
+    Object.entries(frame.layerZ || NET_LAYER_Z).forEach(([layer, z]) => {
+      const d = Math.abs(wz - z);
+      if (d < bestD) { bestD = d; best = layer; }
+    });
+    return best;
+  }
+
+  function constrainNetworkWorld(wx, wz, layer, frame) {
+    const baseZ = frame.layerZ?.[layer] ?? NET_LAYER_Z[layer] ?? 0;
+    const snapX = Math.round(wx / 1.25) * 1.25;
+    const snapZ = baseZ + Math.round((wz - baseZ) / 1.2) * 1.2;
+    return { x: snapX, z: snapZ, layer };
+  }
+
+  function applyNetworkChamberFromWalk(ch, node, frame) {
+    const wp = node?.walkPlacement;
+    const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
+    const layer = wp?.layer || ch.zone || node?.layer || "access";
+    ch.zone = layer;
+    if (wp && Number.isFinite(wp.wx) && Number.isFinite(wp.wz)) {
+      ch.pos.x = wp.wx;
+      ch.pos.z = wp.wz;
+    }
+    ch.semantic = { kind, mode: "network", layer, why: placementWhy(kind, layer, layer, "network") };
+    ch.anchored = true;
+    if (kind === "ap") {
+      ch.pos.y = 2.85;
+      ch.mount = "ceiling";
+    } else if (kind === "logical") {
+      ch.pos.y = 1.55;
+    } else if (kind === "firewall") {
+      ch.pos.y = 1.15;
+    } else {
+      ch.pos.y = frame.isDc && /n9k|ucs|apic/i.test(ch.stencilId || "") ? 1.25 : 1.05;
+    }
+    return ch;
+  }
+
+  function minSeparationAt(chambers, chId, wx, wz, kind = "room") {
+    const minSep = kind === "room" ? 3.6 : 3.4;
+    let worst = Infinity;
+    chambers.forEach(c => {
+      if (c.id === chId || !c.pos) return;
+      const d = Math.hypot(c.pos.x - wx, c.pos.z - wz);
+      if (d < worst) worst = d;
+    });
+    return { dist: worst, ok: worst >= minSep };
+  }
+
+  function reapplyChamberSemantics(studio, graph, chId) {
+    if (!studio || !graph?.chambers) return null;
+    const ch = graph.chambers.find(c => c.id === chId);
+    const node = studio.design?.nodes?.find(n => n.id === chId);
+    if (!ch || !node) return null;
+
+    if (graph.kind === "room") {
+      const nodes = studio.design.nodes.filter(n => n.roomId === node.roomId);
+      const frame = graph.semanticFrame || buildRoomFrame(graph.chambers, nodes);
+      const placement = node.walkPlacement
+        ? { zone: node.walkPlacement.zone, relX: node.walkPlacement.relX, relY: node.walkPlacement.relY }
+        : { zone: ch.zone, relX: ch.relX ?? 0.5, relY: ch.relY ?? 0.5 };
+      applyChamberFromPlacement(ch, placement, frame);
+      graph.semanticFrame = frame;
+    } else {
+      const frame = graph.semanticFrame || buildNetworkFrame(graph.chambers);
+      applyNetworkChamberFromWalk(ch, node, frame);
+      graph.semanticFrame = frame;
+    }
+    return ch;
+  }
+
   function clampToRoomFrame(chambers, frame) {
     if (!frame || !chambers?.length) return;
     const margin = 1.4;
@@ -171,72 +468,12 @@
     };
     chambers.forEach(ch => {
       const item = itemFor(ch);
-      if (item?.zone) ch.zone = item.zone;
-      const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
-      const rx = item?.relX ?? ch.relX ?? 0.5;
-      const ry = item?.relY ?? ch.relY ?? 0.5;
-      ch.relX = rx;
-      ch.relY = ry;
-      ch.semantic = { kind, mode: "room", why: placementWhy(kind, ch.zone, null, "room") };
-      ch.anchored = true;
-
-      if (kind === "display") {
-        ch.zone = "display";
-        ch.pos.z = frame.frontZ + 0.12;
-        ch.pos.y = 2.05;
-        ch.pos.x = frame.tableCx + (rx - 0.5) * Math.max(frame.tableSpread, 4);
-        ch.faceYaw = 0;
-      } else if (kind === "camera") {
-        ch.zone = "display";
-        ch.pos.z = frame.frontZ + 0.18;
-        ch.pos.y = 2.65;
-        ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
-        ch.faceYaw = 0;
-      } else if (kind === "touch" && (ch.zone === "table" || ch.zone === "desk")) {
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
-        ch.pos.y = ch.zone === "desk" ? 0.78 : 0.82;
-      } else if (kind === "touch" || kind === "touch-wall") {
-        if (ch.zone === "rack") {
-          ch.pos.z = Math.max(ch.pos.z, frame.credenzaZ - 1);
-          ch.pos.y = 1.05;
-          ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
-        } else {
-          ch.zone = "display";
-          ch.pos.z = frame.frontZ + 0.22;
-          ch.pos.y = 1.38;
-          ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
-          ch.faceYaw = 0;
-        }
-      } else if (kind === "ceiling-mic" || kind === "ap") {
-        ch.zone = kind === "ap" ? "ceiling" : "ceiling";
-        ch.pos.y = 2.85;
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.tableCz + (ry - 0.5) * Math.max(frame.tableDepth, 2.4);
-      } else if (kind === "table-mic") {
-        ch.zone = "table";
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
-        ch.pos.y = 0.86;
-      } else if (kind === "codec" || (kind === "switch" && ch.zone === "rack")) {
-        ch.zone = "rack";
-        ch.pos.z = Math.max(ch.pos.z, frame.credenzaZ - 1);
-        ch.pos.y = 1.05;
-        ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
-      } else if (ch.zone === "table" && /conf-table/.test(ch.stencilId || "")) {
-        ch.pos.x = frame.tableCx;
-        ch.pos.z = frame.tableCz;
-        ch.pos.y = 0.4;
-        ch.anchored = false;
-      } else if (ch.zone === "table" || ch.zone === "desk") {
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
-        ch.pos.y = ch.zone === "desk" ? 0.78 : 0.82;
-      } else {
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.frontZ + 2 + ry * Math.max(frame.tableDepth, 2.4);
-        ch.pos.y = ch.zone === "ceiling" ? 2.85 : (ch.zone === "rack" ? 1.05 : 0.9);
-      }
+      const placement = {
+        zone: item?.zone || ch.zone || "table",
+        relX: item?.relX ?? ch.relX ?? 0.5,
+        relY: item?.relY ?? ch.relY ?? 0.5
+      };
+      applyChamberFromPlacement(ch, placement, frame);
     });
     constrainedRelax(chambers, "room");
     clampToRoomFrame(chambers, frame);
@@ -257,6 +494,11 @@
       const list = byLayer[layer] || [];
       list.sort((a, b) => (a.pos?.diagramY ?? 0) - (b.pos?.diagramY ?? 0));
       list.forEach((ch, i) => {
+        const node = nodes.find(n => n.id === ch.id);
+        if (node?.walkPlacement?.wx != null) {
+          applyNetworkChamberFromWalk(ch, node, frame);
+          return;
+        }
         const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
         const baseZ = frame.layerZ[layer] ?? i * 2;
         const spread = (i - (list.length - 1) / 2) * 3.0;
@@ -593,33 +835,8 @@
   }
 
   function worldToRoomRel(wx, wz, ch, frame) {
-    const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
-    const zone = ch.zone || "table";
-    const spread = Math.max(frame.tableSpread, 4);
-    const depth = Math.max(frame.tableDepth, 2.4);
-    let relX = 0.5;
-    let relY = 0.5;
-    if (zone === "table" || zone === "desk" || kind === "table-mic" || (kind === "touch" && zone !== "rack" && zone !== "display")) {
-      relX = (wx - frame.tableCx) / spread + 0.5;
-      relY = (wz - frame.tableCz) / depth + 0.5;
-    } else if (kind === "display" || kind === "camera" || zone === "display" || zone === "wall") {
-      relX = (wx - frame.tableCx) / spread + 0.5;
-      relY = 0.5;
-    } else if (zone === "rack" || kind === "codec" || kind === "switch") {
-      relX = (wx - frame.tableCx) / 4 + 0.5;
-      relY = 0.5;
-    } else if (zone === "ceiling" || kind === "ceiling-mic" || kind === "ap") {
-      relX = (wx - frame.tableCx) / spread + 0.5;
-      relY = (wz - frame.tableCz) / depth + 0.5;
-    } else {
-      relX = (wx - frame.tableCx) / spread + 0.5;
-      relY = (wz - frame.tableCz) / depth + 0.5;
-    }
-    return {
-      zone,
-      relX: Math.max(0.06, Math.min(0.94, relX)),
-      relY: Math.max(0.06, Math.min(0.94, relY))
-    };
+    const p = placementFromWorld(wx, ch.pos?.y, wz, ch, frame, { inferZone: false });
+    return { zone: p.zone, relX: p.relX, relY: p.relY };
   }
 
   function worldToDiagramNetwork(wx, wz, layoutDiagram, node) {
@@ -633,36 +850,43 @@
     return { x: centerX - nw / 2, y: centerY - nh / 2 };
   }
 
-  /** Persist a 3D floor position back to the design node + diagram coordinates. */
-  function syncNodeFromWorld(studio, nodeId, wx, wz, graph) {
+  /** Persist a 3D position back to the design node + diagram coordinates. */
+  function syncNodeFromWorld(studio, nodeId, wx, wz, graph, opts = {}) {
     const node = studio?.design?.nodes?.find(n => n.id === nodeId);
     const ch = graph?.chambers?.find(c => c.id === nodeId);
     if (!node || !ch) return false;
-    const kind = graph.kind === "room" ? "room" : "network";
-    if (kind === "room") {
-      const frame = graph.semanticFrame || buildRoomFrame(graph.chambers, studio.design.nodes.filter(n => n.roomId === node.roomId));
-      const rel = worldToRoomRel(wx, wz, ch, frame);
+    const wy = opts.wy ?? ch.pos?.y;
+
+    if (graph.kind === "room") {
+      const frame = graph.semanticFrame || buildRoomFrame(
+        graph.chambers,
+        studio.design.nodes.filter(n => n.roomId === node.roomId)
+      );
+      const rel = placementFromWorld(wx, wy, wz, ch, frame, { inferZone: true });
       node.walkPlacement = { zone: rel.zone, relX: rel.relX, relY: rel.relY };
-      ch.zone = rel.zone;
-      ch.relX = rel.relX;
-      ch.relY = rel.relY;
+      applyChamberFromPlacement(ch, rel, frame);
       const room = studio.design.rooms?.find(r => r.id === node.roomId);
       const diag = diagramFromRelInZone(rel.zone, rel.relX, rel.relY, room, node);
       node.x = diag.x;
       node.y = diag.y;
-    } else {
-      delete node.walkPlacement;
-      const diag = worldToDiagramNetwork(wx, wz, graph.layoutDiagram, node);
-      node.x = diag.x;
-      node.y = diag.y;
-      if (studio.design.snapGrid !== false) {
-        node.x = Math.round(node.x / 16) * 16;
-        node.y = Math.round(node.y / 16) * 16;
-      }
+      return { placement: rel, ch };
     }
-    ch.pos.x = wx;
-    ch.pos.z = wz;
-    return true;
+
+    const frame = graph.semanticFrame || buildNetworkFrame(graph.chambers);
+    const layer = inferNetworkLayer(wz, frame);
+    const constrained = constrainNetworkWorld(wx, wz, layer, frame);
+    node.walkPlacement = { layer, wx: constrained.x, wz: constrained.z };
+    node.layer = layer;
+    ch.zone = layer;
+    applyNetworkChamberFromWalk(ch, node, frame);
+    const diag = worldToDiagramNetwork(ch.pos.x, ch.pos.z, graph.layoutDiagram, node);
+    node.x = diag.x;
+    node.y = diag.y;
+    if (studio.design.snapGrid !== false) {
+      node.x = Math.round(node.x / 16) * 16;
+      node.y = Math.round(node.y / 16) * 16;
+    }
+    return { placement: node.walkPlacement, ch };
   }
 
   window.__DS_WALK_LAYOUT = {
@@ -671,6 +895,10 @@
     applySemanticPlacement, buildRoomFrame, buildNetworkFrame,
     resolveRoomPlacement, clampToRoomFrame,
     deviceKind, placementWhy, NET_LAYER_Z, NET_LAYER_ORDER,
-    diagramFromRelInZone, worldToRoomRel, worldToDiagramNetwork, syncNodeFromWorld
+    diagramFromRelInZone, worldToRoomRel, worldToDiagramNetwork, syncNodeFromWorld,
+    placementProfile, placementSurface, placementFromWorld, applyChamberFromPlacement,
+    buildRoomVolumes, inferZoneFromWorld, inferNetworkLayer, constrainNetworkWorld,
+    reapplyChamberSemantics, minSeparationAt, roomSpread, defaultZoneForKind,
+    clampToVolume
   };
 })();
