@@ -74,7 +74,8 @@
     dustParticles: null, footPhase: 0,
     topology: null, easyNav: true, route: null, environmentTags: {},
     semanticFrame: null, layerFilter: "all",
-    packetsEnabled: true, packetSpeedIdx: 1
+    packetsEnabled: true, packetSpeedIdx: 1,
+    quest: null
   };
 
   function esc(s) {
@@ -1168,6 +1169,7 @@
       }
       if (state.mode) setStatus("Follow a connected link below, or use ‹ Prev / Next › to walk devices");
       showWalkOnboardHint();
+      window.__DS_WALK_QUEST?.syncQuestButton?.(studio);
     });
   }
 
@@ -2002,6 +2004,10 @@
   }
 
   function interactNearby() {
+    if (window.__DS_WALK_QUEST?.isActive?.()) {
+      const port = window.__DS_WALK_QUEST.reticlePick?.();
+      if (port && window.__DS_WALK_QUEST.handlePick?.(port)) return;
+    }
     const ch = state.reticleChamber;
     if (!ch) return;
     openFieldPanel(ch);
@@ -2013,7 +2019,9 @@
     state.nearChamber = ch;
     const prompt = document.getElementById("ds-walk-prompt");
     if (prompt) {
-      if (ch) {
+      if (window.__DS_WALK_QUEST?.isActive?.()) {
+        /* quest module updates prompt */
+      } else if (ch) {
         const p = chamberWorldPos(ch);
         const near = Math.hypot(p.x - state.pos.x, p.z - state.pos.z) < 9;
         prompt.hidden = !near;
@@ -2320,6 +2328,7 @@
     updatePlayer(dt);
     animateCables(state.clock);
     animateRoleEffects(state.clock);
+    window.__DS_WALK_QUEST?.tick?.(state.clock);
     animateDust(dt);
     updateReticleFocus();
     if (state.route) { animateRoute(state.clock); updateWayfind(); }
@@ -2616,6 +2625,9 @@
     const outcomesBtn = tab === "room"
       ? `<button type="button" class="ds-walk-btn ds-walk-btn-spaces" data-action="outcomes" title="Simulated occupancy, location &amp; IoT overlay — room walks only">Insights</button>`
       : "";
+    const questBtn = tab === "room"
+      ? `<button type="button" class="ds-walk-btn ds-walk-btn-quest" data-action="cable-quest" title="Mini-game: connect Room Bar or ceiling mic to the PoE switch">Cable Quest</button>`
+      : "";
     return `<div class="ds-walk-hud">
       <div class="ds-walk-hud-top">
         <strong class="ds-walk-title">3D WALKTHROUGH</strong>
@@ -2625,6 +2637,7 @@
       <div class="ds-walk-hud-mid">
         <button type="button" class="ds-walk-btn" data-action="prev-dev" title="Previous device">‹ Prev</button>
         <button type="button" class="ds-walk-btn" data-action="next-dev" title="Next device">Next ›</button>
+        ${questBtn}
         ${outcomesBtn}
         <button type="button" class="ds-walk-btn ds-walk-pkt-toggle" data-action="packets" title="Show or hide data packets on links">Packets</button>
         <button type="button" class="ds-walk-btn ds-walk-pkt-speed" data-action="packet-speed" title="Packet speed">Normal</button>
@@ -2632,6 +2645,13 @@
       </div>
       ${layerFilterHtml(tab)}
       <div class="ds-walk-outcomes" id="ds-walk-outcomes" hidden></div>
+      <div class="ds-walk-quest" id="ds-walk-quest" hidden>
+        <div class="ds-walk-quest-head">
+          <strong id="ds-walk-quest-title">Cable Quest</strong>
+          <button type="button" class="ds-walk-quest-x" data-action="cable-quest-cancel" title="Cancel quest">✕</button>
+        </div>
+        <p id="ds-walk-quest-step" class="ds-walk-quest-step"></p>
+      </div>
       <div class="ds-walk-wayfind" id="ds-walk-wayfind" hidden></div>
       <div class="ds-walk-links" id="ds-walk-links" hidden></div>
       <div class="ds-walk-legend" id="ds-walk-legend" hidden></div>
@@ -2680,6 +2700,16 @@
       else if (a === "prev-dev") cycleDevice(-1);
       else if (a === "next-dev") cycleDevice(1);
       else if (a === "inspect") interactNearby();
+      else if (a === "cable-quest") {
+        e.preventDefault();
+        e.stopPropagation();
+        window.__DS_WALK_QUEST?.start?.(state.studio);
+      }
+      else if (a === "cable-quest-cancel") {
+        e.preventDefault();
+        e.stopPropagation();
+        window.__DS_WALK_QUEST?.end?.(false);
+      }
       else if (a === "fp-close") window.__DS_FIELD_PANEL?.close?.();
       else if (a === "fp-fly") {
         const id = document.getElementById("ds-field-panel")?.dataset?.chamberId;
@@ -2735,6 +2765,10 @@
         if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();
+          if (window.__DS_WALK_QUEST?.isActive?.()) {
+            window.__DS_WALK_QUEST.end(false);
+            return;
+          }
           const panel = document.getElementById("ds-field-panel");
           if (panel && !panel.hidden) {
             window.__DS_FIELD_PANEL?.close?.();
@@ -2792,8 +2826,12 @@
       if (e.button === 0 && downPos) {
         const moved = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
         if (moved < 6) {
+          if (window.__DS_WALK_QUEST?.isActive?.()) {
+            const port = window.__DS_WALK_QUEST.pickAt?.(e.clientX, e.clientY, canvas);
+            if (port && window.__DS_WALK_QUEST.handlePick?.(port)) return;
+          }
           const ch = pickDeviceAt(e.clientX, e.clientY, canvas) || state.reticleChamber;
-          if (ch) openFieldPanel(ch);
+          if (ch && !window.__DS_WALK_QUEST?.isActive?.()) openFieldPanel(ch);
           else if (state.overlay?.classList.contains("ds-field-panel-open"))
             window.__DS_FIELD_PANEL?.close?.();
         }
@@ -2878,6 +2916,7 @@
     state.camera = null;
     state.topology = null;
     state.graph = null;
+    window.__DS_WALK_QUEST?.end?.(false);
   }
 
   async function open(studio) {
@@ -3011,6 +3050,7 @@
       state.studio.scheduleFitView?.();
     }
     window.__DS_FIELD_PANEL?.close?.();
+    window.__DS_WALK_QUEST?.end?.(false);
     window.__DS_WALK_AUDIO?.stop?.();
     state.mode = null;
     if (!silent) state.studio = null;
@@ -3036,6 +3076,18 @@
       }))
     };
   }
+
+  window.__DS_WALK_QUEST?.register?.({
+    getState: () => state,
+    THREE: () => state.THREE,
+    makeCableRun,
+    podLift,
+    MEDIA_COLORS,
+    setStatus,
+    teleportToChamber,
+    applyPacketVisibility,
+    buildConnectedNav
+  });
 
   window.__DS_WALK = {
     open, close, rebuild, toggle: s => state.mode ? close(true) : open(s),

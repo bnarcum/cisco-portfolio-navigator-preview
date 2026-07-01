@@ -18,7 +18,7 @@ try {
   await page.goto("http://127.0.0.1:8765/cisco-portfolio-navigator.html", { waitUntil: "load", timeout: 60000 });
   await page.waitForFunction(() => window.__cpnV2?.APP_VERSION, { timeout: 60000 });
   const version = await page.evaluate(() => window.__cpnV2.APP_VERSION);
-  if (version !== "2.79.14") errors.push(`version ${version} != 2.79.14`);
+  if (version !== "2.79.15") errors.push(`version ${version} != 2.79.15`);
 
   await page.click("#design-studio-btn");
   await page.waitForSelector("#design-studio.open", { timeout: 8000 });
@@ -144,6 +144,12 @@ try {
     return { pods: st.pods || 0, open: window.__DS_WALK?.isOpen?.() };
   });
   if (!walk.open) errors.push("walk did not open");
+  const questApi = await page.evaluate(() => ({
+    mod: !!window.__DS_WALK_QUEST?.start,
+    btn: !!document.querySelector('[data-action="cable-quest"]')
+  }));
+  if (!questApi.mod) errors.push("Cable Quest module not loaded");
+  if (!questApi.btn) errors.push("Cable Quest button missing in room walk");
   await page.screenshot({ path: path.join(out, "polish-walk.png") });
 
   // Wayfinding: the "Where to?" picker should list destinations; choosing one

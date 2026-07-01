@@ -78,6 +78,16 @@
     if (master) master.gain.value = volume;
   }
 
+  function sfxQuestSuccess() {
+    playTone(523.25, 0.15, "sine", 0.14, 783.99);
+    setTimeout(() => playTone(659.25, 0.2, "triangle", 0.12, 987.77), 100);
+    setTimeout(() => playTone(783.99, 0.35, "sine", 0.1), 220);
+  }
+
+  function sfxQuestFail() {
+    playTone(180, 0.2, "sawtooth", 0.1, 120);
+  }
+
   function isMuted() { return muted; }
   function isRunning() { return false; }
 
@@ -88,6 +98,9 @@
     setVolume,
     isMuted,
     isRunning,
-    sfx: { inspect: sfxInspect, waypoint: sfxWaypoint, routeStart: sfxRouteStart, footstep: sfxFootstep }
+    sfx: {
+      inspect: sfxInspect, waypoint: sfxWaypoint, routeStart: sfxRouteStart,
+      footstep: sfxFootstep, questSuccess: sfxQuestSuccess, questFail: sfxQuestFail
+    }
   };
 })();
