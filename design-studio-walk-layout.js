@@ -12,7 +12,7 @@
   function deviceKind(stencilId, label, zone) {
     const id = `${stencilId || ""} ${label || ""}`.toLowerCase();
     const z = (zone || "").toLowerCase();
-    if (/^display-|display-\d|primary display|confidence|people display|content display|main display|front display/.test(id)) return "display";
+    if (/^display-|display-\d|primary display|confidence|people display|content display|main display|front display|room-bar|bar pro/.test(id)) return "display";
     if (/quad|camera|\bcam\b/.test(id)) return "camera";
     if (/touch|teams panel|zoom controller/.test(id)) return "touch";
     if (z === "ceiling" && /mic/.test(id)) return "ceiling-mic";
@@ -20,7 +20,7 @@
     if (/9179|mr57|9120|9166|cw91|meraki.*ap|\bap\b/.test(id)) return "ap";
     if (/internet|mpls|dia|users|vlan|cloud|logical/.test(id)) return "logical";
     if (/fpr|firewall|ftd/.test(id)) return "firewall";
-    if (/kit|codec|eq|bar pro|board pro/.test(id)) return "codec";
+    if (/kit|codec|eq|board pro/.test(id)) return "codec";
     if (/9200|9300|9400|9500|switch|n9k|nexus|apic|ucs/.test(id)) return "switch";
     return "default";
   }
@@ -66,15 +66,99 @@
     return { isDc, demarcZ, layerZ: { ...NET_LAYER_Z } };
   }
 
-  function applyRoomSemantics(chambers, nodes, items) {
+  function inferZoneForKind(kind, zones) {
+    const pref = {
+      display: "display", camera: "display", touch: "table",
+      "ceiling-mic": "ceiling", "table-mic": "table",
+      codec: "rack", switch: "rack", ap: "ceiling"
+    };
+    const name = pref[kind];
+    if (name && zones[name]) return name;
+    return Object.keys(zones)[0] || "default";
+  }
+
+  function nearestZone(zones, ox, oy, cx, cy) {
+    let best = Object.keys(zones)[0] || "default";
+    let bestD = Infinity;
+    Object.entries(zones).forEach(([name, z]) => {
+      const zx = ox + z.x + z.w / 2;
+      const zy = oy + z.y + z.h / 2;
+      const d = Math.hypot(cx - zx, cy - zy);
+      if (d < bestD) { bestD = d; best = name; }
+    });
+    return best;
+  }
+
+  function relPosInZone(z, ox, oy, cx, cy) {
+    const padX = 16;
+    const padY = 24;
+    const innerW = Math.max(z.w - padX * 2, 48);
+    const innerH = Math.max(z.h - padY * 2, 48);
+    const relX = Math.max(0.06, Math.min(0.94, (cx - (ox + z.x + padX)) / innerW));
+    const relY = Math.max(0.06, Math.min(0.94, (cy - (oy + z.y + padY)) / innerH));
+    return { relX, relY };
+  }
+
+  /** Hybrid placement: template match, else zone + relative position from Room diagram. */
+  function resolveRoomPlacement(nodes, room, tplItems) {
+    const tpl = window.__DS_TEMPLATES?.ROOM_TEMPLATES?.[room?.template];
+    const zones = room?.computedZones || tpl?.zones;
+    const ox = room?.layoutOrigin?.x ?? 100;
+    const oy = room?.layoutOrigin?.y ?? 132;
+    const claimed = new Set();
+    const out = {};
+    if (!nodes?.length) return out;
+
+    nodes.forEach(n => {
+      let item = tplItems?.find(it => it.label === n.label);
+      if (!item) item = tplItems?.find(it => it.stencilId === n.stencilId && !claimed.has(it.label));
+      if (item) {
+        claimed.add(item.label);
+        out[n.id] = { zone: item.zone, relX: item.relX ?? 0.5, relY: item.relY ?? 0.5, fromTemplate: true };
+        return;
+      }
+      const c = nodeCenter(n);
+      const kind = deviceKind(n.stencilId, n.label, null);
+      let zoneName = zones ? inferZoneForKind(kind, zones) : "default";
+      if (zones && !zones[zoneName]) zoneName = nearestZone(zones, ox, oy, c.x, c.y);
+      const z = zones?.[zoneName];
+      const rel = z ? relPosInZone(z, ox, oy, c.x, c.y) : { relX: 0.5, relY: 0.5 };
+      out[n.id] = { zone: zoneName, relX: rel.relX, relY: rel.relY, kind };
+    });
+    return out;
+  }
+
+  function clampToRoomFrame(chambers, frame) {
+    if (!frame || !chambers?.length) return;
+    const margin = 1.4;
+    const halfW = Math.max(frame.tableSpread * 0.55, 4.5) + margin;
+    const minX = frame.tableCx - halfW;
+    const maxX = frame.tableCx + halfW;
+    const minZ = frame.frontZ - margin;
+    const maxZ = frame.credenzaZ + margin;
+    chambers.forEach(ch => {
+      if (!ch.pos || !Number.isFinite(ch.pos.x)) return;
+      ch.pos.x = Math.max(minX, Math.min(maxX, ch.pos.x));
+      ch.pos.z = Math.max(minZ, Math.min(maxZ, ch.pos.z));
+    });
+  }
+
+  function applyRoomSemantics(chambers, nodes, items, placementById) {
     if (!chambers?.length) return buildRoomFrame(chambers, nodes);
     const frame = buildRoomFrame(chambers, nodes);
-    const itemFor = ch => items?.find(it => it.label === ch.label) || items?.find(it => it.stencilId === ch.stencilId);
+    const itemFor = ch => {
+      const placed = placementById?.[ch.id];
+      if (placed) return placed;
+      return items?.find(it => it.label === ch.label) || items?.find(it => it.stencilId === ch.stencilId);
+    };
     chambers.forEach(ch => {
       const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
       const item = itemFor(ch);
-      const rx = item?.relX ?? 0.5;
-      const ry = item?.relY ?? 0.5;
+      if (item?.zone) ch.zone = item.zone;
+      const rx = item?.relX ?? ch.relX ?? 0.5;
+      const ry = item?.relY ?? ch.relY ?? 0.5;
+      ch.relX = rx;
+      ch.relY = ry;
       ch.semantic = { kind, mode: "room", why: placementWhy(kind, ch.zone, null, "room") };
       ch.anchored = true;
 
@@ -95,11 +179,15 @@
         ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
         ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
         ch.pos.y = 0.82;
-      } else if (kind === "ceiling-mic") {
-        ch.zone = "ceiling";
-        ch.pos.y = 2.95;
+      } else if (kind === "ceiling-mic" || kind === "ap") {
+        ch.zone = kind === "ap" ? "ceiling" : "ceiling";
+        ch.pos.y = 2.85;
+        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+        ch.pos.z = frame.tableCz + (ry - 0.5) * Math.max(frame.tableDepth, 2.4);
       } else if (kind === "table-mic") {
         ch.zone = "table";
+        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+        ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
         ch.pos.y = 0.86;
       } else if (kind === "codec" || (kind === "switch" && ch.zone === "rack")) {
         ch.zone = "rack";
@@ -111,9 +199,14 @@
         ch.pos.z = frame.tableCz;
         ch.pos.y = 0.4;
         ch.anchored = false;
+      } else {
+        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+        ch.pos.z = frame.frontZ + 2 + ry * Math.max(frame.tableDepth, 2.4);
+        ch.pos.y = ch.zone === "ceiling" ? 2.85 : (ch.zone === "rack" ? 1.05 : 0.9);
       }
     });
     constrainedRelax(chambers, "room");
+    clampToRoomFrame(chambers, frame);
     return frame;
   }
 
@@ -188,7 +281,11 @@
 
   function applySemanticPlacement(chambers, nodes, kind, ctx = {}) {
     if (!chambers?.length) return null;
-    if (kind === "room") return applyRoomSemantics(chambers, nodes, ctx.items);
+    if (kind === "room") {
+      const placementById = ctx.placementById
+        || (ctx.room ? resolveRoomPlacement(nodes, ctx.room, ctx.items) : null);
+      return applyRoomSemantics(chambers, nodes, ctx.items, placementById);
+    }
     return applyNetworkSemantics(chambers, nodes);
   }
 
@@ -448,6 +545,7 @@
     diagramToWorld, layerAisles, roomZones, nodeCenter,
     buildWalkTopology, distToSegment,
     applySemanticPlacement, buildRoomFrame, buildNetworkFrame,
+    resolveRoomPlacement, clampToRoomFrame,
     deviceKind, placementWhy, NET_LAYER_Z, NET_LAYER_ORDER
   };
 })();

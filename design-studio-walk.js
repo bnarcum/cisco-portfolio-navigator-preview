@@ -175,8 +175,9 @@
     const graph = linkGraph(room, chambers, links, "room");
     const layoutInfo = applyDiagramLayout(studio, graph.chambers, nodes, "room");
     const tpl = window.__DS_TEMPLATES?.ROOM_TEMPLATES?.[room.template];
+    const placementById = window.__DS_WALK_LAYOUT?.resolveRoomPlacement?.(nodes, room, tpl?.items);
     graph.semanticFrame = window.__DS_WALK_LAYOUT?.applySemanticPlacement?.(
-      graph.chambers, nodes, "room", { items: tpl?.items, room }
+      graph.chambers, nodes, "room", { items: tpl?.items, room, placementById }
     );
     graph.layoutBounds = recomputeBounds(graph.chambers, "room") || layoutInfo?.bounds;
     graph.layoutDiagram = layoutInfo?.diagram;
@@ -483,7 +484,101 @@
     return 1.1;
   }
 
-  async function makeDevicePod(THREE, ch, scale = 1, kind = "room") {
+  function attachRoleEffects(THREE, g, ch, kind, graph) {
+    const dk = window.__DS_WALK_LAYOUT?.deviceKind?.(ch.stencilId, ch.label, ch.zone) || "default";
+    if (dk === "ap") attachApCoverageRings(THREE, g);
+    if (dk === "firewall") attachFirewallShield(THREE, g);
+    if (dk === "codec") attachAvSignalBeam(THREE, g, ch, graph);
+  }
+
+  function attachApCoverageRings(THREE, g) {
+    const group = new THREE.Group();
+    group.position.y = 2.82;
+    const rings = [];
+    [2.0, 2.9, 3.7].forEach((r, i) => {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(r - 0.05, r, 40),
+        new THREE.MeshBasicMaterial({
+          color: 0x22c55e, transparent: true, opacity: 0.07 + i * 0.02,
+          side: THREE.DoubleSide, depthWrite: false
+        })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      group.add(ring);
+      rings.push(ring);
+    });
+    g.add(group);
+    g.userData.roleFx = { type: "ap", rings, phase: Math.random() * Math.PI * 2 };
+  }
+
+  function attachFirewallShield(THREE, g) {
+    const plane = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.6, 2.0),
+      new THREE.MeshBasicMaterial({
+        color: 0xff6b35, transparent: true, opacity: 0.09,
+        side: THREE.DoubleSide, depthWrite: false
+      })
+    );
+    plane.position.set(0, 1.15, 0.85);
+    g.add(plane);
+    g.userData.roleFx = { type: "firewall", plane, phase: Math.random() * Math.PI * 2 };
+  }
+
+  function attachAvSignalBeam(THREE, g, ch, graph) {
+    const cors = (graph?.corridors || []).filter(c => {
+      if (c.from.id !== ch.id && c.to.id !== ch.id) return false;
+      const other = c.from.id === ch.id ? c.to : c.from;
+      const ok = /hdmi|usb|speaker|control/i.test(c.media || "")
+        || /display|camera|codec|hdmi|usb|mic/i.test(c.label || "")
+        || /display|camera|codec/i.test(other.stencilId || "");
+      return ok;
+    });
+    if (!cors.length) return;
+    const cor = cors[0];
+    const other = cor.from.id === ch.id ? cor.to : cor.from;
+    const ox = ch.pos?.x ?? 0;
+    const oz = ch.pos?.z ?? 0;
+    const tx = other.pos?.x ?? ox;
+    const tz = other.pos?.z ?? oz;
+    const dx = tx - ox;
+    const dz = tz - oz;
+    if (Math.hypot(dx, dz) < 0.5) return;
+    const geom = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 1.35, 0.15),
+      new THREE.Vector3(dx, 1.35, dz)
+    ]);
+    const mat = new THREE.LineDashedMaterial({
+      color: 0x7c3aed, transparent: true, opacity: 0.28,
+      dashSize: 0.4, gapSize: 0.22, depthWrite: false
+    });
+    const beam = new THREE.Line(geom, mat);
+    beam.computeLineDistances?.();
+    g.add(beam);
+    g.userData.roleFx = { type: "av", beam, phase: Math.random() * Math.PI * 2 };
+  }
+
+  function animateRoleEffects(t) {
+    state.devicePods.forEach(pod => {
+      const fx = pod.userData?.roleFx;
+      if (!fx) return;
+      if (fx.type === "ap" && fx.rings) {
+        fx.rings.forEach((ring, i) => {
+          const pulse = 0.5 + 0.5 * Math.sin(t * 1.1 + fx.phase + i * 0.65);
+          ring.material.opacity = (0.05 + i * 0.018) * (0.65 + 0.7 * pulse);
+          const s = 1 + 0.025 * pulse;
+          ring.scale.set(s, s, 1);
+        });
+      } else if (fx.type === "firewall" && fx.plane) {
+        const pulse = 0.5 + 0.5 * Math.sin(t * 0.9 + fx.phase);
+        fx.plane.material.opacity = 0.06 + 0.05 * pulse;
+      } else if (fx.type === "av" && fx.beam) {
+        const pulse = 0.5 + 0.5 * Math.sin(t * 1.4 + fx.phase);
+        fx.beam.material.opacity = 0.08 + 0.07 * pulse;
+      }
+    });
+  }
+
+  async function makeDevicePod(THREE, ch, scale = 1, kind = "room", graph = null) {
     const theme = zoneTheme(ch.zone);
     const g = new THREE.Group();
     g.userData = { chamber: ch, kind: "pod" };
@@ -552,6 +647,7 @@
 
     g.position.set(ch.pos.x, 0, ch.pos.z);
     g.rotation.y = podFaceYaw(ch);
+    attachRoleEffects(THREE, g, ch, kind, graph);
     state.devicePods.push(g);
     state.colliders.push({ x: ch.pos.x, z: ch.pos.z, r: 0.55 * scale, id: ch.id, kind: "pod" });
     return g;
@@ -997,7 +1093,7 @@
         ch.pos = { x: 0, y: ch.pos?.y ?? 3, z: 0 };
       }
       try {
-        const pod = await makeDevicePod(THREE, ch, scale, graph.kind);
+        const pod = await makeDevicePod(THREE, ch, scale, graph.kind, graph);
         state.scene?.add(pod);
       } catch (err) {
         console.warn("[DS Walk] pod skipped:", ch.label, err);
@@ -2223,6 +2319,7 @@
     state.clock += dt;
     updatePlayer(dt);
     animateCables(state.clock);
+    animateRoleEffects(state.clock);
     animateDust(dt);
     updateReticleFocus();
     if (state.route) { animateRoute(state.clock); updateWayfind(); }
