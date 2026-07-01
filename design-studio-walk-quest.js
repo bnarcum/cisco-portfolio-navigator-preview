@@ -158,6 +158,7 @@
     btn.title = avail
       ? "Mini-game: connect Room Bar or ceiling mic to the PoE switch"
       : "Add Room Bar + C9200 Collab SW (unlinked) to enable";
+  }
 
   function availableQuests(studio) {
     const state = st();

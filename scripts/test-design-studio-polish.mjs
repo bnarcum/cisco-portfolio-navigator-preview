@@ -18,7 +18,7 @@ try {
   await page.goto("http://127.0.0.1:8765/cisco-portfolio-navigator.html", { waitUntil: "load", timeout: 60000 });
   await page.waitForFunction(() => window.__cpnV2?.APP_VERSION, { timeout: 60000 });
   const version = await page.evaluate(() => window.__cpnV2.APP_VERSION);
-  if (version !== "2.79.15") errors.push(`version ${version} != 2.79.15`);
+  if (version !== "2.79.16") errors.push(`version ${version} != 2.79.16`);
 
   await page.click("#design-studio-btn");
   await page.waitForSelector("#design-studio.open", { timeout: 8000 });
@@ -146,7 +146,8 @@ try {
   if (!walk.open) errors.push("walk did not open");
   const questApi = await page.evaluate(() => ({
     mod: !!window.__DS_WALK_QUEST?.start,
-    btn: !!document.querySelector('[data-action="cable-quest"]')
+    btn: !!document.querySelector('[data-action="cable-quest"]'),
+    quests: window.__DS_WALK_QUEST?.availableQuests?.(window.DesignStudio.instance)?.length ?? -1
   }));
   if (!questApi.mod) errors.push("Cable Quest module not loaded");
   if (!questApi.btn) errors.push("Cable Quest button missing in room walk");
