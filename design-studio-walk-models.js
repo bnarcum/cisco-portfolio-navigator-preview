@@ -227,7 +227,10 @@
 
   function buildPhotoShell(THREE, opts) {
     const { photoTex, theme, scale, ch } = opts;
-    const profile = PHOTO_SHELL_PROFILES[ch?.stencilId] || { mount: "shelf", aspect: 1.4, targetH: 0.5, depth: 0.18 };
+    let profile = { ...(PHOTO_SHELL_PROFILES[ch?.stencilId] || { mount: "shelf", aspect: 1.4, targetH: 0.5, depth: 0.18 }) };
+    if (ch?.stencilId === "room-navigator" && (ch?.zone === "table" || ch?.zone === "desk")) {
+      profile = { mount: "table", aspect: 0.72, targetH: 0.36, depth: 0.045, tilt: 0.24 };
+    }
     const g = new THREE.Group();
     const h = profile.targetH * scale;
     const w = h * profile.aspect;

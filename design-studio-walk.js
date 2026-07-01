@@ -499,7 +499,7 @@
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(r - 0.05, r, 40),
         new THREE.MeshBasicMaterial({
-          color: 0x22c55e, transparent: true, opacity: 0.07 + i * 0.02,
+          color: 0x22c55e, transparent: true, opacity: 0.2 + i * 0.06,
           side: THREE.DoubleSide, depthWrite: false
         })
       );
@@ -515,7 +515,7 @@
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(1.6, 2.0),
       new THREE.MeshBasicMaterial({
-        color: 0xff6b35, transparent: true, opacity: 0.09,
+        color: 0xff6b35, transparent: true, opacity: 0.24,
         side: THREE.DoubleSide, depthWrite: false
       })
     );
@@ -548,7 +548,7 @@
       new THREE.Vector3(dx, 1.35, dz)
     ]);
     const mat = new THREE.LineDashedMaterial({
-      color: 0x7c3aed, transparent: true, opacity: 0.28,
+      color: 0x7c3aed, transparent: true, opacity: 0.48,
       dashSize: 0.4, gapSize: 0.22, depthWrite: false
     });
     const beam = new THREE.Line(geom, mat);
@@ -564,16 +564,16 @@
       if (fx.type === "ap" && fx.rings) {
         fx.rings.forEach((ring, i) => {
           const pulse = 0.5 + 0.5 * Math.sin(t * 1.1 + fx.phase + i * 0.65);
-          ring.material.opacity = (0.05 + i * 0.018) * (0.65 + 0.7 * pulse);
+          ring.material.opacity = (0.14 + i * 0.04) * (0.7 + 0.75 * pulse);
           const s = 1 + 0.025 * pulse;
           ring.scale.set(s, s, 1);
         });
       } else if (fx.type === "firewall" && fx.plane) {
         const pulse = 0.5 + 0.5 * Math.sin(t * 0.9 + fx.phase);
-        fx.plane.material.opacity = 0.06 + 0.05 * pulse;
+        fx.plane.material.opacity = 0.16 + 0.14 * pulse;
       } else if (fx.type === "av" && fx.beam) {
         const pulse = 0.5 + 0.5 * Math.sin(t * 1.4 + fx.phase);
-        fx.beam.material.opacity = 0.08 + 0.07 * pulse;
+        fx.beam.material.opacity = 0.2 + 0.16 * pulse;
       }
     });
   }
