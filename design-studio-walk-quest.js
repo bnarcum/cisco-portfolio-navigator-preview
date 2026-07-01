@@ -31,8 +31,7 @@
   function st() { return deps?.getState?.(); }
 
   function findPair(studio, def) {
-    const state = st();
-    const roomId = state?.graph?.campusRoomId || studio?.activeRoomId;
+    const roomId = studio?.activeRoomId;
     const nodes = (studio?.design?.nodes || []).filter(n => {
       if (roomId && n.roomId !== roomId) return false;
       return (n.canvas || "room") === "room";
@@ -163,8 +162,7 @@
 
   function availableQuests(studio) {
     const state = st();
-    const gk = state?.graph?.kind;
-    if (!studio || (gk !== "room" && gk !== "campus")) return [];
+    if (!studio || state?.graph?.kind !== "room") return [];
     return QUESTS.filter(def => {
       const { from, to } = findPair(studio, def);
       if (!from || !to) return false;
@@ -257,7 +255,6 @@
     syncQuestHud();
     window.__DS_WALK_AUDIO?.sfx?.questSuccess?.();
     studio.toast?.("Cable Quest complete");
-    window.__DS_WALK_CAMPUS?.syncValidationHalos?.();
     deps?.setStatus?.(quest.doneMsg);
     setTimeout(() => end(true), 4200);
   }
