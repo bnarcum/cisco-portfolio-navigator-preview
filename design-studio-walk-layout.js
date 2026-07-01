@@ -14,7 +14,8 @@
     const z = (zone || "").toLowerCase();
     if (/^display-|display-\d|primary display|confidence|people display|content display|main display|front display|room-bar|bar pro/.test(id)) return "display";
     if (/quad|camera|\bcam\b/.test(id)) return "camera";
-    if (/touch|teams panel|zoom controller/.test(id)) return "touch";
+    if (/room-navigator-wall|navigator.*wall/.test(id) && z !== "table" && z !== "desk") return "touch-wall";
+    if (/navigator|room-nav|touch-10|touch|teams panel|zoom controller/.test(id)) return "touch";
     if (z === "ceiling" && /mic/.test(id)) return "ceiling-mic";
     if (/table-mic/.test(id) || (/mic/.test(id) && z === "table")) return "table-mic";
     if (/9179|mr57|9120|9166|cw91|meraki.*ap|\bap\b/.test(id)) return "ap";
@@ -110,19 +111,27 @@
     if (!nodes?.length) return out;
 
     nodes.forEach(n => {
+      const c = nodeCenter(n);
+      const diagramZone = zones ? nearestZone(zones, ox, oy, c.x, c.y) : null;
+      const dz = zones?.[diagramZone];
+      const diagramRel = dz ? relPosInZone(dz, ox, oy, c.x, c.y) : { relX: 0.5, relY: 0.5 };
+
       let item = tplItems?.find(it => it.label === n.label);
       if (!item) item = tplItems?.find(it => it.stencilId === n.stencilId && !claimed.has(it.label));
       if (item) {
         claimed.add(item.label);
+        if (diagramZone && diagramZone !== item.zone) {
+          out[n.id] = { zone: diagramZone, relX: diagramRel.relX, relY: diagramRel.relY, fromDiagram: true };
+          return;
+        }
         out[n.id] = { zone: item.zone, relX: item.relX ?? 0.5, relY: item.relY ?? 0.5, fromTemplate: true };
         return;
       }
-      const c = nodeCenter(n);
-      const kind = deviceKind(n.stencilId, n.label, null);
-      let zoneName = zones ? inferZoneForKind(kind, zones) : "default";
+      const kind = deviceKind(n.stencilId, n.label, diagramZone);
+      let zoneName = diagramZone || (zones ? inferZoneForKind(kind, zones) : "default");
       if (zones && !zones[zoneName]) zoneName = nearestZone(zones, ox, oy, c.x, c.y);
       const z = zones?.[zoneName];
-      const rel = z ? relPosInZone(z, ox, oy, c.x, c.y) : { relX: 0.5, relY: 0.5 };
+      const rel = z ? relPosInZone(z, ox, oy, c.x, c.y) : diagramRel;
       out[n.id] = { zone: zoneName, relX: rel.relX, relY: rel.relY, kind };
     });
     return out;
@@ -152,9 +161,9 @@
       return items?.find(it => it.label === ch.label) || items?.find(it => it.stencilId === ch.stencilId);
     };
     chambers.forEach(ch => {
-      const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
       const item = itemFor(ch);
       if (item?.zone) ch.zone = item.zone;
+      const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
       const rx = item?.relX ?? ch.relX ?? 0.5;
       const ry = item?.relY ?? ch.relY ?? 0.5;
       ch.relX = rx;
@@ -174,11 +183,22 @@
         ch.pos.y = 2.65;
         ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
         ch.faceYaw = 0;
-      } else if (kind === "touch") {
-        ch.zone = "table";
+      } else if (kind === "touch" && (ch.zone === "table" || ch.zone === "desk")) {
         ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
         ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
-        ch.pos.y = 0.82;
+        ch.pos.y = ch.zone === "desk" ? 0.78 : 0.82;
+      } else if (kind === "touch" || kind === "touch-wall") {
+        if (ch.zone === "rack") {
+          ch.pos.z = Math.max(ch.pos.z, frame.credenzaZ - 1);
+          ch.pos.y = 1.05;
+          ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
+        } else {
+          ch.zone = "display";
+          ch.pos.z = frame.frontZ + 0.22;
+          ch.pos.y = 1.38;
+          ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
+          ch.faceYaw = 0;
+        }
       } else if (kind === "ceiling-mic" || kind === "ap") {
         ch.zone = kind === "ap" ? "ceiling" : "ceiling";
         ch.pos.y = 2.85;
@@ -199,6 +219,10 @@
         ch.pos.z = frame.tableCz;
         ch.pos.y = 0.4;
         ch.anchored = false;
+      } else if (ch.zone === "table" || ch.zone === "desk") {
+        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+        ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
+        ch.pos.y = ch.zone === "desk" ? 0.78 : 0.82;
       } else {
         ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
         ch.pos.z = frame.frontZ + 2 + ry * Math.max(frame.tableDepth, 2.4);
