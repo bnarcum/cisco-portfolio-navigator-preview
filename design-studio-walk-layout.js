@@ -47,18 +47,36 @@
     return (mode === "room" ? room : net)[kind] || (mode === "room" ? room.default : net.default);
   }
 
-  function buildRoomFrame(chambers, nodes) {
-    const zs = chambers.map(c => c.pos?.z).filter(Number.isFinite);
+  /** Install-ready room depths (metres) — not raw diagram Z spread. */
+  function roomDepthProfile(templateKey) {
+    const t = String(templateKey || "").toLowerCase();
+    if (/auditorium|town|training|large/.test(t)) {
+      return { frontZ: 0, tableZ: 5.0, credenzaZ: 9.5, tableSpread: 7.5, tableDepth: 3.2 };
+    }
+    if (/huddle|small|focus|phone|desk/.test(t)) {
+      return { frontZ: 0, tableZ: 2.2, credenzaZ: 4.8, tableSpread: 3.0, tableDepth: 1.6 };
+    }
+    if (/boardroom|conference|medium|dual|divisible|teams|zoom|executive/.test(t)) {
+      return { frontZ: 0, tableZ: 3.6, credenzaZ: 7.0, tableSpread: 5.5, tableDepth: 2.5 };
+    }
+    return { frontZ: 0, tableZ: 3.4, credenzaZ: 6.5, tableSpread: 5.0, tableDepth: 2.3 };
+  }
+
+  function buildRoomFrame(chambers, nodes, templateKey) {
     const xs = chambers.map(c => c.pos?.x).filter(Number.isFinite);
-    const display = chambers.filter(c => c.zone === "display" || deviceKind(c.stencilId, c.label, c.zone) === "display");
-    const table = chambers.filter(c => c.zone === "table" || /table-mic|conf-table/i.test(c.stencilId || ""));
-    const frontZ = display.length ? Math.min(...display.map(c => c.pos.z)) : (zs.length ? Math.min(...zs) : 0);
-    const tableCx = table.length ? table.reduce((s, c) => s + c.pos.x, 0) / table.length : (xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0);
-    const tableCz = table.length ? table.reduce((s, c) => s + c.pos.z, 0) / table.length : frontZ + 4;
-    const tableSpread = table.length > 1 ? Math.max(3, Math.max(...table.map(c => c.pos.x)) - Math.min(...table.map(c => c.pos.x)) + 2) : 5.5;
-    const tableDepth = table.length > 1 ? Math.max(2, Math.max(...table.map(c => c.pos.z)) - Math.min(...table.map(c => c.pos.z)) + 1.5) : 2.4;
-    const credenzaZ = Math.max(...zs, frontZ + 6);
-    return { frontZ, tableCx, tableCz, tableSpread, tableDepth, credenzaZ, hasDisplay: display.length > 0 };
+    const tableCx = xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0;
+    const depths = roomDepthProfile(templateKey);
+    const display = chambers.filter(c =>
+      c.zone === "display" || deviceKind(c.stencilId, c.label, c.zone) === "display");
+    return {
+      frontZ: depths.frontZ,
+      tableCx,
+      tableCz: depths.tableZ,
+      tableSpread: depths.tableSpread,
+      tableDepth: depths.tableDepth,
+      credenzaZ: depths.credenzaZ,
+      hasDisplay: display.length > 0
+    };
   }
 
   function buildNetworkFrame(chambers) {
@@ -139,7 +157,7 @@
 
   function clampToRoomFrame(chambers, frame) {
     if (!frame || !chambers?.length) return;
-    const margin = 1.4;
+    const margin = 0.9;
     const halfW = Math.max(frame.tableSpread * 0.55, 4.5) + margin;
     const minX = frame.tableCx - halfW;
     const maxX = frame.tableCx + halfW;
@@ -152,9 +170,9 @@
     });
   }
 
-  function applyRoomSemantics(chambers, nodes, items, placementById) {
-    if (!chambers?.length) return buildRoomFrame(chambers, nodes);
-    const frame = buildRoomFrame(chambers, nodes);
+  function applyRoomSemantics(chambers, nodes, items, placementById, templateKey) {
+    if (!chambers?.length) return buildRoomFrame(chambers, nodes, templateKey);
+    const frame = buildRoomFrame(chambers, nodes, templateKey);
     const itemFor = ch => {
       const placed = placementById?.[ch.id];
       if (placed) return placed;
@@ -315,7 +333,7 @@
     if (kind === "room") {
       const placementById = ctx.placementById
         || (ctx.room ? resolveRoomPlacement(nodes, ctx.room, ctx.items) : null);
-      return applyRoomSemantics(chambers, nodes, ctx.items, placementById);
+      return applyRoomSemantics(chambers, nodes, ctx.items, placementById, ctx.room?.template);
     }
     return applyNetworkSemantics(chambers, nodes);
   }

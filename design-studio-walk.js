@@ -150,7 +150,7 @@
     const wx = chambers.map(c => c.pos.x).filter(Number.isFinite);
     const wz = chambers.map(c => c.pos.z).filter(Number.isFinite);
     if (!wx.length) return null;
-    const pad = kind === "network" ? 10 : 8;
+    const pad = kind === "network" ? 10 : 5;
     return {
       minX: Math.min(...wx) - pad,
       maxX: Math.max(...wx) + pad,
@@ -312,6 +312,7 @@
     state.THREE = THREE;
     if (graph.kind === "room") {
       addProfessionalRoomShell(THREE, scene, bounds);
+      addRoomLighting(THREE, scene, bounds);
       addAdaptiveVenue(THREE, scene, bounds, graph);
       if (roomWantsCableTray(graph)) addCableInfrastructure(THREE, scene, bounds, graph);
       addSubtleZonePads(THREE, scene, graph);
@@ -1005,28 +1006,28 @@
   }
 
   function addProfessionalRoomShell(THREE, scene, bounds) {
-    const pad = 10;
-    const w = Math.max(bounds.maxX - bounds.minX + pad * 2, 20);
-    const d = Math.max(bounds.maxZ - bounds.minZ + pad * 2, 20);
+    const pad = 6;
+    const w = Math.max(bounds.maxX - bounds.minX + pad * 2, 14);
+    const d = Math.max(bounds.maxZ - bounds.minZ + pad * 2, 14);
     const h = 4.65;
     const cx = (bounds.minX + bounds.maxX) / 2;
     const cz = (bounds.minZ + bounds.maxZ) / 2;
     setSkyBackground(THREE, scene, "room");
-    scene.fog = new THREE.FogExp2(0x1a2838, 0.016);
+    scene.fog = new THREE.FogExp2(0x2a3848, 0.01);
 
     const floorTex = makeCarpetTexture(THREE);
     floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
     floorTex.repeat.set(w / 5, d / 5);
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(w, d),
-      new THREE.MeshStandardMaterial({ map: floorTex, color: 0x7a7770, metalness: 0.12, roughness: 0.82 })
+      new THREE.MeshStandardMaterial({ map: floorTex, color: 0x9a958c, metalness: 0.1, roughness: 0.78 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(cx, 0, cz);
     floor.receiveShadow = true;
     addTagged(scene, floor, "room-floor");
 
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a323c, metalness: 0.18, roughness: 0.8 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x3d4854, metalness: 0.14, roughness: 0.76 });
     [
       { sx: w, sz: 0.28, x: cx, z: cz - d / 2 },
       { sx: w, sz: 0.28, x: cx, z: cz + d / 2 },
@@ -1037,8 +1038,8 @@
     const ceil = new THREE.Mesh(
       new THREE.PlaneGeometry(w, d),
       new THREE.MeshStandardMaterial({
-        color: 0x1e2830, metalness: 0.05, roughness: 0.95,
-        side: THREE.DoubleSide, transparent: true, opacity: 0.35
+        color: 0x2a343c, metalness: 0.05, roughness: 0.92,
+        side: THREE.DoubleSide, transparent: true, opacity: 0.28
       })
     );
     ceil.rotation.x = Math.PI / 2;
@@ -1047,10 +1048,26 @@
     addTagged(scene, ceil, "room-ceiling");
 
     [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
-      const bulb = new THREE.PointLight(0xffeed8, 0.38, 14, 2);
+      const bulb = new THREE.PointLight(0xfff0d8, 0.62, 18, 2);
       bulb.position.set(cx + sx * w * 0.32, h - 0.15, cz + sz * d * 0.32);
       scene.add(bulb);
     });
+  }
+
+  function addRoomLighting(THREE, scene, bounds) {
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cz = (bounds.minZ + bounds.maxZ) / 2;
+    const span = Math.max(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ, 10);
+    scene.add(new THREE.HemisphereLight(0xe8eef8, 0x4a5058, 0.52));
+    const tableLight = new THREE.PointLight(0xfff6e8, 0.9, span * 1.1, 2);
+    tableLight.position.set(cx, 3.6, cz);
+    scene.add(tableLight);
+    const frontWash = new THREE.DirectionalLight(0xffffff, 0.55);
+    frontWash.position.set(cx, 2.8, bounds.minZ - 4);
+    scene.add(frontWash);
+    const backFill = new THREE.DirectionalLight(0xc8d8f0, 0.28);
+    backFill.position.set(cx, 2.2, bounds.maxZ + 3);
+    scene.add(backFill);
   }
 
   function addCableInfrastructure(THREE, scene, bounds, graph) {
@@ -1357,7 +1374,7 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace || renderer.outputEncoding;
     if (THREE.ACESFilmicToneMapping) {
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.12;
+      renderer.toneMappingExposure = graph.kind === "room" ? 1.34 : 1.12;
     }
     if (THREE.PCFSoftShadowMap !== undefined) {
       renderer.shadowMap.enabled = true;
@@ -1367,7 +1384,7 @@
 
     const scene = new THREE.Scene();
     state.scene = scene;
-    addVoxelEnvironment(THREE, scene, true);
+    addVoxelEnvironment(THREE, scene, graph.kind !== "network");
     addImageBasedLighting(THREE, scene, renderer);
     state.bounds = graph.layoutBounds || {
       minX: Math.min(...graph.chambers.map(c => c.pos.x)) - 8,
