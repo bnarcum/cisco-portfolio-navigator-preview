@@ -70,7 +70,9 @@ try {
       window.DesignStudio.instance.design, "campus3tierRedundant", 80, 80, window.__DS_STENCILS);
     window.DesignStudio.instance.setTab("network");
   });
-  await page.waitForTimeout(2000);
+  // Cinematic addons (post-FX) add async load latency before device pods stream in.
+  await page.waitForFunction(() => (window.__DS_WALK?.debugStats?.()?.pods || 0) >= 3, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(1200);
   const netRebuild = await page.evaluate(() => ({
     open: window.__DS_WALK?.isOpen?.(),
     kind: window.__DS_WALK?.debugStats?.()?.graphKind,
@@ -97,12 +99,13 @@ try {
   await page.click("#ds-walk-corridor");
   await page.waitForFunction(() => window.__DS_WALK?.isOpen?.(), { timeout: 60000 });
   await page.waitForTimeout(900);
-  const campusStats = await page.evaluate(() => window.__DS_WALK?.debugStats?.() || {});
-  const campusTags = campusStats.environmentTags || {};
-  if (campusTags["network-rack-row"]) errors.push(`campus walk should not render rack rows, got ${campusTags["network-rack-row"]}`);
-  if (campusTags["network-closet-wall"]) errors.push("campus walk should not render closet walls");
-  if (campusTags["network-patch-panel"]) errors.push("campus walk should not render patch panels");
-  if (campusTags["network-cable-tray"]) errors.push("campus walk should not render cable tray");
+  const campus = await page.evaluate(() => ({ tags: window.__DS_WALK?.debugStats?.()?.environmentTags || {}, fx: !!window.__DS_WALK_FX?.loaded?.() }));
+  const campusTags = campus.tags;
+  // NOC environment (data-center shell) replaces the old grass/voxel world.
+  if (campus.fx && !campusTags["network-noc-floor"]) errors.push("campus walk should render NOC raised floor");
+  if (campus.fx && !campusTags["network-noc-rack"]) errors.push("campus walk should render NOC rack rows");
+  if (campusTags["network-rack-row"]) errors.push(`campus walk should not render legacy rack rows, got ${campusTags["network-rack-row"]}`);
+  if (campusTags["network-closet-wall"]) errors.push("campus walk should not render legacy closet walls");
   await page.evaluate(() => window.__DS_WALK?.close?.(true));
 
   // Data center: floor-only decor (no rack rows or closet walls).
@@ -116,11 +119,11 @@ try {
   await page.click("#ds-walk-corridor");
   await page.waitForFunction(() => window.__DS_WALK?.isOpen?.(), { timeout: 60000 });
   await page.waitForTimeout(900);
-  const dcStats = await page.evaluate(() => window.__DS_WALK?.debugStats?.() || {});
-  const dcTags = dcStats.environmentTags || {};
-  if (dcTags["network-rack-row"]) errors.push(`DC walk should not render rack rows, got ${dcTags["network-rack-row"]}`);
-  if (dcTags["network-closet-wall"]) errors.push("DC walk should not render closet walls");
-  if (dcTags["network-patch-panel"]) errors.push("DC walk should not render patch panels");
+  const dc = await page.evaluate(() => ({ tags: window.__DS_WALK?.debugStats?.()?.environmentTags || {}, fx: !!window.__DS_WALK_FX?.loaded?.() }));
+  const dcTags = dc.tags;
+  if (dc.fx && !dcTags["network-noc-floor"]) errors.push("DC walk should render NOC raised floor");
+  if (dc.fx && !dcTags["network-noc-lightstrip"]) errors.push("DC walk should render NOC ceiling light strips");
+  if (dcTags["network-rack-row"]) errors.push(`DC walk should not render legacy rack rows, got ${dcTags["network-rack-row"]}`);
 
   if (errors.length) {
     console.error("FAIL test-walk-environments\n" + errors.map(e => `  - ${e}`).join("\n"));

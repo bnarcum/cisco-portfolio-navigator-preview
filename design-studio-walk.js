@@ -312,10 +312,16 @@
     state.THREE = THREE;
     if (graph.kind === "room") {
       addProfessionalRoomShell(THREE, scene, bounds);
-      addRoomLighting(THREE, scene, bounds);
+      if (!window.__DS_WALK_FX?.loaded?.()) addRoomLighting(THREE, scene, bounds);
       addAdaptiveVenue(THREE, scene, bounds, graph);
       if (roomWantsCableTray(graph)) addCableInfrastructure(THREE, scene, bounds, graph);
       addSubtleZonePads(THREE, scene, graph);
+      addDustParticles(THREE, scene, bounds);
+      return;
+    }
+    const FX = window.__DS_WALK_FX;
+    if (FX?.loaded?.() && FX.buildNOC) {
+      FX.buildNOC(THREE, scene, bounds, graph, { addTagged, box, makeCanvasTexture });
       addDustParticles(THREE, scene, bounds);
       return;
     }
@@ -333,10 +339,14 @@
   }
 
   function setupAvatar(THREE, scene) {
+    const FX = window.__DS_WALK_FX;
     const VOX = window.__DS_WALK_VOXEL;
-    if (!VOX) return;
     if (state.avatar) scene.remove(state.avatar);
-    state.avatar = VOX.makeAvatar(THREE);
+    let avatar = null;
+    if (FX?.makeMannequin) { try { avatar = FX.makeMannequin(THREE); } catch { avatar = null; } }
+    if (!avatar && VOX?.makeAvatar) avatar = VOX.makeAvatar(THREE);
+    if (!avatar) return;
+    state.avatar = avatar;
     scene.add(state.avatar);
     state.avatar.visible = state.thirdPerson;
   }
@@ -1047,11 +1057,14 @@
     ceil.userData = { noShadow: true };
     addTagged(scene, ceil, "room-ceiling");
 
-    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
-      const bulb = new THREE.PointLight(0xfff0d8, 0.62, 18, 2);
-      bulb.position.set(cx + sx * w * 0.32, h - 0.15, cz + sz * d * 0.32);
-      scene.add(bulb);
-    });
+    // Corner fill bulbs only when the cinematic rig isn't active (it owns lighting).
+    if (!window.__DS_WALK_FX?.loaded?.()) {
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+        const bulb = new THREE.PointLight(0xfff0d8, 0.62, 18, 2);
+        bulb.position.set(cx + sx * w * 0.32, h - 0.15, cz + sz * d * 0.32);
+        scene.add(bulb);
+      });
+    }
   }
 
   function addRoomLighting(THREE, scene, bounds) {
@@ -1116,13 +1129,24 @@
   function addConferenceFurniture(THREE, scene, bounds, graph) {
     const wood = new THREE.MeshStandardMaterial({ color: 0x6b4f3a, roughness: 0.58, metalness: 0.06 });
     const chairMat = new THREE.MeshStandardMaterial({ color: 0x2a3238, roughness: 0.7, metalness: 0.2 });
-    const tableChambers = (graph.chambers || []).filter(ch => /table|mic/i.test(ch.zone || "") || /table/i.test(ch.label || ""));
-    const xs = tableChambers.length ? tableChambers.map(ch => ch.pos.x) : [bounds.minX + 4, bounds.maxX - 4];
-    const zs = tableChambers.length ? tableChambers.map(ch => ch.pos.z) : [bounds.minZ + 5, bounds.maxZ - 5];
-    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const cz = (Math.min(...zs) + Math.max(...zs)) / 2;
-    const tw = Math.max(4.8, Math.min(12, Math.max(...xs) - Math.min(...xs) + 4));
-    const td = Math.max(2.0, Math.min(4.2, Math.max(...zs) - Math.min(...zs) + 2.2));
+    // Anchor the table to the semantic frame so it aligns with the spawn point
+    // and device placement (avoids the "avatar standing on the table" mismatch).
+    const frame = graph.semanticFrame || {};
+    let cx, cz, tw, td;
+    if (Number.isFinite(frame.tableCx) && Number.isFinite(frame.tableCz)) {
+      cx = frame.tableCx;
+      cz = frame.tableCz;
+      tw = Math.max(4.8, Math.min(12, (frame.tableSpread || 5.5) + 0.8));
+      td = Math.max(2.0, Math.min(4.2, (frame.tableDepth || 2.5) + 0.4));
+    } else {
+      const tableChambers = (graph.chambers || []).filter(ch => /table|mic/i.test(ch.zone || "") || /table/i.test(ch.label || ""));
+      const xs = tableChambers.length ? tableChambers.map(ch => ch.pos.x) : [bounds.minX + 4, bounds.maxX - 4];
+      const zs = tableChambers.length ? tableChambers.map(ch => ch.pos.z) : [bounds.minZ + 5, bounds.maxZ - 5];
+      cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+      cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+      tw = Math.max(4.8, Math.min(12, Math.max(...xs) - Math.min(...xs) + 4));
+      td = Math.max(2.0, Math.min(4.2, Math.max(...zs) - Math.min(...zs) + 2.2));
+    }
     box(THREE, scene, "room-table", [tw, 0.12, td], [cx, 0.38, cz], wood);
     const seats = Math.max(4, Math.min(12, Math.round(tw / 1.2) * 2));
     for (let i = 0; i < seats / 2; i++) {
@@ -1384,14 +1408,28 @@
 
     const scene = new THREE.Scene();
     state.scene = scene;
-    addVoxelEnvironment(THREE, scene, graph.kind !== "network");
-    addImageBasedLighting(THREE, scene, renderer);
     state.bounds = graph.layoutBounds || {
       minX: Math.min(...graph.chambers.map(c => c.pos.x)) - 8,
       maxX: Math.max(...graph.chambers.map(c => c.pos.x)) + 8,
       minZ: Math.min(...graph.chambers.map(c => c.pos.z)) - 8,
       maxZ: Math.max(...graph.chambers.map(c => c.pos.z)) + 8
     };
+
+    // Cinematic addons (post-FX, RectAreaLight). Best-effort; falls back cleanly.
+    const FX = window.__DS_WALK_FX;
+    let fxReady = false;
+    if (FX?.ensure) { try { fxReady = !!(await FX.ensure()); } catch { fxReady = false; } }
+
+    addImageBasedLighting(THREE, scene, renderer);
+    const isRoom = graph.kind === "room";
+    if (fxReady && isRoom && FX.roomLightRig) {
+      state.sun = FX.roomLightRig(THREE, scene, state.bounds, renderer).sun;
+    } else if (fxReady && !isRoom && FX.nocLightRig) {
+      state.sun = FX.nocLightRig(THREE, scene, state.bounds).sun;
+    } else {
+      addVoxelEnvironment(THREE, scene, !isRoom);
+    }
+
     setupDiagramWorld(THREE, scene, state.bounds, graph);
 
     const camera = new THREE.PerspectiveCamera(76, 1, 0.1, 220);
@@ -1420,6 +1458,16 @@
     buildConnectedNav(spawn);
     resizeRenderer();
 
+    if (fxReady && FX?.buildComposer) {
+      state.fx = FX.buildComposer(THREE, renderer, scene, camera, {
+        bloomStrength: isRoom ? 0.3 : 0.42,
+        bloomThreshold: isRoom ? 0.82 : 0.7,
+        aoRadius: isRoom ? 0.35 : 0.5,
+        dofFocus: isRoom ? 6 : 9
+      });
+      if (state.fx) { state.fx.setSize(state.renderer.domElement.width, state.renderer.domElement.height); state.fx.setQuality(2); }
+    }
+
     applySceneShadows();
     setStatus("Loading devices…");
     loadDevicePods(THREE, graph, 1).then(() => {
@@ -1441,6 +1489,17 @@
     state.renderer.setSize(w, h, false);
     state.camera.aspect = w / h;
     state.camera.updateProjectionMatrix();
+    if (state.fx) state.fx.setSize(state.renderer.domElement.width, state.renderer.domElement.height, state.renderer.getPixelRatio());
+  }
+
+  // Enable depth-of-field only when the view has settled (not walking/flying),
+  // so motion stays crisp and the "beauty" shot gets cinematic focus falloff.
+  function updateDofFocus(dt) {
+    if (!state.fx?.setBokeh) return;
+    const moving = Math.hypot(state.vel.x, state.vel.z) > 0.15 || !!state.fly;
+    const now = state.clock;
+    if (moving) { state._settleT = now; if (state._dofOn) { state.fx.setBokeh(false); state._dofOn = false; } return; }
+    if (!state._dofOn && now - (state._settleT || 0) > 1.1) { state.fx.setBokeh(true); state._dofOn = true; }
   }
 
   function snapToWalkable(x, z) {
@@ -1482,11 +1541,15 @@
     const frame = graph.semanticFrame || {};
     const tcx = Number.isFinite(frame.tableCx) ? frame.tableCx : 0;
     const tcz = Number.isFinite(frame.tableCz) ? frame.tableCz : 4.8;
+    const td = Number.isFinite(frame.tableDepth) ? frame.tableDepth : 2.5;
     const frontZ = Number.isFinite(frame.frontZ) ? frame.frontZ : 0;
-    const posZ = tcz - 0.55;
+    const credZ = Number.isFinite(frame.credenzaZ) ? frame.credenzaZ : tcz + 4;
+    // Stand just past the table's FAR edge (credenza side), looking at the displays.
+    const edge = tcz + td / 2 + 1.0;
+    const posZ = Math.min(edge, credZ - 1.2);
     return {
-      pos: { x: tcx, y: EYE_HEIGHT, z: Math.max(frontZ + 0.85, posZ) },
-      yaw: Math.atan2(0, frontZ - posZ)
+      pos: { x: tcx, y: EYE_HEIGHT, z: posZ },
+      yaw: Math.atan2(0, frontZ - posZ) // face -Z toward the front wall
     };
   }
 
@@ -2680,7 +2743,13 @@
     // Minimap is canvas-2D and relatively costly; 15fps is plenty for a map.
     if (state.clock - (state._miniT || 0) > 0.066) { state._miniT = state.clock; drawMinimap(); }
     adaptQuality(dt);
-    state.renderer.render(state.scene, state.camera);
+    updateDofFocus(dt);
+    if (state.fx) {
+      try { state.fx.render(dt); }
+      catch (err) { console.warn("[DS Walk] composer render failed, reverting to plain:", err); state.fx = null; state.renderer.render(state.scene, state.camera); }
+    } else {
+      state.renderer.render(state.scene, state.camera);
+    }
     state.animId = requestAnimationFrame(loop);
   }
 
@@ -2693,10 +2762,23 @@
     if (s._fpsAcc < 1.5) return;
     const fps = s._fpsN / s._fpsAcc;
     s._fpsAcc = 0; s._fpsN = 0;
-    if (!s._qualityDropped && fps < 38 && s.renderer && s.renderer.getPixelRatio() > 1) {
+    // Step 1: trim the heaviest post-FX (AO/bloom) before touching resolution.
+    if (s.fx && (s._fxQuality ?? 2) === 2 && fps < 40) {
+      s._fxQuality = 1;
+      s.fx.setQuality(1);
+      return;
+    }
+    // Step 2: drop device pixel ratio.
+    if (!s._qualityDropped && fps < 34 && s.renderer && s.renderer.getPixelRatio() > 1) {
       s._qualityDropped = true;
       s.renderer.setPixelRatio(1);
       resizeRenderer();
+      return;
+    }
+    // Step 3: last resort — disable the composer entirely, plain render.
+    if (s.fx && fps < 26) {
+      s.fx.setQuality(0);
+      s._fxQuality = 0;
     }
   }
 
