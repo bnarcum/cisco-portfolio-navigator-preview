@@ -225,6 +225,7 @@
 
     return {
       raw, t, pillar, nums, roomMix,
+      deviceOps: parseDeviceRequests(raw),
       wantsNetwork: intentNeedsNetwork(t, roomMix, nums, pillar),
       signals
     };
@@ -375,6 +376,158 @@
     return added;
   }
 
+  const NUM_WORDS = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
+
+  function parseCount(token) {
+    if (!token) return null;
+    const t = token.toLowerCase();
+    if (/^\d+$/.test(t)) return Math.min(parseInt(t, 10), 24);
+    return NUM_WORDS[t] ?? null;
+  }
+
+  /**
+   * Device-level BOM parsing (Layer C). Maps the brief's natural language onto
+   * the canonical registry: explicit counts (mics), model variants (Board Pro
+   * G2), control-device preference (Navigator vs Touch) and PoE-switch intent.
+   * Conservative by design — only emits an op when the brief is explicit, so
+   * generic briefs keep their template BOM untouched.
+   */
+  function parseDeviceRequests(raw) {
+    const reg = window.__DS_STENCILS?.ROOM_DEVICES || {};
+    const text = " " + String(raw || "").toLowerCase() + " ";
+    const ops = { counts: {}, variants: {}, mentioned: [], controlPref: null, wantSwitch: false };
+    for (const [sid, def] of Object.entries(reg)) {
+      const aliases = def.aliases || [];
+      for (const alias of aliases) {
+        const idx = text.indexOf(alias);
+        if (idx < 0) continue;
+        if (!ops.mentioned.includes(sid)) ops.mentioned.push(sid);
+        const before = text.slice(Math.max(0, idx - 16), idx);
+        const m = before.match(/(\d+|a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*(?:cisco\s+)?$/);
+        const c = m ? parseCount(m[1]) : null;
+        if (c != null && def.role === "microphone") ops.counts[sid] = c;
+        if (def.variants) {
+          const win = before + " " + text.slice(idx, idx + alias.length + 18);
+          for (const vk of Object.keys(def.variants)) {
+            if (vk === "table") continue;
+            if (new RegExp(`\\b${vk}\\b`, "i").test(win)) { ops.variants[sid] = vk; break; }
+          }
+        }
+        break;
+      }
+    }
+    const hasNav = ops.mentioned.includes("room-navigator") || /\bnavigator\b/.test(text);
+    const hasTouch = ops.mentioned.includes("touch-10") || /\btouch\s?10\b|\btouch panel\b/.test(text);
+    if (hasNav && !hasTouch) ops.controlPref = "room-navigator";
+    else if (hasTouch && !hasNav) ops.controlPref = "touch-10";
+    if (ops.mentioned.includes("c9200-collab") || /\bpoe switch\b|\bswitch\b/.test(text)) ops.wantSwitch = true;
+    return ops;
+  }
+
+  function nextSwitchPort(links, switchId) {
+    let max = 0;
+    links.forEach(l => {
+      if (l.from !== switchId) return;
+      const m = (l.fromPort || "").match(/Gi1\/0\/(\d+)/);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
+    return `Gi1/0/${max + 1}`;
+  }
+
+  function newId() { return "ds-" + Math.random().toString(36).slice(2, 10); }
+
+  /** Reconcile the generated per-room BOM with the parsed device requests. */
+  function applyDeviceOverrides(design, ops, deps) {
+    if (!ops) return;
+    const reg = deps.stencils?.ROOM_DEVICES || window.__DS_STENCILS?.ROOM_DEVICES || {};
+    const isSwitch = sid => reg[sid]?.role === "collab-switch" || sid === "c9200-collab";
+
+    (design.rooms || []).forEach(room => {
+      const roomNodes = () => design.nodes.filter(n => n.roomId === room.id);
+
+      // A) Model variants (e.g. Board Pro G2).
+      Object.entries(ops.variants).forEach(([sid, vk]) => {
+        const v = reg[sid]?.variants?.[vk];
+        if (!v) return;
+        roomNodes().filter(n => n.stencilId === sid).forEach(n => {
+          n.variant = vk;
+          if (v.pid) n.pid = v.pid;
+          if (v.label) n.label = v.label;
+        });
+      });
+
+      // B) Control-device preference (Navigator <-> Touch), ports are identical.
+      if (ops.controlPref) {
+        const target = ops.controlPref;
+        const tdef = reg[target];
+        roomNodes()
+          .filter(n => n.stencilId === "touch-10" || n.stencilId === "room-navigator")
+          .forEach(n => {
+            if (n.stencilId === target) return;
+            n.stencilId = target;
+            n.pid = tdef?.pid;
+            n.label = tdef?.label || n.label;
+            if (tdef?.w) n.w = tdef.w;
+            if (tdef?.h) n.h = tdef.h;
+            delete n.variant;
+          });
+      }
+
+      // C) Explicit device counts (microphones).
+      Object.entries(ops.counts).forEach(([sid, want]) => {
+        const def = reg[sid];
+        if (!def) return;
+        const cur = roomNodes().filter(n => n.stencilId === sid);
+        if (want < cur.length) {
+          const rmIds = new Set(cur.slice(want).map(n => n.id));
+          design.nodes = design.nodes.filter(n => !rmIds.has(n.id));
+          design.links = design.links.filter(l => !rmIds.has(l.from) && !rmIds.has(l.to));
+        } else if (want > cur.length) {
+          const template = cur[0];
+          const srcLink = template ? design.links.find(l => l.to === template.id) : null;
+          let srcId = srcLink?.from;
+          if (!srcId) srcId = roomNodes().find(n => isSwitch(n.stencilId))?.id;
+          const media = srcLink?.media || "cat6";
+          const toPort = srcLink?.toPort || "ETH";
+          for (let i = cur.length; i < want; i++) {
+            const id = newId();
+            design.nodes.push({
+              id, stencilId: sid, label: `${def.label} ${i + 1}`, pid: def.pid,
+              canvas: "room", roomId: room.id,
+              x: (template?.x || 0) + (i - cur.length + 1) * 44, y: (template?.y || 0),
+              w: def.w || 58, h: def.h || 42, qty: 1
+            });
+            if (srcId) design.links.push({
+              id: newId(), from: srcId, to: id, media,
+              label: `PoE-Mic${i + 1}`, length: "5m",
+              fromPort: nextSwitchPort(design.links, srcId), toPort
+            });
+          }
+        }
+        const finalMics = roomNodes().filter(n => n.stencilId === sid);
+        if (finalMics.length > 1) finalMics.forEach((n, idx) => { n.label = `${def.label} ${idx + 1}`; });
+      });
+
+      // D) Ensure a PoE switch is present when the brief asks for one.
+      if (ops.wantSwitch && !roomNodes().some(n => isSwitch(n.stencilId))) {
+        const def = reg["c9200-collab"];
+        if (def) {
+          const id = newId();
+          const anchor = roomNodes().find(n => ["display", "codec"].includes(reg[n.stencilId]?.role));
+          design.nodes.push({
+            id, stencilId: "c9200-collab", label: def.label, pid: def.pid,
+            canvas: "room", roomId: room.id,
+            x: (anchor?.x || 0), y: (anchor?.y || 0) + 90, w: def.w || 96, h: def.h || 50, qty: 1
+          });
+          if (anchor) design.links.push({
+            id: newId(), from: id, to: anchor.id, media: "cat6",
+            label: "PoE", length: "5m", fromPort: "Gi1/0/1", toPort: "LAN"
+          });
+        }
+      }
+    });
+  }
+
   function executePlan(plan, design, deps) {
     const { applyNetworkTemplate, applyRoomTemplate, ROOM_TEMPLATES } = deps.templates;
     const STN = deps.stencils;
@@ -406,6 +559,9 @@
         autoLayoutRoom(design, roomId);
       }
     });
+
+    // Layer C: reconcile the template BOM with explicit device requests.
+    applyDeviceOverrides(design, plan.parsed?.deviceOps, deps);
 
     if (design.rooms.length) {
       const priority = [
@@ -492,6 +648,6 @@
   window.__DS_INTENT = {
     PILLARS, parseIntent, buildPlan, executePlan, generateFromIntent,
     autoRemediate, renderChipsHtml, renderRationaleHtml, scoreNetworkTemplates,
-    isCiscoUrl, citeMeta
+    isCiscoUrl, citeMeta, parseDeviceRequests, applyDeviceOverrides
   };
 })();

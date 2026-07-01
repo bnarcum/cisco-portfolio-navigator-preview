@@ -9,7 +9,28 @@
   const NET_LAYER_Z = { wan: -16, security: -11, core: -5, distribution: 1, dc: 3, access: 9, mgmt: 5, collab: 13 };
   const NET_LAYER_ORDER = ["wan", "security", "core", "distribution", "dc", "access", "mgmt", "collab"];
 
+  // Identity-first device classification. The canonical registry (stencil def)
+  // is authoritative; the zone/label are only a fallback for devices without a
+  // registry entry. This is what makes "a ceiling mic dropped in the table
+  // zone" still classify (and mount) as a ceiling mic.
   function deviceKind(stencilId, label, zone) {
+    const def = window.__DS_STENCILS?.getDef?.(stencilId, "room");
+    if (def) {
+      const shape = def.shape, role = def.role;
+      if (shape === "ceiling-mic") return "ceiling-mic";
+      if (shape === "table-mic") return "table-mic";
+      if (role === "camera" || shape === "camera") return "camera";
+      if (role === "display" || shape === "display") return "display";
+      if (role === "control" || shape === "touch") return def.mount === "wall-panel" ? "touch-wall" : "touch";
+      if (role === "microphone") return def.mount === "ceiling" ? "ceiling-mic" : "table-mic";
+      if (role === "codec" || shape === "codec") return "codec";
+      if (role === "phone" || shape === "phone") return "phone";
+      if (role === "furniture" || shape === "rack" || shape === "table") return "furniture";
+      if (role === "ap") return "ap";
+      if (role === "firewall") return "firewall";
+      if (role === "logical" || role === "cloud" || role === "dns") return "logical";
+      if (shape === "switch" || role === "collab-switch" || role === "access" || role === "core" || role === "distribution") return "switch";
+    }
     const id = `${stencilId || ""} ${label || ""}`.toLowerCase();
     const z = (zone || "").toLowerCase();
     if (/^display-|display-\d|primary display|confidence|people display|content display|main display|front display|room-bar|bar pro/.test(id)) return "display";
@@ -18,12 +39,29 @@
     if (/navigator|room-nav|touch-10|touch|teams panel|zoom controller/.test(id)) return "touch";
     if (z === "ceiling" && /mic/.test(id)) return "ceiling-mic";
     if (/table-mic/.test(id) || (/mic/.test(id) && z === "table")) return "table-mic";
+    if (/mic/.test(id)) return "ceiling-mic";
     if (/9179|mr57|9120|9166|cw91|meraki.*ap|\bap\b/.test(id)) return "ap";
     if (/internet|mpls|dia|users|vlan|cloud|logical/.test(id)) return "logical";
     if (/fpr|firewall|ftd/.test(id)) return "firewall";
     if (/kit|codec|eq|board pro/.test(id)) return "codec";
     if (/9200|9300|9400|9500|switch|n9k|nexus|apic|ucs/.test(id)) return "switch";
     return "default";
+  }
+
+  /**
+   * Authoritative physical mount surface for a room device, read from the
+   * canonical registry (with variant resolution). Falls back to a kind-based
+   * default only for devices with no registry mount.
+   */
+  function roomMount(ch) {
+    const prof = window.__DS_STENCILS?.deviceProfile?.(ch.stencilId, ch);
+    if (prof?.mount) return prof.mount;
+    const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
+    return {
+      display: "wall-display", camera: "wall-camera", "touch-wall": "wall-panel",
+      "ceiling-mic": "ceiling", ap: "ceiling", "table-mic": "table",
+      touch: "table", codec: "rack", switch: "rack", phone: "desk", furniture: "floor-table"
+    }[kind] || "table";
   }
 
   function placementWhy(kind, zone, layer, mode) {
@@ -162,78 +200,92 @@
     };
     chambers.forEach(ch => {
       const item = itemFor(ch);
-      if (item?.zone) ch.zone = item.zone;
-      const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
       const rx = item?.relX ?? ch.relX ?? 0.5;
       const ry = item?.relY ?? ch.relY ?? 0.5;
       ch.relX = rx;
       ch.relY = ry;
-      ch.semantic = { kind, mode: "room", why: placementWhy(kind, ch.zone, null, "room") };
+      // Placement is driven by the canonical physical mount, NOT the diagram
+      // zone. The zone is then set to the canonical value so cabling/pod
+      // rendering (which read ch.zone) stay consistent with reality.
+      const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
+      const mount = roomMount(ch);
+      ch.mount = mount;
+      ch.zone = window.__DS_STENCILS?.roomZoneForMount?.(mount) || ch.zone || "table";
+      ch.semantic = { kind, mount, mode: "room", why: placementWhy(kind, ch.zone, null, "room") };
       ch.anchored = true;
 
-      if (kind === "display") {
-        ch.zone = "display";
-        ch.pos.z = frame.frontZ + 0.12;
-        const aux = /aux|secondary|content display|confidence|people display/i.test(ch.label || "")
-          || (/display-86|86/i.test(ch.stencilId || "") && !/primary|main|board|front/i.test(ch.label || ""));
-        const panelH = aux ? 0.95 : 1.2;
-        const wallTop = 3.42;
-        const wallBot = 0.42;
-        const travel = Math.max(0.4, wallTop - wallBot - panelH);
-        ch.pos.y = wallBot + ry * travel;
-        ch.pos.y = Math.max(wallBot, Math.min(wallTop - panelH, ch.pos.y));
-        ch.pos.x = frame.tableCx + (rx - 0.5) * Math.max(frame.tableSpread, 4);
-        ch.faceYaw = 0;
-      } else if (kind === "camera") {
-        ch.zone = "display";
-        ch.pos.z = frame.frontZ + 0.18;
-        ch.pos.y = 2.65;
-        ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
-        ch.faceYaw = 0;
-      } else if (kind === "touch" && (ch.zone === "table" || ch.zone === "desk")) {
+      const spread = Math.max(frame.tableSpread, 4);
+      const onTable = () => {
         ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
         ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
-        ch.pos.y = ch.zone === "desk" ? 0.78 : 0.82;
-      } else if (kind === "touch" || kind === "touch-wall") {
-        if (ch.zone === "rack") {
-          ch.pos.z = Math.max(ch.pos.z, frame.credenzaZ - 1);
-          ch.pos.y = 1.05;
-          ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
-        } else {
-          ch.zone = "display";
+      };
+      const inCredenza = () => {
+        ch.pos.z = Math.max(ch.pos.z, frame.credenzaZ - 1);
+        ch.pos.y = 1.05;
+        ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
+      };
+
+      switch (mount) {
+        case "wall-display": {
+          ch.pos.z = frame.frontZ + 0.12;
+          const aux = /aux|secondary|content display|confidence|people display/i.test(ch.label || "")
+            || (/display-86|86/i.test(ch.stencilId || "") && !/primary|main|board|front/i.test(ch.label || ""));
+          const panelH = aux ? 0.95 : 1.2;
+          const wallTop = 3.42, wallBot = 0.42;
+          const travel = Math.max(0.4, wallTop - wallBot - panelH);
+          ch.pos.y = Math.max(wallBot, Math.min(wallTop - panelH, wallBot + ry * travel));
+          ch.pos.x = frame.tableCx + (rx - 0.5) * spread;
+          ch.faceYaw = 0;
+          break;
+        }
+        case "wall-camera":
+          ch.pos.z = frame.frontZ + 0.18;
+          ch.pos.y = 2.65;
+          ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
+          ch.faceYaw = 0;
+          break;
+        case "wall-panel":
           ch.pos.z = frame.frontZ + 0.22;
           ch.pos.y = 1.38;
           ch.pos.x = frame.tableCx + (rx - 0.5) * 3;
           ch.faceYaw = 0;
-        }
-      } else if (kind === "ceiling-mic" || kind === "ap") {
-        ch.zone = kind === "ap" ? "ceiling" : "ceiling";
-        ch.pos.y = 2.85;
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.tableCz + (ry - 0.5) * Math.max(frame.tableDepth, 2.4);
-      } else if (kind === "table-mic") {
-        ch.zone = "table";
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
-        ch.pos.y = 0.86;
-      } else if (kind === "codec" || (kind === "switch" && ch.zone === "rack")) {
-        ch.zone = "rack";
-        ch.pos.z = Math.max(ch.pos.z, frame.credenzaZ - 1);
-        ch.pos.y = 1.05;
-        ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
-      } else if (ch.zone === "table" && /conf-table/.test(ch.stencilId || "")) {
-        ch.pos.x = frame.tableCx;
-        ch.pos.z = frame.tableCz;
-        ch.pos.y = 0.4;
-        ch.anchored = false;
-      } else if (ch.zone === "table" || ch.zone === "desk") {
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.tableCz + (ry - 0.5) * frame.tableDepth;
-        ch.pos.y = ch.zone === "desk" ? 0.78 : 0.82;
-      } else {
-        ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
-        ch.pos.z = frame.frontZ + 2 + ry * Math.max(frame.tableDepth, 2.4);
-        ch.pos.y = ch.zone === "ceiling" ? 2.85 : (ch.zone === "rack" ? 1.05 : 0.9);
+          break;
+        case "shelf":
+          ch.pos.z = frame.frontZ + 0.18;
+          ch.pos.y = 1.32;
+          ch.pos.x = frame.tableCx + (rx - 0.5) * 2;
+          ch.faceYaw = 0;
+          break;
+        case "ceiling":
+          ch.pos.y = 2.85;
+          ch.pos.x = frame.tableCx + (rx - 0.5) * frame.tableSpread;
+          ch.pos.z = frame.tableCz + (ry - 0.5) * Math.max(frame.tableDepth, 2.4);
+          break;
+        case "table":
+          onTable();
+          ch.pos.y = kind === "table-mic" ? 0.86 : 0.82;
+          break;
+        case "desk":
+          onTable();
+          ch.pos.y = 0.78;
+          break;
+        case "rack":
+          inCredenza();
+          break;
+        case "floor-table":
+          ch.pos.x = frame.tableCx;
+          ch.pos.z = frame.tableCz;
+          ch.pos.y = 0.4;
+          ch.anchored = false;
+          break;
+        case "floor-rack":
+          ch.pos.z = frame.credenzaZ - 0.4;
+          ch.pos.y = 0.9;
+          ch.pos.x = frame.tableCx + (rx - 0.5) * 4;
+          break;
+        default:
+          onTable();
+          ch.pos.y = 0.9;
       }
     });
     constrainedRelax(chambers, "room");
@@ -577,6 +629,6 @@
     buildWalkTopology, distToSegment,
     applySemanticPlacement, buildRoomFrame, buildNetworkFrame,
     resolveRoomPlacement, clampToRoomFrame,
-    deviceKind, placementWhy, NET_LAYER_Z, NET_LAYER_ORDER
+    deviceKind, roomMount, placementWhy, NET_LAYER_Z, NET_LAYER_ORDER
   };
 })();

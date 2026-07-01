@@ -1322,6 +1322,14 @@
 
   // POI category + icon for a chamber (drives the destination picker + card).
   function poiCategory(ch) {
+    // Canonical role wins for room devices — icon/category no longer re-guessed
+    // from label regex, so it can never disagree with placement/model.
+    const role = window.__DS_STENCILS?.deviceProfile?.(ch.stencilId, ch)?.role;
+    if (role === "microphone") return { icon: "🎙", label: "Microphone" };
+    if (role === "camera") return { icon: "📷", label: "Camera" };
+    if (role === "display" || role === "codec" || role === "control" || role === "phone") return { icon: "🖥", label: "Collaboration" };
+    if (role === "switch" || role === "collab-switch") return { icon: "🔀", label: "Network" };
+
     const s = ((ch.label || "") + " " + (ch.pid || "") + " " + (ch.stencilId || "")).toLowerCase();
     if (/\bap\b|9179|\bmr\d|wi-?fi|access point/.test(s)) return { icon: "📶", label: "Access Point" };
     if (/\bmic|microphone/.test(s)) return { icon: "🎙", label: "Microphone" };

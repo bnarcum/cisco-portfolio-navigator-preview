@@ -189,27 +189,91 @@
     "mv2": { label: "Meraki MV2 Camera", pid: "MV2-HW", layer: "access", role: "camera", shape: "camera", ports: "ap-single", w: 64, h: 48, poeW: 13, spaces: true, mtGateway: true }
   };
 
+  // ---- Canonical device registry (ROOM) -------------------------------------
+  // Each entry is the SINGLE source of truth for a room device. The 3D walk,
+  // 2D diagram, cabling, category icons and the intent BOM all read from here
+  // instead of re-deriving identity from labels/zones.
+  //   mount       — authoritative physical surface (drives 3D placement):
+  //                 wall-display | wall-camera | wall-panel | shelf |
+  //                 ceiling | table | desk | rack | floor-table | floor-rack
+  //   role        — device class (drives category icon + cabling):
+  //                 display | camera | microphone | control | codec | phone |
+  //                 switch | furniture
+  //   model3d     — procedural mesh template key
+  //   defaultCount— BOM default the intent can scale (e.g. mics)
+  //   aliases     — natural-language phrases the intent maps to this device
+  //   variants    — model variants (e.g. Board Pro G2, wall-mount Navigator)
   const ROOM_DEVICES = {
-    "room-kit-eq": { label: "Room Kit EQ", pid: "CS-KIT-EQ-K9", shape: "codec", ports: "codec-av", w: 92, h: 52, poeW: 60 },
-    "room-kit-pro": { label: "Room Kit Pro G2", pid: "CS-KITPRO-K9", shape: "codec", ports: "codec-av", w: 92, h: 52, poeW: 60 },
-    "room-bar": { label: "Room Bar", pid: "CS-BAR-K9", shape: "codec", ports: "codec-av", w: 84, h: 48, poeW: 45 },
-    "board-pro": { label: "Board Pro 75", pid: "CS-BRD-75-K9", shape: "display", ports: "codec-av", w: 104, h: 60, poeW: 45 },
-    "desk-pro": { label: "Desk Pro", pid: "CS-DESKPRO-K9", shape: "codec", ports: "codec-av", w: 76, h: 48, poeW: 30 },
-    "desk-mini": { label: "Desk Mini", pid: "CS-DESKMINI-K9", shape: "codec", ports: "codec-av", w: 64, h: 44, poeW: 25 },
-    "desk-phone": { label: "Desk Phone 9841", pid: "CP-9841-K9", shape: "phone", ports: "phone-lan", w: 52, h: 40, poeW: 8 },
-    "room-vision-ptz": { label: "Room Vision PTZ", pid: "CS-RoomVisionPTZ", shape: "camera", ports: "cam-hdmi", w: 56, h: 52, poeW: 0 },
-    "quad-cam": { label: "Quad Camera", pid: "CS-QUADCAM-K9", shape: "camera", ports: "cam-hdmi", w: 56, h: 52 },
-    "ceiling-mic": { label: "Ceiling Mic Pro", pid: "CS-MIC-CLGPRO", shape: "ceiling-mic", ports: "mic-poe", w: 52, h: 36, poeW: 15 },
-    "table-mic": { label: "Table Mic Pro", pid: "CS-MIC-TBLPRO", shape: "table-mic", ports: "mic-poe", w: 48, h: 40, poeW: 10 },
-    "touch-10": { label: "Touch 10", pid: "CS-TOUCH10-K9", shape: "touch", ports: "touch-lan", w: 58, h: 42, poeW: 12 },
-    "room-navigator": { label: "Room Navigator", pid: "CS-NAV-T-K9", shape: "touch", ports: "touch-lan", w: 58, h: 42, poeW: 12 },
-    "display-75": { label: "Display 75\"", pid: "DISPLAY-75-4K", shape: "display", ports: "display-hdmi", w: 100, h: 58, ccwEligible: false, decorative: true },
-    "display-86": { label: "Display 86\"", pid: "DISPLAY-86-4K", shape: "display", ports: "display-hdmi", w: 108, h: 62, ccwEligible: false, decorative: true },
-    "credenza-rack": { label: "12U Credenza", pid: "RACK-12U-CRED", shape: "rack", ports: "generic", w: 56, h: 72, ccwEligible: false, decorative: true },
-    "conf-table-12": { label: "Conf Table (12)", pid: "FURN-TABLE-12", shape: "table", ports: "generic", w: 120, h: 56, ccwEligible: false, decorative: true },
-    "conf-table-8": { label: "Huddle Table (8)", pid: "FURN-TABLE-8", shape: "table", ports: "generic", w: 88, h: 48, ccwEligible: false, decorative: true },
-    "c9200-collab": { label: "C9200 Collab SW", pid: "C9200-24P", shape: "switch", ports: "switch-24", w: 96, h: 50, poeW: 370, layer: "collab", role: "collab-switch" }
+    "room-kit-eq": { label: "Room Kit EQ", pid: "CS-KIT-EQ-K9", shape: "codec", ports: "codec-av", w: 92, h: 52, poeW: 60, mount: "rack", role: "codec", model3d: "codec", aliases: ["room kit eq", "kit eq", "room kit"] },
+    "room-kit-pro": { label: "Room Kit Pro G2", pid: "CS-KITPRO-K9", shape: "codec", ports: "codec-av", w: 92, h: 52, poeW: 60, mount: "rack", role: "codec", model3d: "codec", aliases: ["room kit pro", "kit pro"] },
+    "room-bar": { label: "Room Bar", pid: "CS-BAR-K9", shape: "codec", ports: "codec-av", w: 84, h: 48, poeW: 45, mount: "shelf", role: "codec", model3d: "codec", aliases: ["room bar", "bar pro", "webex bar"] },
+    "board-pro": { label: "Board Pro 75", pid: "CS-BRD-75-K9", shape: "display", ports: "codec-av", w: 104, h: 60, poeW: 45, mount: "wall-display", role: "display", model3d: "display", aliases: ["board pro", "webex board", "board"], variants: { g2: { pid: "CS-BRD-PRO-G2-75", label: "Board Pro G2 75" }, "55": { pid: "CS-BRD-55-K9", label: "Board Pro 55" } } },
+    "desk-pro": { label: "Desk Pro", pid: "CS-DESKPRO-K9", shape: "codec", ports: "codec-av", w: 76, h: 48, poeW: 30, mount: "desk", role: "codec", model3d: "display", aliases: ["desk pro"] },
+    "desk-mini": { label: "Desk Mini", pid: "CS-DESKMINI-K9", shape: "codec", ports: "codec-av", w: 64, h: 44, poeW: 25, mount: "desk", role: "codec", model3d: "display", aliases: ["desk mini"] },
+    "desk-phone": { label: "Desk Phone 9841", pid: "CP-9841-K9", shape: "phone", ports: "phone-lan", w: 52, h: 40, poeW: 8, mount: "desk", role: "phone", model3d: "generic", aliases: ["desk phone", "ip phone", "9841"] },
+    "room-vision-ptz": { label: "Room Vision PTZ", pid: "CS-RoomVisionPTZ", shape: "camera", ports: "cam-hdmi", w: 56, h: 52, poeW: 0, mount: "wall-camera", role: "camera", model3d: "camera", aliases: ["room vision", "ptz camera", "ptz"] },
+    "quad-cam": { label: "Quad Camera", pid: "CS-QUADCAM-K9", shape: "camera", ports: "cam-hdmi", w: 56, h: 52, mount: "wall-camera", role: "camera", model3d: "camera", aliases: ["quad camera", "quad cam", "quadcam"] },
+    "ceiling-mic": { label: "Ceiling Mic Pro", pid: "CS-MIC-CLGPRO", shape: "ceiling-mic", ports: "mic-poe", w: 52, h: 36, poeW: 15, mount: "ceiling", role: "microphone", model3d: "ceiling-mic", cableAnchor: "ceiling", defaultCount: 2, aliases: ["ceiling mic", "ceiling microphone", "ceiling mic pro", "mic pro"] },
+    "table-mic": { label: "Table Mic Pro", pid: "CS-MIC-TBLPRO", shape: "table-mic", ports: "mic-poe", w: 48, h: 40, poeW: 10, mount: "table", role: "microphone", model3d: "table-mic", cableAnchor: "table", defaultCount: 2, aliases: ["table mic", "table microphone", "table mic pro"] },
+    "touch-10": { label: "Touch 10", pid: "CS-TOUCH10-K9", shape: "touch", ports: "touch-lan", w: 58, h: 42, poeW: 12, mount: "table", role: "control", model3d: "touch", aliases: ["touch 10", "touch panel", "touch controller", "touch10"] },
+    "room-navigator": { label: "Room Navigator", pid: "CS-NAV-T-K9", shape: "touch", ports: "touch-lan", w: 58, h: 42, poeW: 12, mount: "table", role: "control", model3d: "touch", aliases: ["navigator", "room navigator", "scheduling panel"], variants: { wall: { mount: "wall-panel", pid: "CS-NAV-W-K9", label: "Room Navigator (Wall)" }, table: { mount: "table", pid: "CS-NAV-T-K9" } } },
+    "display-75": { label: "Display 75\"", pid: "DISPLAY-75-4K", shape: "display", ports: "display-hdmi", w: 100, h: 58, ccwEligible: false, decorative: true, mount: "wall-display", role: "display", model3d: "display", aliases: ["display 75", "75 inch display"] },
+    "display-86": { label: "Display 86\"", pid: "DISPLAY-86-4K", shape: "display", ports: "display-hdmi", w: 108, h: 62, ccwEligible: false, decorative: true, mount: "wall-display", role: "display", model3d: "display", aliases: ["display 86", "86 inch display"] },
+    "credenza-rack": { label: "12U Credenza", pid: "RACK-12U-CRED", shape: "rack", ports: "generic", w: 56, h: 72, ccwEligible: false, decorative: true, mount: "floor-rack", role: "furniture", model3d: "rack" },
+    "conf-table-12": { label: "Conf Table (12)", pid: "FURN-TABLE-12", shape: "table", ports: "generic", w: 120, h: 56, ccwEligible: false, decorative: true, mount: "floor-table", role: "furniture", model3d: "table" },
+    "conf-table-8": { label: "Huddle Table (8)", pid: "FURN-TABLE-8", shape: "table", ports: "generic", w: 88, h: 48, ccwEligible: false, decorative: true, mount: "floor-table", role: "furniture", model3d: "table" },
+    "c9200-collab": { label: "C9200 Collab SW", pid: "C9200-24P", shape: "switch", ports: "switch-24", w: 96, h: 50, poeW: 370, layer: "collab", role: "collab-switch", mount: "rack", model3d: "switch", aliases: ["poe switch", "collab switch", "access switch", "c9200"] }
   };
+
+  /** Canonical 2D/diagram zone that matches a physical mount surface. */
+  const MOUNT_TO_ZONE = {
+    "wall-display": "display", "wall-camera": "display", "wall-panel": "display",
+    shelf: "display", ceiling: "ceiling", table: "table", desk: "desk",
+    rack: "rack", "floor-table": "table", "floor-rack": "rack"
+  };
+
+  function roomZoneForMount(mount) {
+    return MOUNT_TO_ZONE[mount] || "table";
+  }
+
+  /**
+   * Resolve the canonical profile for a device instance, folding in any model
+   * variant (explicit node.variant, or inferred from the instance label/pid).
+   * This is the one function every subsystem calls to learn where a device
+   * mounts, what it is, and how to render/cable it.
+   */
+  function deviceProfile(stencilId, node) {
+    const def = getDef(stencilId, "room");
+    if (!def) return null;
+    let mount = def.mount || null;
+    let pid = def.pid;
+    let label = def.label;
+    const role = def.role || null;
+    const model3d = def.model3d || null;
+
+    if (def.variants) {
+      let vKey = node?.variant && def.variants[node.variant] ? node.variant : null;
+      if (!vKey) {
+        const hay = `${node?.label || ""} ${node?.pid || ""}`.toLowerCase();
+        for (const k of Object.keys(def.variants)) {
+          if (k === "table") continue;
+          const v = def.variants[k];
+          if ((v.pid && node?.pid === v.pid) || new RegExp(`\\b${k}\\b`, "i").test(hay)) { vKey = k; break; }
+        }
+      }
+      if (vKey) {
+        const v = def.variants[vKey];
+        mount = v.mount || mount;
+        pid = v.pid || pid;
+        label = v.label || label;
+      }
+    }
+    return {
+      stencilId, mount, role, model3d, pid, label,
+      cableAnchor: def.cableAnchor || null,
+      zone: roomZoneForMount(mount)
+    };
+  }
 
   const FAMILY_TO_STENCIL = {
     "catalyst-core": "c9500-core", "catalyst-access": "c9300-access", "catalyst-wireless": "cw9179f",
@@ -428,6 +492,7 @@
     NETWORK_DEVICES, ROOM_DEVICES, FAMILY_TO_STENCIL, PORT_PRESETS,
     getDef, getPorts, portXY, portExists, renderDeviceSvg, renderPorts,
     buildCatalogStencils, buildRoomStencils, suggestMedia,
-    resolveSymbolId, resolveAccent, renderSymbolPreview, LAYER_ACCENT, isCcwEligible
+    resolveSymbolId, resolveAccent, renderSymbolPreview, LAYER_ACCENT, isCcwEligible,
+    deviceProfile, roomZoneForMount, MOUNT_TO_ZONE
   };
 })();

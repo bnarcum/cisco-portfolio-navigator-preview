@@ -58,6 +58,11 @@
     const role = (def?.role || "").toLowerCase();
     const sid = (ch?.stencilId || "").toLowerCase();
 
+    // Canonical registry mesh wins — one source of truth for which model
+    // renders, instead of re-guessing from shape/role/label per stencil.
+    const prof = window.__DS_STENCILS?.deviceProfile?.(ch?.stencilId, ch);
+    if (prof?.model3d) return prof.model3d;
+
     if (STENCIL_TEMPLATE[sid]) return STENCIL_TEMPLATE[sid];
     if (shape === "rack" || sid.includes("rack") || sid.includes("credenza")) return "rack";
     if (shape === "table" || sid.includes("table") || sid.includes("furn")) return "table";
