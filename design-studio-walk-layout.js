@@ -111,6 +111,15 @@
     if (!nodes?.length) return out;
 
     nodes.forEach(n => {
+      if (n.walkPlacement) {
+        out[n.id] = {
+          zone: n.walkPlacement.zone || "table",
+          relX: n.walkPlacement.relX ?? 0.5,
+          relY: n.walkPlacement.relY ?? 0.5,
+          fromWalk: true
+        };
+        return;
+      }
       const c = nodeCenter(n);
       const diagramZone = zones ? nearestZone(zones, ox, oy, c.x, c.y) : null;
       const dz = zones?.[diagramZone];
@@ -565,11 +574,103 @@
     };
   }
 
+  function diagramFromRelInZone(zoneName, relX, relY, room, node) {
+    const tpl = window.__DS_TEMPLATES?.ROOM_TEMPLATES?.[room?.template];
+    const zones = room?.computedZones || tpl?.zones;
+    const ox = room?.layoutOrigin?.x ?? 100;
+    const oy = room?.layoutOrigin?.y ?? 132;
+    const z = zones?.[zoneName];
+    const nw = node?.w || 76;
+    const nh = node?.h || 46;
+    if (!z) return { x: ox + 120, y: oy + 120 };
+    const padX = 16;
+    const padY = 24;
+    const innerW = Math.max(z.w - padX * 2, 48);
+    const innerH = Math.max(z.h - padY * 2, 48);
+    const cx = ox + z.x + padX + relX * innerW;
+    const cy = oy + z.y + padY + relY * innerH;
+    return { x: cx - nw / 2, y: cy - nh / 2 };
+  }
+
+  function worldToRoomRel(wx, wz, ch, frame) {
+    const kind = deviceKind(ch.stencilId, ch.label, ch.zone);
+    const zone = ch.zone || "table";
+    const spread = Math.max(frame.tableSpread, 4);
+    const depth = Math.max(frame.tableDepth, 2.4);
+    let relX = 0.5;
+    let relY = 0.5;
+    if (zone === "table" || zone === "desk" || kind === "table-mic" || (kind === "touch" && zone !== "rack" && zone !== "display")) {
+      relX = (wx - frame.tableCx) / spread + 0.5;
+      relY = (wz - frame.tableCz) / depth + 0.5;
+    } else if (kind === "display" || kind === "camera" || zone === "display" || zone === "wall") {
+      relX = (wx - frame.tableCx) / spread + 0.5;
+      relY = 0.5;
+    } else if (zone === "rack" || kind === "codec" || kind === "switch") {
+      relX = (wx - frame.tableCx) / 4 + 0.5;
+      relY = 0.5;
+    } else if (zone === "ceiling" || kind === "ceiling-mic" || kind === "ap") {
+      relX = (wx - frame.tableCx) / spread + 0.5;
+      relY = (wz - frame.tableCz) / depth + 0.5;
+    } else {
+      relX = (wx - frame.tableCx) / spread + 0.5;
+      relY = (wz - frame.tableCz) / depth + 0.5;
+    }
+    return {
+      zone,
+      relX: Math.max(0.06, Math.min(0.94, relX)),
+      relY: Math.max(0.06, Math.min(0.94, relY))
+    };
+  }
+
+  function worldToDiagramNetwork(wx, wz, layoutDiagram, node) {
+    const cx = layoutDiagram?.cx ?? 0;
+    const cy = layoutDiagram?.cy ?? 0;
+    const scale = layoutDiagram?.scale ?? NET_SCALE;
+    const nw = node?.w || 76;
+    const nh = node?.h || 46;
+    const centerX = wx / scale + cx;
+    const centerY = wz / scale + cy;
+    return { x: centerX - nw / 2, y: centerY - nh / 2 };
+  }
+
+  /** Persist a 3D floor position back to the design node + diagram coordinates. */
+  function syncNodeFromWorld(studio, nodeId, wx, wz, graph) {
+    const node = studio?.design?.nodes?.find(n => n.id === nodeId);
+    const ch = graph?.chambers?.find(c => c.id === nodeId);
+    if (!node || !ch) return false;
+    const kind = graph.kind === "room" ? "room" : "network";
+    if (kind === "room") {
+      const frame = graph.semanticFrame || buildRoomFrame(graph.chambers, studio.design.nodes.filter(n => n.roomId === node.roomId));
+      const rel = worldToRoomRel(wx, wz, ch, frame);
+      node.walkPlacement = { zone: rel.zone, relX: rel.relX, relY: rel.relY };
+      ch.zone = rel.zone;
+      ch.relX = rel.relX;
+      ch.relY = rel.relY;
+      const room = studio.design.rooms?.find(r => r.id === node.roomId);
+      const diag = diagramFromRelInZone(rel.zone, rel.relX, rel.relY, room, node);
+      node.x = diag.x;
+      node.y = diag.y;
+    } else {
+      delete node.walkPlacement;
+      const diag = worldToDiagramNetwork(wx, wz, graph.layoutDiagram, node);
+      node.x = diag.x;
+      node.y = diag.y;
+      if (studio.design.snapGrid !== false) {
+        node.x = Math.round(node.x / 16) * 16;
+        node.y = Math.round(node.y / 16) * 16;
+      }
+    }
+    ch.pos.x = wx;
+    ch.pos.z = wz;
+    return true;
+  }
+
   window.__DS_WALK_LAYOUT = {
     diagramToWorld, layerAisles, roomZones, nodeCenter,
     buildWalkTopology, distToSegment,
     applySemanticPlacement, buildRoomFrame, buildNetworkFrame,
     resolveRoomPlacement, clampToRoomFrame,
-    deviceKind, placementWhy, NET_LAYER_Z, NET_LAYER_ORDER
+    deviceKind, placementWhy, NET_LAYER_Z, NET_LAYER_ORDER,
+    diagramFromRelInZone, worldToRoomRel, worldToDiagramNetwork, syncNodeFromWorld
   };
 })();

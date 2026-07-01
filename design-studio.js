@@ -613,8 +613,20 @@
       this.stack.push(json);
       if (this.stack.length > MAX_HISTORY) this.stack.shift(); else this.ptr++;
     }
-    undo() { if (this.ptr <= 0) return; this.ptr--; this.studio.design = JSON.parse(this.stack[this.ptr]); this.studio.render(); }
-    redo() { if (this.ptr >= this.stack.length - 1) return; this.ptr++; this.studio.design = JSON.parse(this.stack[this.ptr]); this.studio.render(); }
+    undo() {
+      if (this.ptr <= 0) return;
+      this.ptr--;
+      this.studio.design = JSON.parse(this.stack[this.ptr]);
+      this.studio.render();
+      this.studio.syncWalkIfOpen();
+    }
+    redo() {
+      if (this.ptr >= this.stack.length - 1) return;
+      this.ptr++;
+      this.studio.design = JSON.parse(this.stack[this.ptr]);
+      this.studio.render();
+      this.studio.syncWalkIfOpen();
+    }
   }
 
   class DesignStudio {
@@ -642,6 +654,11 @@
     }
 
     pushHistory() { saveDesign(this.design); this.history.snapshot(); }
+
+    syncWalkIfOpen() {
+      if (!window.__DS_WALK?.isOpen?.()) return null;
+      return window.__DS_WALK.syncWalkIfOpen?.(this) || window.__DS_WALK.rebuild?.(this);
+    }
 
     mount() {
       if (document.getElementById("design-studio")) return;
@@ -1404,7 +1421,7 @@
       this.syncSidebarMode();
       window.__DS_PREMIUM?.refresh?.(this);
       if (walkOpen && wasWalkTab && (tab === "room" || tab === "network"))
-        window.__DS_WALK?.rebuild?.(this);
+        this.syncWalkIfOpen();
     }
 
     renderRoomGuide() {
@@ -1744,6 +1761,7 @@ Account: ${this.design.account}`;
         this.selectedNode = null;
       } else return;
       this.pushHistory(); this.render(); this.updateAlignBar();
+      this.syncWalkIfOpen();
     }
 
     visibleNodes() {
@@ -1830,7 +1848,7 @@ Account: ${this.design.account}`;
       };
     }
 
-    addStencil(stencilId, x, y) {
+    addStencil(stencilId, x, y, opts = {}) {
       const mode = this.tab === "room" ? "room" : "network";
       const def = STN()?.getDef?.(stencilId, mode);
       const st = stencilFor(stencilId, mode);
@@ -1850,6 +1868,15 @@ Account: ${this.design.account}`;
       this.pushHistory();
       this.render();
       this.offerSuggestionsForNode(node);
+      if (!opts.skipWalkSync) this.syncWalkIfOpen();
+      return node;
+    }
+
+    addStencilFromWalk(stencilId, wx, wz) {
+      const node = this.addStencil(stencilId, undefined, undefined, { skipWalkSync: true });
+      if (!node?.id) return;
+      const place = () => window.__DS_WALK_LAYOUT_MODE?.placeNodeAtWorld?.(node.id, wx, wz);
+      Promise.resolve(this.syncWalkIfOpen()).then(place);
     }
 
     offerSuggestionsForNode(node) {
@@ -1898,7 +1925,7 @@ Account: ${this.design.account}`;
           const where = targetTab === "room" ? "Room" : "Network";
           this.toast(`Applied on ${where} canvas (${what})${addedLinks ? " — see Cables" : ""}`);
         }
-        if (window.__DS_WALK?.isOpen?.()) window.__DS_WALK.rebuild(this);
+        if (window.__DS_WALK?.isOpen?.()) this.syncWalkIfOpen();
       }
       return { ok: true, targetTab, layoutNetwork, addedNodes, addedLinks };
     }
@@ -1923,7 +1950,7 @@ Account: ${this.design.account}`;
       else this.render();
       if (targetTab === "network") this.scheduleFitView();
       this.toast(`Applied ${n} suggestion${n === 1 ? "" : "s"} — see Cables tab`);
-      if (window.__DS_WALK?.isOpen?.()) window.__DS_WALK.rebuild(this);
+      if (window.__DS_WALK?.isOpen?.()) this.syncWalkIfOpen();
     }
 
     renderRoomZones() {

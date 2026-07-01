@@ -18,7 +18,7 @@ try {
   await page.goto("http://127.0.0.1:8765/cisco-portfolio-navigator.html", { waitUntil: "load", timeout: 60000 });
   await page.waitForFunction(() => window.__cpnV2?.APP_VERSION, { timeout: 60000 });
   const version = await page.evaluate(() => window.__cpnV2.APP_VERSION);
-  if (version !== "2.79.16") errors.push(`version ${version} != 2.79.16`);
+  if (version !== "2.79.18") errors.push(`version ${version} != 2.79.18`);
 
   await page.click("#design-studio-btn");
   await page.waitForSelector("#design-studio.open", { timeout: 8000 });
@@ -151,6 +151,14 @@ try {
   }));
   if (!questApi.mod) errors.push("Cable Quest module not loaded");
   if (!questApi.btn) errors.push("Cable Quest button missing in room walk");
+  const layoutApi = await page.evaluate(() => ({
+    mod: !!window.__DS_WALK_LAYOUT_MODE?.toggle,
+    btn: !!document.querySelector('[data-action="layout-toggle"]'),
+    sync: !!window.__DS_WALK_LAYOUT?.syncNodeFromWorld
+  }));
+  if (!layoutApi.mod) errors.push("Walk Layout mode module not loaded");
+  if (!layoutApi.btn) errors.push("Layout button missing in walk HUD");
+  if (!layoutApi.sync) errors.push("syncNodeFromWorld missing on __DS_WALK_LAYOUT");
   await page.screenshot({ path: path.join(out, "polish-walk.png") });
 
   // Wayfinding: the "Where to?" picker should list destinations; choosing one

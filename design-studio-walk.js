@@ -78,6 +78,11 @@
     quest: null
   };
 
+  function syncWalkIfOpen(studio) {
+    if (!studio || !state.mode) return null;
+    return rebuild(studio);
+  }
+
   function esc(s) {
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
   }
@@ -1170,6 +1175,7 @@
       if (state.mode) setStatus("Follow a connected link below, or use ‹ Prev / Next › to walk devices");
       showWalkOnboardHint();
       window.__DS_WALK_QUEST?.syncQuestButton?.(studio);
+      window.__DS_WALK_LAYOUT_MODE?.syncHud?.();
     });
   }
 
@@ -1906,6 +1912,12 @@
 
   function updatePlayer(dt) {
     if (updateFly(dt)) { applyCamera(); return; }
+    if (window.__DS_WALK_LAYOUT_MODE?.isActive?.()) {
+      state.vel.x = 0;
+      state.vel.z = 0;
+      applyCamera();
+      return;
+    }
 
     {
       state.vel.y = (state.vel.y ?? 0) - 30 * dt;
@@ -2030,7 +2042,9 @@
     }
     const el = document.getElementById("ds-walk-focus");
     if (el) {
-      if (ch) {
+      if (window.__DS_WALK_LAYOUT_MODE?.isActive?.()) {
+        prompt.textContent = "Layout mode — drag a device on the floor";
+      } else if (ch) {
         el.hidden = false;
         el.innerHTML = `<strong>${esc(ch.label)}</strong>${ch.pid ? `<span>${esc(ch.pid)}</span>` : ""}`;
       } else el.hidden = true;
@@ -2631,7 +2645,7 @@
     return `<div class="ds-walk-hud">
       <div class="ds-walk-hud-top">
         <strong class="ds-walk-title">3D WALKTHROUGH</strong>
-        <span class="ds-walk-hint">WASD move · drag look · E inspect · Esc exit</span>
+        <span class="ds-walk-hint">WASD move · G layout · E inspect · Esc exit</span>
         <button type="button" class="ds-walk-close" title="Exit walkthrough">✕</button>
       </div>
       <div class="ds-walk-hud-mid">
@@ -2641,6 +2655,7 @@
         ${outcomesBtn}
         <button type="button" class="ds-walk-btn ds-walk-pkt-toggle" data-action="packets" title="Show or hide data packets on links">Packets</button>
         <button type="button" class="ds-walk-btn ds-walk-pkt-speed" data-action="packet-speed" title="Packet speed">Normal</button>
+        <button type="button" class="ds-walk-btn ds-walk-btn-layout" data-action="layout-toggle" title="Drag devices on the floor — syncs to diagram">Layout</button>
         <button type="button" class="ds-walk-btn primary" data-action="inspect" title="Open device details">Inspect</button>
       </div>
       ${layerFilterHtml(tab)}
@@ -2710,6 +2725,11 @@
         e.stopPropagation();
         window.__DS_WALK_QUEST?.end?.(false);
       }
+      else if (a === "layout-toggle") {
+        e.preventDefault();
+        e.stopPropagation();
+        window.__DS_WALK_LAYOUT_MODE?.toggle?.();
+      }
       else if (a === "fp-close") window.__DS_FIELD_PANEL?.close?.();
       else if (a === "fp-fly") {
         const id = document.getElementById("ds-field-panel")?.dataset?.chamberId;
@@ -2765,6 +2785,7 @@
         if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();
+          if (window.__DS_WALK_LAYOUT_MODE?.onKeyDown?.(e)) return;
           if (window.__DS_WALK_QUEST?.isActive?.()) {
             window.__DS_WALK_QUEST.end(false);
             return;
@@ -2781,6 +2802,11 @@
         if (e.key === "]" || e.key === "}") { e.preventDefault(); cycleDevice(1); return; }
         if (e.key === "Tab") { e.preventDefault(); cycleDevice(e.shiftKey ? -1 : 1); return; }
         if (e.key === "e" || e.key === "E") { e.preventDefault(); interactNearby(); return; }
+        if (e.key === "g" || e.key === "G") {
+          e.preventDefault();
+          window.__DS_WALK_LAYOUT_MODE?.toggle?.();
+          return;
+        }
         if (e.code === "Space" && !state.fly) {
           e.preventDefault();
           if (state.onGround) {
@@ -2808,12 +2834,14 @@
         return;
       }
       if (!canvas.contains(e.target) && e.target !== canvas) return;
+      if (window.__DS_WALK_LAYOUT_MODE?.handleDown?.(e, canvas, pickDeviceAt)) return;
       window.__DS_WALK_AUDIO?.start?.();
       state.lookDrag = true;
       downPos = { x: e.clientX, y: e.clientY };
       state.lookLast = { x: e.clientX, y: e.clientY };
     };
     const onMove = e => {
+      if (window.__DS_WALK_LAYOUT_MODE?.handleMove?.(e, canvas)) return;
       if (state.pointerLocked) {
         onLook(e.movementX, e.movementY);
         return;
@@ -2823,9 +2851,19 @@
       state.lookLast = { x: e.clientX, y: e.clientY };
     };
     const onUp = e => {
+      if (window.__DS_WALK_LAYOUT_MODE?.handleUp?.()) {
+        state.lookDrag = false;
+        downPos = null;
+        return;
+      }
       if (e.button === 0 && downPos) {
         const moved = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
         if (moved < 6) {
+          if (window.__DS_WALK_LAYOUT_MODE?.isActive?.()) {
+            state.lookDrag = false;
+            downPos = null;
+            return;
+          }
           if (window.__DS_WALK_QUEST?.isActive?.()) {
             const port = window.__DS_WALK_QUEST.pickAt?.(e.clientX, e.clientY, canvas);
             if (port && window.__DS_WALK_QUEST.handlePick?.(port)) return;
@@ -2851,6 +2889,19 @@
       state.pointerLocked = document.pointerLockElement === canvas;
       state.overlay?.classList.toggle("ds-walk-locked", state.pointerLocked);
     };
+    const onStencilDragOver = e => {
+      if (!e.dataTransfer?.types?.includes("text/stencil")) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+    };
+    const onStencilDrop = e => {
+      const id = e.dataTransfer?.getData?.("text/stencil");
+      if (!id || !state.studio) return;
+      e.preventDefault();
+      const hit = window.__DS_WALK_LAYOUT_MODE?.floorHit?.(e.clientX, e.clientY, canvas);
+      if (hit) state.studio.addStencilFromWalk?.(id, hit.x, hit.z);
+      else state.studio.addStencil(id);
+    };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKey);
     window.addEventListener("mousemove", onMove);
@@ -2858,6 +2909,8 @@
     canvas.addEventListener("mousedown", onDown);
     canvas.addEventListener("dblclick", onDbl);
     canvas.addEventListener("wheel", onWheel, { passive: false });
+    canvas.addEventListener("dragover", onStencilDragOver);
+    canvas.addEventListener("drop", onStencilDrop);
     document.addEventListener("pointerlockchange", onLock);
     state._inputCleanup = () => {
       window.removeEventListener("keydown", onKey);
@@ -2867,6 +2920,8 @@
       canvas.removeEventListener("mousedown", onDown);
       canvas.removeEventListener("dblclick", onDbl);
       canvas.removeEventListener("wheel", onWheel);
+      canvas.removeEventListener("dragover", onStencilDragOver);
+      canvas.removeEventListener("drop", onStencilDrop);
       document.removeEventListener("pointerlockchange", onLock);
       document.exitPointerLock?.();
     };
@@ -3051,6 +3106,7 @@
     }
     window.__DS_FIELD_PANEL?.close?.();
     window.__DS_WALK_QUEST?.end?.(false);
+    if (window.__DS_WALK_LAYOUT_MODE?.isActive?.()) window.__DS_WALK_LAYOUT_MODE.toggle?.();
     window.__DS_WALK_AUDIO?.stop?.();
     state.mode = null;
     if (!silent) state.studio = null;
@@ -3089,8 +3145,19 @@
     buildConnectedNav
   });
 
+  window.__DS_WALK_LAYOUT_MODE?.register?.({
+    getState: () => state,
+    THREE: () => state.THREE,
+    setStatus,
+    makeCableRun,
+    applyPacketVisibility,
+    buildConnectedNav,
+    snapToWalkable
+  });
+
   window.__DS_WALK = {
-    open, close, rebuild, toggle: s => state.mode ? close(true) : open(s),
+    open, close, rebuild, syncWalkIfOpen,
+    toggle: s => state.mode ? close(true) : open(s),
     isOpen: () => !!state.mode, debugStats, hasRoute: () => !!state.route,
     flyToChamberById
   };
