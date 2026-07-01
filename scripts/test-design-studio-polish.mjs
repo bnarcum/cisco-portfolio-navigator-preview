@@ -18,7 +18,7 @@ try {
   await page.goto("http://127.0.0.1:8765/cisco-portfolio-navigator.html", { waitUntil: "load", timeout: 60000 });
   await page.waitForFunction(() => window.__cpnV2?.APP_VERSION, { timeout: 60000 });
   const version = await page.evaluate(() => window.__cpnV2.APP_VERSION);
-  if (version !== "2.79.16") errors.push(`version ${version} != 2.79.16`);
+  if (version !== "2.79.17") errors.push(`version ${version} != 2.79.17`);
 
   await page.click("#design-studio-btn");
   await page.waitForSelector("#design-studio.open", { timeout: 8000 });
@@ -204,6 +204,30 @@ try {
   if (!outcome.shown || !outcome.hasOccupancy) errors.push("Spaces outcome readout did not appear");
   if (!outcome.on || outcome.objects < 3) errors.push(`Spaces outcome 3D overlay missing (objects=${outcome.objects})`);
   await page.screenshot({ path: path.join(out, "polish-outcomes.png") });
+  const campusApi = await page.evaluate(() => ({
+    campus: !!window.__DS_WALK_CAMPUS?.startJourney,
+    exploreCh: !!window.__DS_EXPLORE?.resolveContextForChamber,
+    validateBtn: !!document.querySelector('[data-action="validate-toggle"]')
+  }));
+  if (!campusApi.campus) errors.push("Campus walk module not loaded");
+  if (!campusApi.exploreCh) errors.push("resolveContextForChamber missing");
+  if (!campusApi.validateBtn) errors.push("Validate toggle missing in walk HUD");
+
+  const netWalk = await page.evaluate(() => {
+    window.__DS_WALK?.close?.();
+    window.DesignStudio.instance.setTab("network");
+    return null;
+  });
+  await page.waitForTimeout(200);
+  await page.evaluate(() => window.__DS_WALK?.open?.(window.DesignStudio.instance));
+  await page.waitForTimeout(2000);
+  const campusWalk = await page.evaluate(() => ({
+    kind: window.__DS_WALK?.debugStats?.()?.graphKind,
+    journeyBtn: !!document.querySelector('[data-action="campus-journey"]')
+  }));
+  if (campusWalk.kind !== "campus") errors.push(`expected campus graph, got ${campusWalk.kind}`);
+  if (!campusWalk.journeyBtn) errors.push("Campus Journey button missing");
+  await page.screenshot({ path: path.join(out, "polish-campus-walk.png") });
   await page.evaluate(() => window.__DS_WALK?.close?.());
 
   if (errors.length) {

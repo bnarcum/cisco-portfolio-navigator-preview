@@ -136,6 +136,81 @@
     return [{ label: t.ct || "Cisco Tested room guide", url: t.ctUrl }];
   }
 
+  function resolveContextForChamber(ch, studio) {
+    if (!ch || !studio) return null;
+    const part = ch.campusPart || (ch.canvas === "room" ? "room" : "network");
+    if (part === "room") {
+      const node = studio.design?.nodes?.find(n => n.id === ch.id);
+      const roomId = node?.roomId || studio.activeRoomId || studio.design?.rooms?.[0]?.id;
+      const room = studio.design?.rooms?.find(r => r.id === roomId);
+      const tplKey = room?.template;
+      const ctx = ROOM_CTX[tplKey] || { useCases: ["Hybrid Work"] };
+      return {
+        docs: docFromRoomTpl(tplKey),
+        labs: rankLabs(ctx, 2),
+        skills: rankSkills(ctx, 1),
+        pathId: ctx.pathId || "hybrid-work",
+        browseQuery: ctx.query || room?.name || "hybrid work room"
+      };
+    }
+    const sid = (ch.stencilId || ch.label || "").toLowerCase();
+    const plan = studio.design?.intentPlan;
+    const netKey = plan?.netKey;
+    let ctx = { ...(NET_CTX[netKey] || { useCases: ["Hybrid Work", "Network Automation"] }) };
+    if (/9200|9300|collab|switch/i.test(sid)) ctx.query = ctx.query || "catalyst campus switch poe";
+    else if (/9500|core|n9k/i.test(sid)) ctx.query = ctx.query || "campus core switching";
+    else if (/9179|mr57|wireless|ap\b/i.test(sid)) ctx.query = ctx.query || "wireless access point";
+    else if (/fpr|firewall/i.test(sid)) ctx.query = ctx.query || "firewall secure networking";
+    else if (/ise/i.test(sid)) ctx.query = ctx.query || "cisco ise 802.1x";
+    else ctx.query = ctx.query || ch.label || "campus network";
+    const netTpl = netKey ? window.__DS_TEMPLATES?.NETWORK_TEMPLATES?.[netKey] : null;
+    return {
+      docs: docsFromCitations(plan).length ? docsFromCitations(plan) : docFromNetTpl(netKey),
+      labs: rankLabs(ctx, 2),
+      skills: rankSkills(ctx, 1),
+      pathId: ctx.pathId,
+      browseQuery: ctx.query || netTpl?.label || ch.label
+    };
+  }
+
+  function renderDcloudWalkActions(ctx) {
+    const labs = ctx?.labs || [];
+    if (!labs.length) return "";
+    const primary = labs[0];
+    const url = labUrl(primary);
+    const browse = ctx.browseQuery || "";
+    return `<div class="ds-walk-dcloud">
+      <span class="ds-walk-dcloud-label">dCloud</span>
+      <a class="ds-walk-dcloud-launch" href="${esc(url)}" target="_blank" rel="noopener" data-dcloud-id="${esc(primary.id)}">${esc(primary.linkLabel || primary.name)} ↗</a>
+      <button type="button" class="ds-walk-dcloud-browse" data-browse-query="${esc(browse)}">Browse labs</button>
+    </div>`;
+  }
+
+  function renderDcloudFieldSection(ctx) {
+    const labs = ctx?.labs || [];
+    if (!labs.length) return "";
+    const primary = labs[0];
+    const url = labUrl(primary);
+    const browse = ctx.browseQuery || "";
+    const more = labs.slice(1, 3).map(e =>
+      `<a class="ds-fp-dcloud-alt" href="${esc(labUrl(e))}" target="_blank" rel="noopener" data-dcloud-id="${esc(e.id)}">${esc(e.linkLabel || e.name)} ↗</a>`
+    ).join("");
+    return `<section class="ds-fp-section ds-fp-dcloud">
+      <h4>Try on dCloud</h4>
+      <p class="ds-fp-dcloud-lead">Hands-on lab matched to this device from your design context.</p>
+      <div class="ds-fp-dcloud-actions">
+        <a class="ds-walk-btn primary ds-fp-dcloud-primary" href="${esc(url)}" target="_blank" rel="noopener" data-dcloud-id="${esc(primary.id)}">Launch ${esc(primary.linkLabel || primary.name)} ↗</a>
+        <button type="button" class="ds-walk-btn ds-fp-dcloud-browse" data-browse-query="${esc(browse)}">Browse all labs…</button>
+      </div>
+      ${more ? `<div class="ds-fp-dcloud-more">${more}</div>` : ""}
+    </section>`;
+  }
+
+  function wireDcloudRoot(root) {
+    if (!root) return;
+    wireRoot(root);
+  }
+
   function resolveContext(studio) {
     const design = studio.design || {};
     const plan = design.intentPlan;
@@ -346,5 +421,8 @@
     }
   }
 
-  window.__DS_EXPLORE = { refresh, cardFooter, resolveContext, rankLabs };
+  window.__DS_EXPLORE = {
+    refresh, cardFooter, resolveContext, rankLabs,
+    resolveContextForChamber, renderDcloudWalkActions, renderDcloudFieldSection, wireDcloudRoot
+  };
 })();

@@ -503,6 +503,13 @@
       bresenham(a.r, a.c, b.r, b.c, 1);
     });
 
+    (opts.extraWalkways || []).forEach(w => {
+      if (![w.ax, w.az, w.bx, w.bz].every(Number.isFinite)) return;
+      const a = toCell(w.ax, w.az), b = toCell(w.bx, w.bz);
+      if (![a.r, a.c, b.r, b.c].every(Number.isFinite)) return;
+      bresenham(a.r, a.c, b.r, b.c, 2);
+    });
+
     const adj = {};
     chambers.forEach(ch => { adj[ch.id] = []; });
     segments.forEach(s => {

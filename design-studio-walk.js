@@ -118,6 +118,7 @@
       zone,
       photoUrl: chamberPhoto(n.stencilId, n.canvas),
       pos: extra?.pos || { x: 0, y: 3, z: 0 },
+      canvas: n.canvas || (n.roomId ? "room" : "network"),
       color: MEDIA_COLORS.cat6
     };
   }
@@ -220,12 +221,98 @@
     return { room, chambers, corridors, kind };
   }
 
+  function hasCampusDesign(studio) {
+    const d = studio?.design;
+    if (!d) return false;
+    const hasNet = d.nodes.some(n => !n.roomId && n.canvas !== "room");
+    const hasRoom = (d.rooms || []).length > 0 && d.nodes.some(n => n.roomId);
+    return hasNet && hasRoom;
+  }
+
+  function pickCampusRoomId(studio) {
+    const rooms = studio.design.rooms || [];
+    const board = rooms.find(r => /boardroom|board|executive/i.test(r.template || r.name || ""));
+    return studio.activeRoomId || board?.id || rooms[0]?.id;
+  }
+
+  function buildCampusGraph(studio) {
+    const roomId = pickCampusRoomId(studio);
+    const savedRoom = studio.activeRoomId;
+    studio.activeRoomId = roomId;
+    const roomGraph = buildRoomGraph(studio);
+    studio.activeRoomId = savedRoom;
+    const netGraph = buildNetworkGraph(studio);
+    if (!roomGraph?.chambers?.length || !netGraph?.chambers?.length) return netGraph || roomGraph;
+
+    const netBounds = recomputeBounds(netGraph.chambers, "network");
+    const offsetX = (netBounds?.maxX ?? 20) + 36;
+
+    roomGraph.chambers.forEach(ch => {
+      ch.pos.x += offsetX;
+      ch.campusPart = "room";
+      ch.canvas = "room";
+    });
+    netGraph.chambers.forEach(ch => {
+      ch.campusPart = "network";
+      ch.canvas = "network";
+    });
+
+    const chambers = [...netGraph.chambers, ...roomGraph.chambers];
+    const corridors = [...netGraph.corridors, ...roomGraph.corridors];
+    const chamberIds = new Set(chambers.map(c => c.id));
+    const netIds = new Set(netGraph.chambers.map(c => c.id));
+    const roomIds = new Set(roomGraph.chambers.map(c => c.id));
+    studio.design.links.forEach(l => {
+      if (!chamberIds.has(l.from) || !chamberIds.has(l.to)) return;
+      const cross = (netIds.has(l.from) && roomIds.has(l.to)) || (netIds.has(l.to) && roomIds.has(l.from));
+      if (!cross) return;
+      const a = chambers.find(c => c.id === l.from);
+      const b = chambers.find(c => c.id === l.to);
+      if (!a || !b) return;
+      corridors.push({
+        id: l.id, from: a, to: b, media: l.media || "cat6",
+        label: l.label || "Campus link", fromPort: l.fromPort, toPort: l.toPort,
+        color: MEDIA_COLORS[l.media] || MEDIA_COLORS.cat6
+      });
+    });
+
+    const accessCh = netGraph.chambers.find(c => /collab|c9200-collab/i.test(c.stencilId || ""))
+      || netGraph.chambers.find(c => c.zone === "collab" || c.zone === "access")
+      || netGraph.chambers.find(c => /9200|9300/i.test(c.label || ""));
+    const roomEntry = roomGraph.chambers.find(c => /switch|9200|collab/i.test(c.stencilId || ""))
+      || roomGraph.chambers.find(c => c.zone === "rack" || c.zone === "table")
+      || roomGraph.chambers[0];
+    const campusBridge = accessCh && roomEntry ? {
+      ax: accessCh.pos.x, az: accessCh.pos.z,
+      bx: roomEntry.pos.x, bz: roomEntry.pos.z
+    } : null;
+
+    const room = studio.design.rooms.find(r => r.id === roomId);
+    return {
+      room,
+      chambers,
+      corridors,
+      kind: "campus",
+      campusBridge,
+      campusRoomId: roomId,
+      layoutBounds: recomputeBounds(chambers, "network"),
+      semanticFrame: { network: netGraph.semanticFrame, room: roomGraph.semanticFrame }
+    };
+  }
+
   function buildGraph(studio) {
+    if (hasCampusDesign(studio)) return buildCampusGraph(studio);
     return studio.tab === "room" ? buildRoomGraph(studio) : buildNetworkGraph(studio);
   }
 
+  function podKindFor(ch, graph) {
+    if (graph?.kind === "campus") return ch.campusPart || "network";
+    return graph?.kind || "network";
+  }
+
   function buildTopology(graph) {
-    return window.__DS_WALK_LAYOUT?.buildWalkTopology?.(graph.chambers, graph.corridors) || null;
+    const extra = graph?.campusBridge ? [graph.campusBridge] : [];
+    return window.__DS_WALK_LAYOUT?.buildWalkTopology?.(graph.chambers, graph.corridors, { extraWalkways: extra }) || null;
   }
 
 
@@ -916,6 +1003,13 @@
 
   function addAdaptiveVenue(THREE, scene, bounds, graph) {
     if (!bounds || !graph) return;
+    if (graph.kind === "campus") {
+      addNetworkVenue(THREE, scene, bounds, graph);
+      const roomCh = graph.chambers.filter(c => c.campusPart === "room");
+      const rb = roomCh.length ? recomputeBounds(roomCh, "room") : null;
+      if (rb) addRoomVenue(THREE, scene, rb, { ...graph, chambers: roomCh, kind: "room" });
+      return;
+    }
     if (graph.kind === "room") addRoomVenue(THREE, scene, bounds, graph);
     else addNetworkVenue(THREE, scene, bounds, graph);
   }
@@ -1048,10 +1142,13 @@
   }
 
   function addWorldScenery(THREE, scene, graph) {
-    if (graph.kind !== "network") return;
-    const layers = [...new Set(graph.chambers.map(c => c.zone).filter(Boolean))];
+    if (graph.kind !== "network" && graph.kind !== "campus") return;
+    const baseCh = graph.kind === "campus"
+      ? graph.chambers.filter(c => c.campusPart !== "room")
+      : graph.chambers;
+    const layers = [...new Set(baseCh.map(c => c.zone).filter(Boolean))];
     layers.forEach(layer => {
-      const list = graph.chambers.filter(c => c.zone === layer);
+      const list = baseCh.filter(c => c.zone === layer);
       if (!list.length) return;
       const xs = list.map(c => c.pos.x), zs = list.map(c => c.pos.z);
       const minX = Math.min(...xs) - 2, maxX = Math.max(...xs) + 2;
@@ -1094,7 +1191,7 @@
         ch.pos = { x: 0, y: ch.pos?.y ?? 3, z: 0 };
       }
       try {
-        const pod = await makeDevicePod(THREE, ch, scale, graph.kind, graph);
+        const pod = await makeDevicePod(THREE, ch, scale, podKindFor(ch, graph), graph);
         state.scene?.add(pod);
       } catch (err) {
         console.warn("[DS Walk] pod skipped:", ch.label, err);
@@ -1163,13 +1260,15 @@
     setStatus("Loading devices…");
     loadDevicePods(THREE, graph, 1).then(() => {
       applySceneShadows();
-      if (window.__cpnAutoOutcomes && !state.outcomes && graph.kind === "room" && !insightsUserDismissed()) {
+      if (window.__cpnAutoOutcomes && !state.outcomes && (graph.kind === "room" || graph.kind === "campus") && !insightsUserDismissed()) {
         window.__cpnAutoOutcomes = false;
         toggleOutcomes();
       }
       if (state.mode) setStatus("Follow a connected link below, or use ‹ Prev / Next › to walk devices");
       showWalkOnboardHint();
       window.__DS_WALK_QUEST?.syncQuestButton?.(studio);
+      window.__DS_WALK_CAMPUS?.syncValidateHud?.();
+      window.__DS_WALK_CAMPUS?.syncValidationHalos?.();
     });
   }
 
@@ -1578,7 +1677,9 @@
     const atDest = state.chambers[state.navIndex]?.id === r.destId;
     if (!state.fly && (atDest || d < 2.0)) {
       const label = r.destLabel;
+      const destId = r.destId;
       clearWayfinding();
+      window.__DS_WALK_CAMPUS?.onArrive?.(destId);
       setStatus(`Arrived at ${label}`);
       const wf = document.getElementById("ds-walk-wayfind");
       if (wf) {
@@ -2032,7 +2133,10 @@
     if (el) {
       if (ch) {
         el.hidden = false;
-        el.innerHTML = `<strong>${esc(ch.label)}</strong>${ch.pid ? `<span>${esc(ch.pid)}</span>` : ""}`;
+        const ctx = state.studio ? window.__DS_EXPLORE?.resolveContextForChamber?.(ch, state.studio) : null;
+        const dcloud = ctx ? window.__DS_EXPLORE?.renderDcloudWalkActions?.(ctx) : "";
+        el.innerHTML = `<div class="ds-walk-focus-main"><strong>${esc(ch.label)}</strong>${ch.pid ? `<span>${esc(ch.pid)}</span>` : ""}</div>${dcloud}`;
+        window.__DS_EXPLORE?.wireDcloudRoot?.(el);
       } else el.hidden = true;
     }
     state.devicePods.forEach(pod => {
@@ -2329,6 +2433,7 @@
     animateCables(state.clock);
     animateRoleEffects(state.clock);
     window.__DS_WALK_QUEST?.tick?.(state.clock);
+    window.__DS_WALK_CAMPUS?.pulseValidationHalos?.(state.clock);
     animateDust(dt);
     updateReticleFocus();
     if (state.route) { animateRoute(state.clock); updateWayfind(); }
@@ -2621,13 +2726,17 @@
     setStatus(`Packet speed · ${PACKET_SPEEDS[state.packetSpeedIdx].label}`);
   }
 
-  function hudHtml(tab) {
-    const outcomesBtn = tab === "room"
+  function hudHtml(tab, campus) {
+    const outcomesBtn = (tab === "room" || campus)
       ? `<button type="button" class="ds-walk-btn ds-walk-btn-spaces" data-action="outcomes" title="Simulated occupancy, location &amp; IoT overlay — room walks only">Insights</button>`
       : "";
-    const questBtn = tab === "room"
+    const questBtn = (tab === "room" || campus)
       ? `<button type="button" class="ds-walk-btn ds-walk-btn-quest" data-action="cable-quest" title="Mini-game: connect Room Bar or ceiling mic to the PoE switch">Cable Quest</button>`
       : "";
+    const journeyBtn = campus
+      ? `<button type="button" class="ds-walk-btn ds-walk-btn-journey" data-action="campus-journey" title="Waypoint tour: core → IDF → boardroom">Campus Journey</button>`
+      : "";
+    const validateBtn = `<button type="button" class="ds-walk-btn ds-walk-btn-validate" data-action="validate-toggle" title="Red halos on design validation errors">Validate</button>`;
     return `<div class="ds-walk-hud">
       <div class="ds-walk-hud-top">
         <strong class="ds-walk-title">3D WALKTHROUGH</strong>
@@ -2638,7 +2747,9 @@
         <button type="button" class="ds-walk-btn" data-action="prev-dev" title="Previous device">‹ Prev</button>
         <button type="button" class="ds-walk-btn" data-action="next-dev" title="Next device">Next ›</button>
         ${questBtn}
+        ${journeyBtn}
         ${outcomesBtn}
+        ${validateBtn}
         <button type="button" class="ds-walk-btn ds-walk-pkt-toggle" data-action="packets" title="Show or hide data packets on links">Packets</button>
         <button type="button" class="ds-walk-btn ds-walk-pkt-speed" data-action="packet-speed" title="Packet speed">Normal</button>
         <button type="button" class="ds-walk-btn primary" data-action="inspect" title="Open device details">Inspect</button>
@@ -2696,7 +2807,7 @@
       else if (a === "packet-speed") { e.preventDefault(); e.stopPropagation(); cyclePacketSpeed(); }
       else if (a === "wayfind-open") openWayfindMenu();
       else if (a === "wayfind-close") closeWayfindMenu();
-      else if (a === "wayfind-stop") { clearWayfinding(); setStatus("Wayfinding stopped"); }
+      else if (a === "wayfind-stop") { window.__DS_WALK_CAMPUS?.cancelJourney?.(); clearWayfinding(); setStatus("Wayfinding stopped"); }
       else if (a === "prev-dev") cycleDevice(-1);
       else if (a === "next-dev") cycleDevice(1);
       else if (a === "inspect") interactNearby();
@@ -2709,6 +2820,16 @@
         e.preventDefault();
         e.stopPropagation();
         window.__DS_WALK_QUEST?.end?.(false);
+      }
+      else if (a === "validate-toggle") {
+        e.preventDefault();
+        e.stopPropagation();
+        window.__DS_WALK_CAMPUS?.toggleValidate?.();
+      }
+      else if (a === "campus-journey") {
+        e.preventDefault();
+        e.stopPropagation();
+        window.__DS_WALK_CAMPUS?.startJourney?.();
       }
       else if (a === "fp-close") window.__DS_FIELD_PANEL?.close?.();
       else if (a === "fp-fly") {
@@ -2933,6 +3054,7 @@
     if (state.mode) close(true);
     state.studio = studio;
     state.mode = "walk";
+    const campus = graph.kind === "campus";
 
     let overlay = document.getElementById("ds-walk-overlay");
     const wrap = document.getElementById("ds-canvas-wrap");
@@ -2947,7 +3069,7 @@
     overlay.removeAttribute("hidden");
     overlay.setAttribute("aria-hidden", "false");
     overlay.className = "ds-walk-overlay ds-walk-tour";
-    overlay.innerHTML = `${hudHtml(studio.tab)}
+    overlay.innerHTML = `${hudHtml(studio.tab, campus)}
       <div class="ds-walk-stage">
         <div class="ds-walk-panel-backdrop" id="ds-walk-panel-backdrop" hidden data-action="fp-close" title="Click to keep walking" aria-label="Close panel"></div>
         <div class="ds-walk-crosshair ds-walk-crosshair-plus" aria-hidden="true"></div>
@@ -2971,6 +3093,7 @@
     applyPacketVisibility();
     syncOutcomesHud();
     syncPacketsHud();
+    window.__DS_WALK_CAMPUS?.syncValidateHud?.();
 
     const canvas = overlay.querySelector("#ds-walk-canvas");
     bindInput(canvas);
@@ -3051,6 +3174,7 @@
     }
     window.__DS_FIELD_PANEL?.close?.();
     window.__DS_WALK_QUEST?.end?.(false);
+    window.__DS_WALK_CAMPUS?.cancelJourney?.();
     window.__DS_WALK_AUDIO?.stop?.();
     state.mode = null;
     if (!silent) state.studio = null;
@@ -3087,6 +3211,13 @@
     teleportToChamber,
     applyPacketVisibility,
     buildConnectedNav
+  });
+
+  window.__DS_WALK_CAMPUS?.register?.({
+    getState: () => state,
+    THREE: () => state.THREE,
+    setStatus,
+    beginGuidedRoute
   });
 
   window.__DS_WALK = {
