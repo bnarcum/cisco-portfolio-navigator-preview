@@ -57,9 +57,29 @@ try {
   if (display && camera && !near(display.z, camera.z, 0.6)) errors.push(`display/camera should share front wall (z ${display.z} vs ${camera.z})`);
   if (touch && touch.zone !== "table") errors.push(`touch should be table zone, got ${touch.zone}`);
   if (touch && (touch.y > 1.2 || touch.y < 0.6)) errors.push(`touch should be tabletop height (~0.82), got y=${touch.y}`);
-  if (!conf.environmentTags?.["room-ceiling-grid"]) errors.push("conference should render ceiling grid for cable tray");
-  if (!conf.environmentTags?.["room-cable-tray"]) errors.push("conference should render ceiling cable tray");
+  if (!conf.environmentTags?.["room-credenza-raceway"]) errors.push("conference should render credenza cable raceway");
   if (!conf.environmentTags?.["room-floor"]) errors.push("conference should use professional carpet floor");
+
+  // Room walk open → switch to network tab must rebuild (regression: mid is not defined).
+  await page.evaluate(() => {
+    window.__DS_TEMPLATES.applyNetworkTemplate(
+      window.DesignStudio.instance.design, "campus3tierRedundant", 80, 80, window.__DS_STENCILS);
+    window.DesignStudio.instance.setTab("network");
+  });
+  await page.waitForTimeout(2000);
+  const netRebuild = await page.evaluate(() => ({
+    open: window.__DS_WALK?.isOpen?.(),
+    kind: window.__DS_WALK?.debugStats?.()?.graphKind,
+    err: document.getElementById("ds-walk-status")?.classList.contains("ds-walk-error"),
+    status: document.getElementById("ds-walk-status")?.textContent || "",
+    cables: window.__DS_WALK?.debugStats?.()?.cables || 0,
+    pods: window.__DS_WALK?.debugStats?.()?.pods || 0
+  }));
+  if (!netRebuild.open) errors.push("network tab switch closed walk overlay");
+  if (netRebuild.err) errors.push(`network rebuild failed: ${netRebuild.status}`);
+  if (netRebuild.kind !== "network") errors.push(`expected network graph after tab switch, got ${netRebuild.kind}`);
+  if (netRebuild.cables < 1) errors.push(`network walk expected cables, got ${netRebuild.cables}`);
+  if (netRebuild.pods < 3) errors.push(`network walk expected pods, got ${netRebuild.pods}`);
   await page.evaluate(() => window.__DS_WALK?.close?.(true));
 
   // Campus: floor-only decor (no rack rows, walls, or ceiling tray).

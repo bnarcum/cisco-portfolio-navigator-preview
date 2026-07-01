@@ -741,7 +741,7 @@
     return out;
   }
 
-  function lateralOffset(dx, dz, sib, amount = 0.2) {
+  function lateralOffset(dx, dz, sib, amount = 0.12) {
     const len = Math.hypot(dx, dz) || 1;
     const px = -dz / len, pz = dx / len;
     const side = (sib - 1) % 2 === 0 ? 1 : -1;
@@ -760,9 +760,9 @@
     const frame = state.graph?.semanticFrame || {};
     const frontZ = Number.isFinite(frame.frontZ) ? frame.frontZ + 0.22 : bounds.minZ + 0.6;
     const backZ = Number.isFinite(frame.credenzaZ) ? frame.credenzaZ - 0.55 : bounds.maxZ - 1.4;
-    const trayY = 3.04;
-    const floorY = 0.14;
-    const credY = 0.9;
+    const trayY = 4.05;
+    const credY = 0.88;
+    const tableY = 0.82;
     const wallY = 2.05;
     const len = Math.hypot(bx - ax, bz - az);
     const off = lateralOffset(bx - ax, bz - az, sib);
@@ -815,20 +815,21 @@
     }
 
     if (len < 2.8) {
-      const midY = Math.max(ya, yb, floorY) + 0.12 + (sib - 1) * 0.06;
+      const runY = Math.max(credY, tableY) + (sib - 1) * 0.04;
       return simplifyCablePath([
         v3(THREE, ax, ya, az),
-        v3(THREE, (ax + bx) / 2 + off.x, midY, (az + bz) / 2 + off.z),
+        v3(THREE, (ax + bx) / 2 + off.x, runY, (az + bz) / 2 + off.z),
         v3(THREE, bx, yb, bz)
       ]);
     }
 
+    // PoE: stay in credenza raceway — never sprawl across the open floor.
     return simplifyCablePath(withOff([
       v3(THREE, ax, ya, az),
-      v3(THREE, ax, floorY, az),
-      v3(THREE, ax, floorY, backZ),
-      v3(THREE, bx, floorY, backZ),
-      v3(THREE, bx, floorY, bz),
+      v3(THREE, ax, credY, az),
+      v3(THREE, ax, credY, backZ),
+      v3(THREE, bx, credY, backZ),
+      v3(THREE, bx, credY, bz),
       v3(THREE, bx, yb, bz)
     ], 2, 4));
   }
@@ -856,8 +857,8 @@
     const roomWalk = state.graph?.kind === "room";
 
     let curve;
-    let tubeR = roomWalk ? 0.042 : 0.085;
-    let emissiveI = roomWalk ? 0.28 : 0.55;
+    let tubeR = roomWalk ? 0.038 : 0.085;
+    let emissiveI = roomWalk ? 0.26 : 0.55;
 
     if (roomWalk && state.bounds) {
       const points = buildRoomCablePoints(THREE, cor, sib, state.bounds);
@@ -867,12 +868,12 @@
       const arch = Math.min(Math.max(len * 0.26, 1.2), 5.0) + (sib - 1) * 0.85;
       const perp = new THREE.Vector3(-dz, 0, dx).normalize();
       const lateral = ((sib - 1) % 2 === 0 ? 1 : -1) * Math.ceil((sib - 1) / 2) * 1.1;
-      const mid = new THREE.Vector3(
+      const arcMid = new THREE.Vector3(
         (ax + bx) / 2 + perp.x * lateral,
         baseY + arch,
         (az + bz) / 2 + perp.z * lateral
       );
-      curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+      curve = new THREE.QuadraticBezierCurve3(a, arcMid, b);
     }
 
     const segs = roomWalk ? Math.max(16, Math.min(40, Math.round(len * 2))) : 28;
@@ -889,8 +890,8 @@
 
     // Connector collars only in network walk — room devices are small; collars obscure product photos.
     if (!roomWalk) {
-      const outA = new THREE.Vector3().subVectors(mid, a).normalize();
-      const outB = new THREE.Vector3().subVectors(mid, b).normalize();
+      const outA = curve.getTangent(0).normalize();
+      const outB = curve.getTangent(1).normalize().multiplyScalar(-1);
       [ { p: a, out: outA }, { p: b, out: outB } ].forEach(({ p, out }) => {
         const collar = new THREE.Mesh(
           new THREE.CylinderGeometry(0.06, 0.072, 0.14, 10),
@@ -1003,25 +1004,11 @@
     return addTagged(scene, m, tag);
   }
 
-  function addCeilingGrid(THREE, scene, bounds, h = 3.15) {
-    const mat = new THREE.MeshStandardMaterial({ color: 0xd8e1e8, metalness: 0.2, roughness: 0.55, transparent: true, opacity: 0.55 });
-    const cx = (bounds.minX + bounds.maxX) / 2;
-    const cz = (bounds.minZ + bounds.maxZ) / 2;
-    const w = bounds.maxX - bounds.minX + 8;
-    const d = bounds.maxZ - bounds.minZ + 8;
-    for (let x = bounds.minX - 4; x <= bounds.maxX + 4; x += 4) {
-      box(THREE, scene, "room-ceiling-grid", [0.035, 0.035, d], [x, h, cz], mat);
-    }
-    for (let z = bounds.minZ - 4; z <= bounds.maxZ + 4; z += 4) {
-      box(THREE, scene, "room-ceiling-grid", [w, 0.035, 0.035], [cx, h, z], mat);
-    }
-  }
-
   function addProfessionalRoomShell(THREE, scene, bounds) {
     const pad = 10;
     const w = Math.max(bounds.maxX - bounds.minX + pad * 2, 20);
     const d = Math.max(bounds.maxZ - bounds.minZ + pad * 2, 20);
-    const h = 3.55;
+    const h = 4.65;
     const cx = (bounds.minX + bounds.maxX) / 2;
     const cz = (bounds.minZ + bounds.maxZ) / 2;
     setSkyBackground(THREE, scene, "room");
@@ -1049,11 +1036,14 @@
 
     const ceil = new THREE.Mesh(
       new THREE.PlaneGeometry(w, d),
-      new THREE.MeshStandardMaterial({ color: 0xe8ecef, metalness: 0.08, roughness: 0.92, side: THREE.DoubleSide })
+      new THREE.MeshStandardMaterial({
+        color: 0x1e2830, metalness: 0.05, roughness: 0.95,
+        side: THREE.DoubleSide, transparent: true, opacity: 0.35
+      })
     );
     ceil.rotation.x = Math.PI / 2;
     ceil.position.set(cx, h, cz);
-    ceil.receiveShadow = true;
+    ceil.userData = { noShadow: true };
     addTagged(scene, ceil, "room-ceiling");
 
     [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
@@ -1065,17 +1055,15 @@
 
   function addCableInfrastructure(THREE, scene, bounds, graph) {
     const frame = graph.semanticFrame || {};
-    const ceilH = 3.15;
-    addCeilingGrid(THREE, scene, bounds, ceilH);
-    const trayMat = new THREE.MeshStandardMaterial({ color: 0x9aa4ac, metalness: 0.72, roughness: 0.38 });
+    const trayMat = new THREE.MeshStandardMaterial({
+      color: 0x6a7278, metalness: 0.55, roughness: 0.5, transparent: true, opacity: 0.45
+    });
     const cx = (bounds.minX + bounds.maxX) / 2;
-    const cz = (bounds.minZ + bounds.maxZ) / 2;
     const backZ = Number.isFinite(frame.credenzaZ) ? frame.credenzaZ - 0.45 : bounds.maxZ - 1.5;
     const w = bounds.maxX - bounds.minX + 6;
-    box(THREE, scene, "room-cable-tray", [w, 0.05, 0.28], [cx, ceilH - 0.06, cz], trayMat);
-    box(THREE, scene, "room-credenza-raceway", [Math.max(w * 0.55, 8), 0.07, 0.2], [cx, 0.9, backZ], trayMat);
+    box(THREE, scene, "room-credenza-raceway", [Math.max(w * 0.7, 10), 0.06, 0.16], [cx, 0.86, backZ], trayMat);
     const frontZ = Number.isFinite(frame.frontZ) ? frame.frontZ + 0.08 : bounds.minZ + 0.5;
-    box(THREE, scene, "room-wall-raceway", [Math.max(w * 0.65, 10), 0.04, 0.14], [cx, 2.08, frontZ], trayMat);
+    box(THREE, scene, "room-wall-raceway", [Math.max(w * 0.65, 10), 0.03, 0.1], [cx, 2.05, frontZ], trayMat);
   }
 
   function addSubtleZonePads(THREE, scene, graph) {
@@ -2041,7 +2029,9 @@
       g.children.forEach(ch => {
         if (!ch.isMesh || !ch.material) return;
         if (ch.userData?.packet) {
-          ch.visible = !!state.packetsEnabled && (!dimOthers || connected);
+          const showPkt = !!state.packetsEnabled
+            && (!state.presentationMode || connected || !dimOthers);
+          ch.visible = showPkt;
           return;
         }
         const baseE = ch.userData.baseEmissive ?? 0.3;
@@ -2928,6 +2918,7 @@
   function togglePackets() {
     state.packetsEnabled = !state.packetsEnabled;
     applyPacketVisibility();
+    updateCableFocus(state.focusId);
     savePacketPrefs();
     syncPacketsHud();
     setStatus(state.packetsEnabled
