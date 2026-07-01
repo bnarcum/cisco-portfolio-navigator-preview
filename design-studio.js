@@ -1838,7 +1838,9 @@ Account: ${this.design.account}`;
       let cx = x ?? (120 + Math.random() * 300);
       let cy = y ?? (120 + Math.random() * 200);
       if (this.design.snapGrid !== false) { cx = snap(cx); cy = snap(cy); }
-      const roomId = mode === "room" && this.design.rooms.length ? this.design.rooms[this.design.rooms.length - 1].id : undefined;
+      const roomId = mode === "room" && this.design.rooms.length
+        ? (this.activeRoomId || this.design.activeRoomId || this.design.rooms[0].id)
+        : undefined;
       const node = {
         id: uid(), stencilId, label: def?.label || st?.label || stencilId, pid: def?.pid || st?.pid,
         layer: def?.layer || st?.layer || "collab", x: cx, y: cy, canvas: mode,
