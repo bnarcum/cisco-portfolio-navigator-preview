@@ -61,7 +61,10 @@ try {
   await page.waitForTimeout(300);
   await page.click("#ds-walk-corridor");
   await page.waitForFunction(() => window.__DS_WALK?.isOpen?.(), { timeout: 60000 });
-  await page.waitForTimeout(1200);
+  await page.waitForFunction(() => {
+    const s = window.__DS_WALK?.debugStats?.() || {};
+    return s.chambers?.length > 0 && s.pods > 0 && s.roomRacewayCables;
+  }, { timeout: 90000 });
   const conf = await page.evaluate(() => window.__DS_WALK?.debugStats?.() || {});
   const chambers = conf.chambers || [];
   const display = chambers.find(c => c.kind === "display" || /display/i.test(c.label));
@@ -75,7 +78,9 @@ try {
   if (touch && (touch.y > 1.2 || touch.y < 0.6)) errors.push(`touch should be tabletop height (~0.82), got y=${touch.y}`);
   if (!conf.environmentTags?.["room-install-floor"]) errors.push("conference walk missing install-ready room shell");
   if (!conf.environmentTags?.["room-device-pad"]) errors.push("conference walk missing device floor pads");
-  if (!conf.roomRacewayCables) errors.push("conference walk should use flat room raceway cables");
+  if (!conf.roomRacewayCables) errors.push("conference walk should use room link registry");
+  if (!conf.roomCablesHidden) errors.push("conference walk should hide 3D cable geometry");
+  if ((conf.roomDepth || 0) > 10.5) errors.push(`conference room too deep: ${conf.roomDepth?.toFixed(1)}m`);
   if ((conf.maxCableRadius || 0) > 0.04) errors.push(`conference cable radius too large: ${conf.maxCableRadius}`);
   if (!conf.environmentTags?.["room-recess-light"]) errors.push("conference walk missing ceiling recessed lights");
   if (conf.environmentTags?.["room-ceiling-grid"]) errors.push("conference should not render ceiling lattice");

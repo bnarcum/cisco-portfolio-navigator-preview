@@ -85,18 +85,46 @@
     return (mode === "room" ? room : net)[kind] || (mode === "room" ? room.default : net.default);
   }
 
-  function buildRoomFrame(chambers, nodes) {
-    const zs = chambers.map(c => c.pos?.z).filter(Number.isFinite);
-    const xs = chambers.map(c => c.pos?.x).filter(Number.isFinite);
-    const display = chambers.filter(c => c.zone === "display" || deviceKind(c.stencilId, c.label, c.zone) === "display");
-    const table = chambers.filter(c => c.zone === "table" || /table-mic|conf-table/i.test(c.stencilId || ""));
-    const frontZ = display.length ? Math.min(...display.map(c => c.pos.z)) : (zs.length ? Math.min(...zs) : 0);
-    const tableCx = table.length ? table.reduce((s, c) => s + c.pos.x, 0) / table.length : (xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0);
-    const tableCz = table.length ? table.reduce((s, c) => s + c.pos.z, 0) / table.length : frontZ + 4;
-    const tableSpread = table.length > 1 ? Math.max(3, Math.max(...table.map(c => c.pos.x)) - Math.min(...table.map(c => c.pos.x)) + 2) : 5.5;
-    const tableDepth = table.length > 1 ? Math.max(2, Math.max(...table.map(c => c.pos.z)) - Math.min(...table.map(c => c.pos.z)) + 1.5) : 2.4;
-    const credenzaZ = Math.max(...zs, frontZ + 6);
-    return { frontZ, tableCx, tableCz, tableSpread, tableDepth, credenzaZ, hasDisplay: display.length > 0 };
+  /** Fixed install-ready walk volume — never derived from 2D diagram canvas scale. */
+  function buildRoomFrame(chambers, nodes, items, templateKey) {
+    const tpl = String(templateKey || "");
+    const hasDisplay = chambers.some(c => deviceKind(c.stencilId, c.label, c.zone) === "display");
+    const relX = (items || [])
+      .filter(it => it.zone === "table" || it.zone === "ceiling")
+      .map(it => it.relX)
+      .filter(Number.isFinite);
+    const tableSpread = relX.length > 1
+      ? Math.max(3.8, Math.min(6.8, (Math.max(...relX) - Math.min(...relX)) * 6.2 + 2.4))
+      : 5.5;
+
+    if (/auditorium/i.test(tpl)) {
+      return {
+        frontZ: -5.5, credenzaZ: 7.5, tableCx: 0, tableCz: 1.5,
+        tableSpread: 9.5, tableDepth: 5.5, hasDisplay, isAuditorium: true
+      };
+    }
+    if (/training/i.test(tpl)) {
+      return {
+        frontZ: -4.2, credenzaZ: 5.8, tableCx: 0, tableCz: 0.4,
+        tableSpread: 7.5, tableDepth: 3.6, hasDisplay
+      };
+    }
+    if (/huddle|executive|desk/i.test(tpl)) {
+      return {
+        frontZ: -3.2, credenzaZ: 3.4, tableCx: 0, tableCz: 0.1,
+        tableSpread: 3.8, tableDepth: 2.0, hasDisplay
+      };
+    }
+    // Boardroom, conference, and default medium rooms.
+    return {
+      frontZ: -3.8,
+      credenzaZ: 4.6,
+      tableCx: 0,
+      tableCz: 0.15,
+      tableSpread,
+      tableDepth: 2.35,
+      hasDisplay
+    };
   }
 
   function buildNetworkFrame(chambers) {
@@ -177,8 +205,8 @@
 
   function clampToRoomFrame(chambers, frame) {
     if (!frame || !chambers?.length) return;
-    const margin = 1.4;
-    const halfW = Math.max(frame.tableSpread * 0.55, 4.5) + margin;
+    const margin = 0.9;
+    const halfW = Math.max(frame.tableSpread * 0.52, 3.8) + margin;
     const minX = frame.tableCx - halfW;
     const maxX = frame.tableCx + halfW;
     const minZ = frame.frontZ - margin;
@@ -190,9 +218,9 @@
     });
   }
 
-  function applyRoomSemantics(chambers, nodes, items, placementById) {
-    if (!chambers?.length) return buildRoomFrame(chambers, nodes);
-    const frame = buildRoomFrame(chambers, nodes);
+  function applyRoomSemantics(chambers, nodes, items, placementById, templateKey) {
+    if (!chambers?.length) return buildRoomFrame(chambers, nodes, items, templateKey);
+    const frame = buildRoomFrame(chambers, nodes, items, templateKey);
     const itemFor = ch => {
       const placed = placementById?.[ch.id];
       if (placed) return placed;
@@ -367,7 +395,7 @@
     if (kind === "room") {
       const placementById = ctx.placementById
         || (ctx.room ? resolveRoomPlacement(nodes, ctx.room, ctx.items) : null);
-      return applyRoomSemantics(chambers, nodes, ctx.items, placementById);
+      return applyRoomSemantics(chambers, nodes, ctx.items, placementById, ctx.room?.template);
     }
     return applyNetworkSemantics(chambers, nodes);
   }
