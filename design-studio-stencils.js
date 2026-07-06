@@ -225,6 +225,68 @@
     "c9200-collab": { label: "C9200 Collab SW", pid: "C9200-24P", shape: "switch", ports: "switch-24", w: 96, h: 50, poeW: 370, layer: "collab", role: "collab-switch", mount: "rack", model3d: "switch", aliases: ["poe switch", "collab switch", "access switch", "c9200"] }
   };
 
+  /** Maps canvas stencil IDs to portfolio product/family keys in learning-links.json. */
+  const STENCIL_LEARNING = {
+    "room-kit-eq": { products: ["room-kit-eq"], families: ["room-systems"] },
+    "room-kit-pro": { products: ["room-kit-pro"], families: ["room-systems"] },
+    "room-bar": { products: ["room-bar"], families: ["room-systems"] },
+    "board-pro": { products: ["board-pro-g2"], families: ["room-systems"] },
+    "desk-pro": { products: ["desk-pro"], families: ["desk-devices", "room-systems"] },
+    "desk-mini": { products: ["desk-mini"], families: ["desk-devices", "room-systems"] },
+    "desk-phone": { families: ["ip-phones"] },
+    "room-vision-ptz": { families: ["room-systems"] },
+    "quad-cam": { families: ["room-systems"] },
+    "ceiling-mic": { products: ["ceiling-mic-pro"], families: ["room-systems"] },
+    "table-mic": { families: ["room-systems"] },
+    "touch-10": { products: ["touch-10", "room-navigator"], families: ["room-systems"] },
+    "room-navigator": { products: ["room-navigator"], families: ["room-systems"] },
+    "c9200-collab": { families: ["catalyst-access", "room-systems"] },
+    "c9500-core": { families: ["catalyst-core"] },
+    "c9500-core-2": { families: ["catalyst-core"] },
+    "c9400-dist": { families: ["catalyst-core"] },
+    "c9300-access": { families: ["catalyst-access"] },
+    "c9200-access": { families: ["catalyst-access"] },
+    cw9179f: { families: ["catalyst-wireless"] },
+    mr57: { families: ["meraki-wireless"] },
+    "c8200-sdwan": { families: ["sdwan"] },
+    "c8200-sdwan-2": { families: ["sdwan"] },
+    "fpr-2130": { families: ["sf-enterprise"] },
+    "fpr-1120": { families: ["sf-branch"] },
+    "ise-pan": { families: ["ise"] },
+    "ise-psn": { families: ["ise"] },
+    "cat-center": { families: ["catalyst-center"] },
+    "n9k-spine": { families: ["nexus"] },
+    "n9k-leaf": { families: ["nexus"] },
+    apic: { families: ["aci"] },
+    "ucs-x": { families: ["ucs"] },
+    mx85: { families: ["meraki-mx"] },
+    ms250: { families: ["meraki-switches"] },
+    "umbrella-va": { families: ["umbrella"] },
+    vmanage: { families: ["sdwan"] }
+  };
+
+  function learningIdsForStencil(stencilId, node) {
+    const base = STENCIL_LEARNING[stencilId];
+    if (!base) return { products: [], families: [] };
+    const products = [...(base.products || [])];
+    const families = [...(base.families || [])];
+    const hay = `${node?.label || ""} ${node?.pid || ""}`.toLowerCase();
+
+    if (stencilId === "board-pro") {
+      const prof = deviceProfile(stencilId, node);
+      if (node?.variant === "g2" || /g2|pro-g2/i.test(hay) || /G2/.test(prof?.pid || ""))
+        products[0] = "board-pro-g2";
+      else if (node?.variant === "55" || /\b55\b/.test(hay)) products[0] = "board-pro-55";
+      else if (/\b75\b/.test(hay) || /75/.test(prof?.pid || "")) products[0] = "board-pro-75";
+    }
+    if (stencilId === "room-bar" && /bar.pro|bar-pro/i.test(hay))
+      products[0] = "room-bar-pro-g2";
+    if (stencilId === "room-navigator" && /wall/i.test(hay))
+      products.push("room-navigator-wall");
+
+    return { products, families };
+  }
+
   /** Canonical 2D/diagram zone that matches a physical mount surface. */
   const MOUNT_TO_ZONE = {
     "wall-display": "display", "wall-camera": "display", "wall-panel": "display",
@@ -493,6 +555,7 @@
     getDef, getPorts, portXY, portExists, renderDeviceSvg, renderPorts,
     buildCatalogStencils, buildRoomStencils, suggestMedia,
     resolveSymbolId, resolveAccent, renderSymbolPreview, LAYER_ACCENT, isCcwEligible,
-    deviceProfile, roomZoneForMount, MOUNT_TO_ZONE
+    deviceProfile, roomZoneForMount, MOUNT_TO_ZONE,
+    STENCIL_LEARNING, learningIdsForStencil
   };
 })();
