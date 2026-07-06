@@ -69,11 +69,15 @@
 
   function rankSkills(ctx, limit = 2) {
     if (typeof window.learningRankEntries !== "function") return [];
+    const bomProducts = ctx.bomProductIds || [];
+    const bomFamilies = ctx.bomFamilyIds || [];
+    const hasBom = bomProducts.length > 0 || bomFamilies.length > 0;
     return window.learningRankEntries({
-      familyIds: ctx.familyIds || [],
+      familyIds: [...new Set([...(ctx.familyIds || []), ...bomFamilies])],
+      productIds: bomProducts,
       sources: ctx.skillSources || ["cisco-u", "webex-academy"],
       limit,
-      requireProductOrFamily: false
+      requireProductOrFamily: hasBom
     });
   }
 
@@ -86,12 +90,15 @@
   }
 
   function rankLabs(ctx, limit = 3) {
+    const bomProducts = ctx.bomProductIds || [];
+    const bomFamilies = ctx.bomFamilyIds || [];
     if (typeof window.dcloudRankEntries === "function") {
       const ranked = window.dcloudRankEntries({
         useCases: ctx.useCases || [],
-        familyIds: ctx.familyIds || [],
+        familyIds: [...new Set([...(ctx.familyIds || []), ...bomFamilies])],
+        productIds: bomProducts,
         limit: limit + 2,
-        requireProductOrFamily: false
+        requireProductOrFamily: bomProducts.length > 0 || bomFamilies.length > 0
       });
       const ids = ctx.dcloudIds || [];
       const pinned = ids.map(entryById).filter(Boolean);
@@ -136,6 +143,56 @@
     return [{ label: t.ct || "Cisco Tested room guide", url: t.ctUrl }];
   }
 
+  function collectBomLearningIds(studio) {
+    const design = studio?.design || {};
+    const STN = window.__DS_STENCILS;
+    const mapFn = STN?.learningIdsForStencil;
+    if (!mapFn) return { productIds: [], familyIds: [] };
+
+    const productIds = new Set();
+    const familyIds = new Set();
+    const isDecorative = n => {
+      const mode = n.canvas === "room" ? "room" : "network";
+      return !!STN.getDef?.(n.stencilId, mode)?.decorative;
+    };
+
+    let nodes = design.nodes || [];
+    if (studio.tab === "room" && studio.activeRoomId) {
+      nodes = nodes.filter(n => n.canvas === "room" && n.roomId === studio.activeRoomId);
+    } else if (studio.tab === "network") {
+      nodes = nodes.filter(n => n.canvas === "network");
+    }
+
+    nodes.filter(n => !isDecorative(n)).forEach(n => {
+      const { products, families } = mapFn(n.stencilId, n);
+      products.forEach(p => productIds.add(p));
+      families.forEach(f => familyIds.add(f));
+    });
+
+    return { productIds: [...productIds], familyIds: [...familyIds] };
+  }
+
+  function mergeBomContext(studio, base) {
+    const bom = collectBomLearningIds(studio);
+    const learnMode = studio.sidebarMode === "learn" && studio.tab !== "intent";
+    const skillLimit = learnMode ? Math.min(6, Math.max(3, bom.productIds.length + 1)) : 2;
+    const labLimit = learnMode ? 3 : (studio.tab === "room" ? 2 : 3);
+    const hasBom = bom.productIds.length > 0;
+    const ctx = { ...base, bomProductIds: bom.productIds, bomFamilyIds: bom.familyIds };
+
+    return {
+      ...ctx,
+      labs: rankLabs(ctx, labLimit),
+      skills: rankSkills(ctx, learnMode && hasBom ? skillLimit : 2),
+      skillLimit,
+      labLimit,
+      lede: hasBom && learnMode
+        ? `Courses and labs matched to ${bom.productIds.length} device type(s) on your canvas — validate before you quote.`
+        : base.lede,
+      eyebrow: hasBom && learnMode ? "Learn for your design" : base.eyebrow
+    };
+  }
+
   function resolveContext(studio) {
     const design = studio.design || {};
     const plan = design.intentPlan;
@@ -145,30 +202,28 @@
       const room = design.rooms.find(r => r.id === studio.activeRoomId);
       const tplKey = room?.template;
       const ctx = ROOM_CTX[tplKey] || { useCases: ["Hybrid Work"] };
-      return {
+      return mergeBomContext(studio, {
+        ...ctx,
         eyebrow: "Want to know more?",
         lede: "Your diagram is a starting point — validate the room design and try the devices on dCloud.",
         docs: docFromRoomTpl(tplKey),
-        labs: rankLabs(ctx, 2),
-        skills: rankSkills(ctx, 2),
         pathId: ctx.pathId || "hybrid-work",
         browseQuery: ctx.query || room?.name || "hybrid work room"
-      };
+      });
     }
 
     if (tab === "network") {
       const netKey = plan?.netKey;
       const ctx = NET_CTX[netKey] || { useCases: ["Hybrid Work", "Network Automation"] };
       const netTpl = netKey ? window.__DS_TEMPLATES?.NETWORK_TEMPLATES?.[netKey] : null;
-      return {
+      return mergeBomContext(studio, {
+        ...ctx,
         eyebrow: "Want to go deeper?",
         lede: "Read the validated design guide, then launch a hands-on lab matched to this topology.",
         docs: docsFromCitations(plan).length ? docsFromCitations(plan) : docFromNetTpl(netKey),
-        labs: rankLabs(ctx, 2),
-        skills: rankSkills(ctx, 2),
         pathId: ctx.pathId,
         browseQuery: ctx.query || netTpl?.label || "campus network"
-      };
+      });
     }
 
     const text = document.getElementById("ds-intent-text")?.value || "";
@@ -190,15 +245,13 @@
       if (firstRoom) docs = docFromRoomTpl(firstRoom);
     }
 
-    return {
+    return mergeBomContext(studio, {
+      ...merged,
       eyebrow: "See the vision — dive as deep as you want",
       lede: "Generate your draft here, then explore Cisco validated guides and dCloud labs for the same story.",
       docs,
-      labs: rankLabs(merged, 3),
-      skills: rankSkills(merged, 2),
-      pathId: merged.pathId,
       browseQuery: merged.query
-    };
+    });
   }
 
   function labUrl(e) {
@@ -237,8 +290,8 @@
   function renderStrip(ctx, compact) {
     if (!ctx) return "";
     const docs = (ctx.docs || []).slice(0, compact ? 1 : undefined);
-    const labs = (ctx.labs || []).slice(0, compact ? 1 : undefined);
-    const skills = (ctx.skills || []).slice(0, compact ? 1 : undefined);
+    const labs = (ctx.labs || []).slice(0, compact ? 1 : (ctx.labLimit || undefined));
+    const skills = (ctx.skills || []).slice(0, compact ? 1 : (ctx.skillLimit || undefined));
     if (!stripHasCards(ctx, compact)) {
       return "";
     }
@@ -264,10 +317,10 @@
     ).join("");
     const skillCards = skills.map(s =>
       `<a class="ds-explore-card ds-explore-card--skill" href="${esc(s.url)}" target="_blank" rel="noopener">
-        <span class="ds-explore-badge ds-explore-badge--skill">Skills</span>
+        <span class="ds-explore-badge ds-explore-badge--skill">${esc((window.learningSourceMeta?.(s.source) || {}).label || "Skills")}</span>
         <strong>${esc(s.linkLabel || s.name || s.title)}</strong>
-        ${s.duration ? `<span class="ds-explore-meta">${esc(s.duration)}</span>` : ""}
-        <span class="ds-explore-cta">Open learning ↗</span>
+        ${s.duration ? `<span class="ds-explore-meta">${esc(s.duration)}${s.hint ? " · " + esc(s.hint.slice(0, 48)) + (s.hint.length > 48 ? "…" : "") : ""}</span>` : (s.hint ? `<span class="ds-explore-meta">${esc(s.hint.slice(0, 64))}${s.hint.length > 64 ? "…" : ""}</span>` : "")}
+        <span class="ds-explore-cta">${esc((window.learningSourceMeta?.(s.source) || {}).cta || "Open learning ↗")}</span>
       </a>`
     ).join("");
   return `<section class="ds-explore" aria-label="Learn more">
@@ -276,6 +329,7 @@
     : `<header class="ds-explore-head">
         <span class="ds-explore-eyebrow">${esc(ctx.eyebrow || "Want to know more?")}</span>
         <p>${esc(ctx.lede || "")}</p>
+        ${ctx.bomProductIds?.length ? `<div class="ds-explore-bom-tags" aria-label="Devices on canvas">${ctx.bomProductIds.map(p => `<span class="ds-explore-bom-tag">${esc(p.replace(/-/g, " "))}</span>`).join("")}</div>` : ""}
       </header>`}
       ${!compact && ctx.pathId ? renderPathStrip(ctx.pathId) : ""}
       ${compact ? "" : `<div class="ds-explore-ladder"><span>CVD</span><span>→</span><span>Skills</span><span>→</span><span>dCloud</span><span>→</span><span>BOM</span></div>`}
@@ -346,5 +400,5 @@
     }
   }
 
-  window.__DS_EXPLORE = { refresh, cardFooter, resolveContext, rankLabs };
+  window.__DS_EXPLORE = { refresh, cardFooter, resolveContext, rankLabs, collectBomLearningIds };
 })();
