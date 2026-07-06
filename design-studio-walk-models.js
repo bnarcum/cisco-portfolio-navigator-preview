@@ -26,7 +26,7 @@
   /** Per-stencil mount + proportions for photo shells. */
   const PHOTO_SHELL_PROFILES = {
     "room-bar": { mount: "shelf", aspect: 3.1, targetH: 0.26, depth: 0.12 },
-    "board-pro": { mount: "wall", aspect: 1.42, targetH: 1.12, depth: 0.07 },
+    "board-pro": { mount: "wall", aspect: 1.42, targetH: 1.05, depth: 0.07 },
     "desk-pro": { mount: "desk", aspect: 1.15, targetH: 0.48, depth: 0.1, tilt: 0.18 },
     "room-kit-eq": { mount: "rack", aspect: 1.55, targetH: 0.4, depth: 0.52 },
     "room-kit-pro": { mount: "rack", aspect: 1.48, targetH: 0.46, depth: 0.55 },

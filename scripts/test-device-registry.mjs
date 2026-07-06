@@ -36,7 +36,7 @@ const placementErrors = await page.evaluate(() => {
       pos: { x: (i % 5) * 3, y: 3, z: Math.floor(i / 5) * 3 }
     }));
     const nodes = chambers.map(c => ({ id: c.id, stencilId: c.stencilId, label: c.label }));
-    const frame = LAY.applySemanticPlacement(chambers, nodes, "room", { items: tpl.items, room: { template: key } });
+    const frame = LAY.applySemanticPlacement(chambers, nodes, "room", { items: tpl.items });
     const frontZ = frame?.frontZ ?? 0;
 
     // Height (y) is the axis the placement sets from the canonical mount and is
