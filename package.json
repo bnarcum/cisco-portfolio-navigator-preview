@@ -23,12 +23,11 @@
     "test:walk-environments": "node scripts/test-walk-environments.mjs",
     "test:learning-bom": "node scripts/test-learning-bom.mjs",
     "test:learning-links": "node scripts/test-learning-links.mjs",
-    "test:guided-experience": "node scripts/test-guided-experience.mjs",
     "test:design-studio": "node scripts/validate-design-studio.js",
     "test:design-studio-room": "node scripts/test-design-studio-room.mjs",
     "deploy:verify": "node scripts/wait-for-github-pages.mjs",
     "deploy": "node scripts/deploy.mjs --push",
-    "test": "npm run test:pillar-layout && npm run test:composition && npm run test:composition-spatial && npm run test:panel-hero && npm run test:spatial-labels && npm run test:spatial-filtered-photos && npm run test:planner-ui && npm run test:matrix-embed && npm run test:dcloud-learning && npm run test:shortcuts && npm run test:intent && npm run test:device-registry && npm run test:room-overlap && npm run test:walk-spacing && npm run test:walk-environments && npm run test:guided-experience && npm run test:design-studio"
+    "test": "npm run test:pillar-layout && npm run test:composition && npm run test:composition-spatial && npm run test:panel-hero && npm run test:spatial-labels && npm run test:spatial-filtered-photos && npm run test:planner-ui && npm run test:matrix-embed && npm run test:dcloud-learning && npm run test:shortcuts && npm run test:intent && npm run test:device-registry && npm run test:room-overlap && npm run test:walk-spacing && npm run test:walk-environments && npm run test:design-studio"
   },
   "devDependencies": {
     "playwright": "^1.49.0",

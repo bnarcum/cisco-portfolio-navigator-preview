@@ -1275,7 +1275,6 @@
         this.resetIntentScroll();
       }, 500);
       this.highlightQuickstartOnce();
-      window.__CPN_EXPERIENCE?.onStudioOpen?.(this);
     }
 
     // First-ever visit: gently spotlight the Quickstart CTA (no auto-generate,
@@ -1301,10 +1300,8 @@
     close() {
       saveDesign(this.design);
       window.__DS_PREMIUM?.plannerSyncHint?.(this);
-      window.__CPN_EXPERIENCE?.onStudioClose?.(this);
       this.el?.classList.remove("open");
       this.el?.classList.remove("ds-present-mode");
-      document.getElementById("ds-canvas-wrap")?.classList.remove("presentation");
       document.body.classList.remove("design-studio-open");
       this.unlockBackgroundScroll();
     }
@@ -1578,10 +1575,10 @@ Account: ${this.design.account}`;
       } else this.toast("Configure AI assistant first");
     }
 
-    resetForScenario(account, intentNotes) {
-      const name = account || this.design.account || document.querySelector("#acct-name")?.value?.trim() || "Untitled Design";
+    startOver() {
+      const name = this.design.account;
+      if (!confirm("Start over? This clears the canvas, rooms, links, and BOM. Your account name is kept.")) return;
       this.design = emptyDesign(name);
-      if (intentNotes != null) this.design.requirements.notes = intentNotes;
       this.activeRoomId = null;
       this.customRoomMix = null;
       this.selectedNode = null;
@@ -1589,23 +1586,13 @@ Account: ${this.design.account}`;
       this.selectedNodes.clear();
       this.linkFrom = null;
       this.linkFromPort = null;
-      this.presentation = false;
-      this.el?.classList.remove("ds-present-mode");
-      document.getElementById("ds-canvas-wrap")?.classList.remove("presentation");
       const ta = document.getElementById("ds-intent-text");
-      if (ta) ta.value = this.design.requirements.notes || "";
+      if (ta) ta.value = "";
       const rat = document.getElementById("ds-intent-rationale");
       if (rat) { rat.hidden = true; rat.innerHTML = ""; }
       const chips = document.getElementById("ds-intent-chips");
       if (chips) chips.innerHTML = window.__DS_INTENT?.renderChipsHtml([]) || "";
       this.pushHistory();
-      return this;
-    }
-
-    startOver() {
-      const name = this.design.account;
-      if (!confirm("Start over? This clears the canvas, rooms, links, and BOM. Your account name is kept.")) return;
-      this.resetForScenario(name, "");
       this.setTab("intent");
       this.render();
       this.toast("Design cleared — describe a new opportunity or open Gallery");
@@ -3028,12 +3015,7 @@ Account: ${this.design.account}`;
     if (btn && !btn.dataset.wired) { btn.dataset.wired = "1"; btn.addEventListener("click", () => studio.open()); }
   }
 
-  window.DesignStudio = {
-    open: () => studio.open(),
-    close: () => studio.close(),
-    instance: studio,
-    resetForScenario: (a, n) => studio.resetForScenario(a, n)
-  };
+  window.DesignStudio = { open: () => studio.open(), close: () => studio.close(), instance: studio };
   window.initDesignStudio = initDesignStudio;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initDesignStudio);
   else initDesignStudio();
