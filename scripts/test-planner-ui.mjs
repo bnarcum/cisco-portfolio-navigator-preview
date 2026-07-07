@@ -32,9 +32,7 @@ try {
     { timeout: 5000 }
   );
 
-  // Guided Plan via overflow menu
-  await page.click("#chrome-more-btn");
-  await page.waitForSelector("#chrome-more-menu:not([hidden])", { timeout: 3000 });
+  // Guided Plan via action bar
   await page.click("#guided-btn");
   const guidedBtnOpen = await page.evaluate(() =>
     document.getElementById("gw-overlay")?.classList.contains("show")

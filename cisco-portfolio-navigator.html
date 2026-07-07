@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cisco Portfolio Navigator</title>
   <link rel="icon" type="image/svg+xml" href="assets/cpn-favicon.svg"/>
-  <meta name="theme-color" content="#eef2f7"/>
+  <meta name="theme-color" content="#07182D"/>
   <script type="importmap">
   {"imports":{"three":"./vendor/three.module.min.js"}}
   </script>
@@ -14,11 +14,9 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="assets/cpn-tokens.css?v=2.81.0"/>
-  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.81.0"/>
-  <link rel="stylesheet" href="assets/cpn-light.css?v=2.81.0"/>
-  <link rel="stylesheet" href="assets/cpn-polish.css?v=2.81.0"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.81.0"/>
+  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.79.24"/>
+  <link rel="stylesheet" href="assets/cpn-light.css?v=2.79.24"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.79.24"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -1089,11 +1087,12 @@
 <div id="preview-banner" role="status">Preview sandbox — changes here are not production. Live site: <a href="https://bnarcum.github.io/cisco-portfolio-navigator/" style="color:#1a1200;text-decoration:underline">Portfolio Navigator</a></div>
 <script>if(/cisco-portfolio-navigator-preview/i.test(location.pathname))document.getElementById("preview-banner").classList.add("visible");</script>
 <div id="app-chrome">
-<header id="topbar">
+<div id="topbar">
   <div class="logo">
-    <img src="assets/cpn-logo.svg" alt="" width="32" height="32"/>
+    <img src="assets/cpn-logo.svg" alt="" width="44" height="44"/>
     Cisco Portfolio Navigator
   </div>
+  <div class="dv"></div>
   <div class="sw">
     <svg class="si" viewBox="0 0 16 16" fill="none">
       <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/>
@@ -1102,60 +1101,61 @@
     <input id="search" type="text" placeholder="Search products, models, use cases…" autocomplete="off" spellcheck="false"/>
     <div id="sr"></div>
   </div>
-  <div class="cpn-topbar-actions actionbar-end">
-    <button id="design-studio-btn" type="button" title="Design Studio — topology, rooms, BOM, CCW prep">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
-        <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
-        <rect x="5" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
-        <path d="M4 4h8M8 4v8" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
-      </svg>
-      <span>Design Studio</span>
-    </button>
-    <button id="planner-btn" type="button" title="Account Planner">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor"/>
-        <rect x="9" y="2" width="5" height="5" rx="1" fill="currentColor" opacity=".6"/>
-        <rect x="2" y="9" width="5" height="5" rx="1" fill="currentColor" opacity=".6"/>
-        <rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor"/>
-      </svg>
-      <span>Account Planner</span>
-    </button>
-    <button type="button" id="chrome-more-btn" class="chrome-more-btn" aria-label="More tools" aria-expanded="false" aria-haspopup="true">More ▾</button>
+</div>
+<div id="actionbar">
+  <div class="actionbar-filters">
+  <div class="vm-seg" id="vm-seg" role="group" aria-label="Visualization level">
+    <button type="button" data-vm="overview"     class="active" title="Overview — One Cisco strategy (default)">Overview</button>
+    <button type="button" data-vm="families"     title="Families — full product-family graph">Families</button>
+    <button type="button" data-vm="composition"  disabled title="Composition — pick a family first">Composition</button>
+    <button type="button" data-vm="all-products" title="All Products — every family + product (dense; power-user view)">All</button>
+    <button type="button" data-vm="spatial" title="Spatial — immersive 3D map of product families">Spatial</button>
   </div>
-  <div id="chrome-more-menu" class="chrome-more-menu" hidden role="menu">
-    <button type="button" id="dcloud-btn" class="cpn-overflow-item" role="menuitem" title="Browse and launch Cisco dCloud hands-on labs">
-      <span>dCloud Labs</span>
-    </button>
-    <button type="button" id="guided-btn" class="cpn-overflow-item" role="menuitem" title="Step-by-step guided account plan">
-      <span id="guided-btn-label">Guided Plan</span>
-    </button>
-    <button type="button" id="ai-btn" class="cpn-overflow-item" role="menuitem" title="Ask AI — generate stacks, justify recs (BYOK)">
-      <span>Ask AI</span>
-    </button>
-    <button type="button" id="theme-toggle" class="cpn-overflow-item" role="menuitem" title="Toggle light / dark presentation theme" aria-label="Toggle theme">☀ Light</button>
-    <button type="button" id="rst" class="cpn-overflow-item" role="menuitem">Reset view</button>
+  <div class="dv"></div>
+  <div class="fr" id="cpills"></div>
+  <select class="tbs" id="ucs"><option value="">All Use Cases</option></select>
+  <select class="tbs" id="inds"><option value="">All Industries</option></select>
   </div>
-</header>
-<div id="refine-bar">
-  <button type="button" id="refine-toggle" class="refine-toggle" aria-expanded="false" aria-controls="refine-panel">
-    <span>Refine view</span>
-    <span class="refine-chevron" aria-hidden="true">▾</span>
+  <button id="rst">Reset</button>
+  <button id="theme-toggle" type="button" title="Toggle light / dark presentation theme" aria-label="Toggle theme">☀ Light</button>
+  <div class="actionbar-end">
+  <button id="design-studio-btn" type="button" title="Design Studio — topology, rooms, BOM, CCW prep">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <rect x="5" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 4h8M8 4v8" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
+    </svg>
+    <span>Design Studio</span>
   </button>
-  <div id="refine-panel" class="refine-panel" hidden>
-    <div class="actionbar-filters">
-      <div class="vm-seg" id="vm-seg" role="group" aria-label="Visualization level">
-        <button type="button" data-vm="overview" class="active" title="Overview — One Cisco strategy (default)">Overview</button>
-        <button type="button" data-vm="families" title="Families — full product-family graph">Families</button>
-        <button type="button" data-vm="composition" disabled title="Composition — pick a family first">Composition</button>
-        <button type="button" data-vm="all-products" title="All Products — every family + product (dense; power-user view)">All</button>
-        <button type="button" data-vm="spatial" title="Spatial — immersive 3D map of product families">Spatial</button>
-      </div>
-      <div class="dv"></div>
-      <div class="fr" id="cpills"></div>
-      <select class="tbs" id="ucs"><option value="">All Use Cases</option></select>
-      <select class="tbs" id="inds"><option value="">All Industries</option></select>
-    </div>
+  <button id="dcloud-btn" type="button" title="Browse and launch Cisco dCloud hands-on labs">
+    <svg width="13" height="13" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <path d="M24.5 17.5c1.2 0 2.2-1 2.2-2.3 0-1.1-.7-2-1.7-2.3.3-2.4-2-4.4-4.7-4.4-1.8 0-3.4.8-4.5 2.1-1-1.2-2.5-1.9-4.1-1.9-3.1 0-5.7 2.2-5.7 5.1 0 .3 0 .6.1.9C2.8 16.6 1.5 18.2 1.5 20.2c0 2.4 2 4.3 4.4 4.3h16.6c2.7 0 4.8-2.1 4.8-4.7 0-2.6-2.1-4.8-4.8-4.8-.3 0-.6 0-.9.1-.4-1.2-1.5-2.1-2.8-2.1z" fill="currentColor"/>
+    </svg>
+    <span>dCloud Labs</span>
+  </button>
+  <button id="guided-btn" type="button" title="Step-by-step guided account plan">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg><span id="guided-btn-label">Guided Plan</span>
+  </button>
+  <button id="ai-btn" type="button" title="Ask AI — generate stacks, justify recs (BYOK)">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 1.2l.85 2.95 2.95.85-2.95.85L8 8.8l-.85-2.95-2.95-.85 2.95-.85L8 1.2z" fill="currentColor"/>
+      <path d="M13.2 9.1l.55 1.85 1.85.55-1.85.55-.55 1.85-.55-1.85-1.85-.55 1.85-.55.55-1.85z" fill="currentColor" opacity=".8"/>
+    </svg>
+    <span>Ask AI</span>
+  </button>
+  <button id="planner-btn">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor"/>
+      <rect x="9" y="2" width="5" height="5" rx="1" fill="currentColor" opacity=".6"/>
+      <rect x="2" y="9" width="5" height="5" rx="1" fill="currentColor" opacity=".6"/>
+      <rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor"/>
+    </svg>
+    Account Planner
+  </button>
   </div>
 </div>
 </div>
@@ -1174,18 +1174,6 @@
     <div class="bg-pillar-tint bg-pillar-tint--res" aria-hidden="true"></div>
     <canvas id="bg-mesh"></canvas>
     <div class="bg-grid"></div>
-  </div>
-  <div id="cpn-hero" aria-hidden="true">
-    <div class="cpn-hero-inner">
-      <div class="cpn-hero-eyebrow">Cisco Portfolio Navigator</div>
-      <h1 class="cpn-hero-title">Navigate the full Cisco portfolio</h1>
-      <p class="cpn-hero-sub">One story across networking, security, collaboration, and observability — validated designs, labs, and customer-ready outputs.</p>
-      <div class="cpn-hero-actions">
-        <button type="button" class="cpn-btn primary" id="cpn-hero-ds">Open Design Studio</button>
-        <button type="button" class="cpn-btn ghost" id="cpn-hero-explore">Explore the graph</button>
-      </div>
-      <button type="button" class="cpn-hero-dismiss" id="cpn-hero-dismiss">Dismiss</button>
-    </div>
   </div>
   <svg id="gs"></svg>
 </div>
@@ -4991,11 +4979,9 @@ function setAmbientPillarTint(pillarId){
 function updateCanvasFocusState(){
   document.body.classList.remove("canvas-focus");
   document.body.classList.toggle("pillar-focus", usePillarLayout() && singlePillarFocused());
-  document.body.classList.toggle("graph-focus", !!selected);
   if (viewMode === "families" && singlePillarFocused()) setAmbientPillarTint(focusedPillarId());
   else if (viewMode === "families" && selected && usePillarLayout()) setAmbientPillarTint(familyPillar(selected.id));
   else setAmbientPillarTint(null);
-  if (typeof syncCpnHero === "function") syncCpnHero();
 }
 
 function applyPillarNodeVisualState(selectedNode){
@@ -9649,7 +9635,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.81.0";
+const APP_VERSION   = "2.79.32";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -15392,7 +15378,7 @@ function initAmbientBackground(){
   if (!ctx) return;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const NODE_COUNT = 16;
+  const NODE_COUNT = 34;
   const LINK_DIST = 228;
   let w = 0, h = 0;
   let nodes = [];
@@ -15552,8 +15538,8 @@ function toggleCpnTheme(){
 function wireThemeToggle(){
   const btn = document.getElementById("theme-toggle");
   if (!btn) return;
-  let theme = "light";
-  try { theme = localStorage.getItem(CPN_THEME_KEY) || "light"; } catch (e){}
+  let theme = "dark";
+  try { theme = localStorage.getItem(CPN_THEME_KEY) || "dark"; } catch (e){}
   applyCpnTheme(theme);
   btn.addEventListener("click", () => toggleCpnTheme());
   const dsBtn = document.getElementById("ds-theme-toggle");
@@ -15563,82 +15549,9 @@ function wireThemeToggle(){
   }
 }
 
-const CPN_HERO_KEY = "cpn-hero-dismissed-v1";
-
-function syncCpnHero(){
-  const hero = document.getElementById("cpn-hero");
-  if (!hero) return;
-  let dismissed = false;
-  try { dismissed = localStorage.getItem(CPN_HERO_KEY) === "1"; } catch (e) { /* ignore */ }
-  const panelOpen = document.getElementById("panel")?.classList.contains("open");
-  const plannerOpen = document.getElementById("planner")?.classList.contains("open");
-  const spatial = document.body.classList.contains("spatial-open");
-  const show = !dismissed && viewMode === "overview" && !selected && !panelOpen && !plannerOpen && !spatial;
-  hero.classList.toggle("show", show);
-  hero.setAttribute("aria-hidden", show ? "false" : "true");
-}
-
-function dismissCpnHero(){
-  try { localStorage.setItem(CPN_HERO_KEY, "1"); } catch (e) { /* ignore */ }
-  syncCpnHero();
-}
-
-function wireCpnHero(){
-  document.getElementById("cpn-hero-ds")?.addEventListener("click", () => {
-    dismissCpnHero();
-    window.DesignStudio?.open?.();
-  });
-  document.getElementById("cpn-hero-explore")?.addEventListener("click", () => dismissCpnHero());
-  document.getElementById("cpn-hero-dismiss")?.addEventListener("click", () => dismissCpnHero());
-}
-
-function wireRefineBar(){
-  const btn = document.getElementById("refine-toggle");
-  const panel = document.getElementById("refine-panel");
-  if (!btn || !panel) return;
-  btn.addEventListener("click", () => {
-    const open = panel.hidden;
-    panel.hidden = !open;
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-    syncTopbarHeight();
-  });
-}
-
-function wireChromeOverflow(){
-  const btn = document.getElementById("chrome-more-btn");
-  const menu = document.getElementById("chrome-more-menu");
-  if (!btn || !menu) return;
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const open = menu.hidden;
-    menu.hidden = !open;
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-  });
-  document.addEventListener("click", () => {
-    if (!menu.hidden) {
-      menu.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-    }
-  });
-  menu.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (e.target.closest(".cpn-overflow-item, #dcloud-btn, #guided-btn, #ai-btn, #theme-toggle, #rst")) {
-      menu.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-    }
-  });
-}
-
-function wirePolishChrome(){
-  wireRefineBar();
-  wireChromeOverflow();
-  wireCpnHero();
-}
-
 function boot(){
   initAmbientBackground();
   wireThemeToggle();
-  wirePolishChrome();
   Promise.all([loadDcloudLinks(), loadLearningLinks()]).then(() => {
     refreshDcloudPanelIfOpen();
     window.DCLOUD_PATHS = DCLOUD_PATHS;
@@ -15698,7 +15611,6 @@ function boot(){
   bootRestore();
   if (typeof updatePlannerUI === "function") updatePlannerUI();
   if (typeof initDesignStudio === "function") initDesignStudio();
-  syncCpnHero();
   if (typeof NODES !== "undefined") {
     window.__cpnDesignCatalog = {
       families: () => NODES,
