@@ -8461,10 +8461,7 @@ function resetAll() {
   facetState.tier.clear();
   document.querySelectorAll(".cp").forEach(b=>b.classList.remove("off"));
   selected=null; resetHL(); closePanel();
-  // Reset also returns the user to the Families view so the graph state matches
-  // the cleared filter state.
-  if (viewMode !== "families" && viewMode !== "spatial") applyViewLevel("families");
-  else if (viewMode === "spatial") applyFilters();
+  if (viewMode !== "overview") applyViewLevel("overview");
   else applyFilters();
   const {w,h}=getDims();
   svg.transition().duration(600).call(zoom.transform,d3.zoomIdentity.translate(w/2,h/2).scale(0.78));
@@ -9635,7 +9632,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.79.32";
+const APP_VERSION   = "2.79.33";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
