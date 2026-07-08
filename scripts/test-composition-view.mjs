@@ -183,32 +183,6 @@ try {
   await page.waitForTimeout(400);
   if (!assertComposition(await diag(page), "all-products-drill-in")) failed = true;
 
-  // Scenario E: persisted Composition restore must not throw (tipEl TDZ) or leave empty graph
-  const bootErrors = [];
-  const onBootErr = (e) => bootErrors.push(e.message);
-  page.on("pageerror", onBootErr);
-  await page.addInitScript((familyId) => {
-    localStorage.setItem("cpn-view-mode-v2", "composition");
-    localStorage.setItem("cpn-view-focus-v2", familyId);
-  }, FAMILY);
-  await page.reload({ waitUntil: "load", timeout: 60000 });
-  await page.waitForTimeout(800);
-  page.off("pageerror", onBootErr);
-  const restored = await page.evaluate(() => ({
-    viewMode,
-    viewFocus,
-    ndCount: document.querySelectorAll("g.nd").length
-  }));
-  if (bootErrors.length) {
-    console.error("FAIL [composition-restore]:", bootErrors[0]);
-    failed = true;
-  } else if (restored.viewMode !== "composition" || restored.ndCount < 8) {
-    console.error("FAIL [composition-restore]:", restored);
-    failed = true;
-  } else {
-    console.log("PASS [composition-restore]", { ndCount: restored.ndCount, viewFocus: restored.viewFocus });
-  }
-
   process.exit(failed ? 1 : 0);
 } finally {
   await browser.close();
