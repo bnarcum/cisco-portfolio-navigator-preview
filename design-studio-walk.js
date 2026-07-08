@@ -75,8 +75,7 @@
     topology: null, easyNav: true, route: null, environmentTags: {},
     semanticFrame: null, layerFilter: "all",
     packetsEnabled: true, packetSpeedIdx: 1,
-    quest: null,
-    journey: null
+    quest: null
   };
 
   function esc(s) {
@@ -1174,7 +1173,7 @@
       }
       if (state.mode) setStatus("Follow a connected link below, or use ‹ Prev / Next › to walk devices");
       showWalkOnboardHint();
-      if (studio) window.__DS_WALK_QUEST?.syncQuestButton?.(studio);
+      window.__DS_WALK_QUEST?.syncQuestButton?.(studio);
     });
   }
 
@@ -1733,13 +1732,11 @@
   function buildDeviceNav(chambers) {
     const bar = document.getElementById("ds-walk-devices");
     if (!bar) return;
-    const isJourney = state.graph?.kind === "portfolio-journey";
     bar.innerHTML = chambers.map((ch, i) => {
       const theme = zoneTheme(ch.zone);
       const accent = "#" + theme.accent.toString(16).padStart(6, "0");
-      const step = ch.journeyIndex ? `<em class="ds-walk-dev-step">${ch.journeyIndex}</em>` : "";
-      return `<button type="button" class="ds-walk-dev${i === state.navIndex ? " active" : ""}${isJourney ? " ds-walk-dev-journey" : ""}" data-chamber="${ch.id}" title="${esc(ch.label)}${ch.pid ? " · " + ch.pid : ""}">
-        ${step}<i style="background:${accent}"></i><span>${esc(ch.label.slice(0, 16))}</span></button>`;
+      return `<button type="button" class="ds-walk-dev${i === state.navIndex ? " active" : ""}" data-chamber="${ch.id}" title="${esc(ch.label)}${ch.pid ? " · " + ch.pid : ""}">
+        <i style="background:${accent}"></i><span>${esc(ch.label.slice(0, 16))}</span></button>`;
     }).join("");
     bar.querySelectorAll("[data-chamber]").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -2013,12 +2010,7 @@
     if (!ch) return;
     window.__DS_WALK_AUDIO?.sfx?.inspect?.();
     highlightNavChip(ch.id);
-    if (state.graph?.kind === "portfolio-journey" && ch.portfolioFamilyId) {
-      const panel = document.getElementById("ds-field-panel");
-      window.__CPN_JOURNEY_WALK?.renderFieldPanel?.(ch, panel);
-    } else {
-      window.__DS_FIELD_PANEL?.render?.(ch, state.studio, state.graph);
-    }
+    window.__DS_FIELD_PANEL?.render?.(ch, state.studio, state.graph);
     state.overlay?.classList.add("ds-field-panel-open");
     document.getElementById("ds-walk-panel-backdrop")?.removeAttribute("hidden");
   }
@@ -2641,30 +2633,6 @@
     setStatus(`Packet speed · ${PACKET_SPEEDS[state.packetSpeedIdx].label}`);
   }
 
-  function hudHtmlJourney(journey) {
-    const title = journey?.title || "Solution journey";
-    const n = journey?.products?.length || 0;
-    return `<div class="ds-walk-hud">
-      <div class="ds-walk-hud-top">
-        <strong class="ds-walk-title">JOURNEY WALK</strong>
-        <span class="ds-walk-hint">${esc(title)} · ${n} stops · WASD · Where to? · E inspect · Esc exit</span>
-        <button type="button" class="ds-walk-close" title="Exit journey walk">✕</button>
-      </div>
-      <div class="ds-walk-hud-mid">
-        <button type="button" class="ds-walk-btn" data-action="prev-dev" title="Previous stop">‹ Prev</button>
-        <button type="button" class="ds-walk-btn" data-action="next-dev" title="Next stop">Next ›</button>
-        <button type="button" class="ds-walk-btn ds-walk-pkt-toggle" data-action="packets" title="Data flow on links">Packets</button>
-        <button type="button" class="ds-walk-btn primary" data-action="inspect" title="Why this family matters">Why here?</button>
-      </div>
-      <div class="ds-walk-journey-blurb" id="ds-walk-journey-blurb">${esc((journey?.desc || "").slice(0, 220))}${(journey?.desc || "").length > 220 ? "…" : ""}</div>
-      <div class="ds-walk-wayfind" id="ds-walk-wayfind" hidden></div>
-      <div class="ds-walk-links" id="ds-walk-links" hidden></div>
-      <div class="ds-walk-legend" id="ds-walk-legend" hidden></div>
-      <div class="ds-walk-focus" id="ds-walk-focus" hidden></div>
-      <div class="ds-walk-status" id="ds-walk-status">Walk the solution path — tap Where to? or follow the floor route</div>
-    </div>`;
-  }
-
   function hudHtml(tab) {
     const outcomesBtn = tab === "room"
       ? `<button type="button" class="ds-walk-btn ds-walk-btn-spaces" data-action="outcomes" title="Simulated occupancy, location &amp; IoT overlay — room walks only">Insights</button>`
@@ -2963,78 +2931,6 @@
     window.__DS_WALK_QUEST?.end?.(false);
   }
 
-  async function openJourney(journey, graph) {
-    if (!journey || !graph?.chambers?.length) return;
-    if (state.mode) close(true);
-
-    state.journey = journey;
-    state.studio = null;
-    state.mode = "journey";
-
-    let overlay = document.getElementById("cpn-journey-walk-overlay");
-    const gw = document.getElementById("gw");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "cpn-journey-walk-overlay";
-      gw?.appendChild(overlay);
-    } else if (gw && overlay.parentElement !== gw) {
-      gw.appendChild(overlay);
-    }
-
-    state.overlay = overlay;
-    overlay.hidden = false;
-    overlay.removeAttribute("hidden");
-    overlay.setAttribute("aria-hidden", "false");
-    overlay.className = "ds-walk-overlay ds-walk-tour cpn-journey-walk";
-    overlay.innerHTML = `${hudHtmlJourney(journey)}
-      <div class="ds-walk-stage">
-        <div class="ds-walk-panel-backdrop" id="ds-walk-panel-backdrop" hidden data-action="fp-close" title="Click to keep walking" aria-label="Close panel"></div>
-        <div class="ds-walk-crosshair ds-walk-crosshair-plus" aria-hidden="true"></div>
-        <div class="ds-walk-prompt" id="ds-walk-prompt" hidden>Press E to inspect</div>
-        <div class="ds-walk-compass" id="ds-walk-compass" aria-hidden="true"><span>N</span></div>
-        <canvas id="ds-walk-minimap" class="ds-walk-minimap" title="Click a stop to jump there"></canvas>
-        <div class="ds-walk-dpad" id="ds-walk-dpad" aria-label="Move">
-          <button type="button" class="ds-walk-dpad-btn" data-move="fwd" aria-label="Forward">▲</button>
-          <button type="button" class="ds-walk-dpad-btn ds-walk-dpad-mid" data-move="left" aria-label="Left">◀</button>
-          <button type="button" class="ds-walk-dpad-btn ds-walk-dpad-mid" data-move="right" aria-label="Right">▶</button>
-          <button type="button" class="ds-walk-dpad-btn" data-move="back" aria-label="Back">▼</button>
-        </div>
-        <div class="ds-walk-canvas-wrap">
-          <canvas id="ds-walk-canvas"></canvas>
-        </div>
-        <aside class="ds-field-panel" id="ds-field-panel" hidden aria-label="Family details"></aside>
-      </div>
-      ${hudPanelsHtml()}`;
-    document.body.classList.add("cpn-journey-open");
-    bindHud();
-    loadPacketPrefs();
-    applyPacketVisibility();
-
-    const canvas = overlay.querySelector("#ds-walk-canvas");
-    bindInput(canvas);
-    setStatus("Loading solution journey…");
-    await waitForCanvasSize(canvas);
-
-    try {
-      overlay.classList.add("ds-walk-loading");
-      await initCorridor(null, canvas, graph);
-      initFieldSystems(graph);
-      loop();
-      overlay.classList.remove("ds-walk-loading");
-      overlay.classList.remove("ds-walk-fade-out");
-      overlay.classList.add("ds-walk-fade-in");
-      requestAnimationFrame(() => overlay.classList.remove("ds-walk-fade-in"));
-      setStatus(`Stop 1 of ${graph.chambers.length} — use Where to? or walk the path between families`);
-      showWalkOnboardHint();
-    } catch (err) {
-      console.error("[Journey Walk]", err);
-      showWalkError(err?.message === "three-load" ? "3D library failed to load — hard-refresh" : `Journey walk failed: ${err.message}`);
-    }
-
-    state._resize = () => resizeRenderer();
-    window.addEventListener("resize", state._resize);
-  }
-
   async function open(studio) {
     if (!studio || (studio.tab !== "room" && studio.tab !== "network")) {
       studio?.toast?.("Open Network or Room tab first");
@@ -3147,7 +3043,6 @@
   }
 
   function close(silent) {
-    const wasJourney = state.mode === "journey";
     cancelAnimationFrame(state.animId);
     state.animId = 0;
     state._inputCleanup?.();
@@ -3161,11 +3056,7 @@
       state.overlay.setAttribute("aria-hidden", "true");
       state.overlay.innerHTML = "";
     }
-    if (wasJourney) {
-      document.body.classList.remove("cpn-journey-open");
-      state.journey = null;
-    }
-    if (state.studio && !silent && !wasJourney) {
+    if (state.studio && !silent) {
       state.studio.roomView = "diagram";
       window.__DS_PREMIUM?.renderRoomViewToggle?.(state.studio);
       state.studio.scheduleFitView?.();
@@ -3174,7 +3065,7 @@
     window.__DS_WALK_QUEST?.end?.(false);
     window.__DS_WALK_AUDIO?.stop?.();
     state.mode = null;
-    if (!silent && !wasJourney) state.studio = null;
+    if (!silent) state.studio = null;
   }
 
   function debugStats() {
@@ -3211,12 +3102,8 @@
   });
 
   window.__DS_WALK = {
-    open, openJourney, close, rebuild,
-    toggle: s => state.mode ? close(true) : open(s),
-    isOpen: () => !!state.mode,
-    isJourney: () => state.mode === "journey",
-    getGraph: () => state.graph,
-    debugStats, hasRoute: () => !!state.route,
+    open, close, rebuild, toggle: s => state.mode ? close(true) : open(s),
+    isOpen: () => !!state.mode, debugStats, hasRoute: () => !!state.route,
     flyToChamberById
   };
 })();

@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="assets/cpn-ui.css?v=2.81.2"/>
   <link rel="stylesheet" href="assets/cpn-light.css?v=2.81.2"/>
   <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.81.3"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.82.0"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.81.2"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -729,7 +729,6 @@
       color:#e8f6ff;font-size:12px;line-height:1.45;pointer-events:auto}
     #learn-path-banner.show{display:block}
     .lpb-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
-    .lpb-head-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
     .lpb-title{font-size:13px;font-weight:700;color:#fff}
     .lpb-tagline{font-size:11px;color:#b8e8ff;margin-top:2px}
     .lpb-close{background:none;border:none;color:#94a3b8;font-size:18px;line-height:1;cursor:pointer;padding:0 2px}
@@ -9127,15 +9126,7 @@ function renderRecs(recs, missCats, stackCats) {
     });
   }
   if(!recs.length&&!missCats.length) html=`<div class="empty"><h3>Looking good!</h3><p>They have products across all major portfolio areas. Check <strong>Solution packages</strong> for complete solution-set gaps.</p></div>`;
-  const stackFamilies = [...stack].filter(id => nodeById[id]);
-  if (stackFamilies.length >= 2) {
-    html = `<button type="button" class="rc-btn prim" id="pln-walk-stack-btn" style="width:100%;margin-bottom:12px">Walk account stack (${stackFamilies.length} families)</button>` + html;
-  }
   el.innerHTML=html;
-  $("#pln-walk-stack-btn")?.addEventListener("click", () => {
-    const acct = $("#acct-name")?.value?.trim();
-    window.__cpnV2?.openStackJourney?.(stackFamilies, acct ? `Account: ${acct}` : "Account stack");
-  });
 }
 
 function renderReps(reps) {
@@ -9739,7 +9730,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.82.0";
+const APP_VERSION   = "2.81.5";
 const DATA_UPDATED  = "2026-07-08";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -10785,7 +10776,6 @@ STYLE.textContent = `
   .refarch-active.show{display:flex;align-items:center;gap:8px}
   .refarch-active::before{content:"⌖";font-size:13px}
   .refarch-active span{background:rgba(0,0,0,.2);padding:1px 6px;border-radius:8px;font-weight:600}
-  .refarch-active .refarch-sub{font-weight:600;opacity:.85;background:transparent;padding:0}
 `;
 document.head.appendChild(STYLE);
 
@@ -13610,16 +13600,13 @@ function renderLearningPathBanner(useCase){
   }
   const steps = dcloudPathEntries(path);
   if (!steps.length){ hideLearningPathBanner(); return; }
-  const walkBtn = REF_ARCH[useCase]
-    ? `<button type="button" class="lpb-walk-btn" id="lpb-walk-btn" title="3D walk the solution stack">Walk journey</button>`
-    : "";
   el.innerHTML = `
     <div class="lpb-head">
       <div>
         <div class="lpb-title">${escapeHtml(path.title)} learning path</div>
         <div class="lpb-tagline">${escapeHtml(path.tagline || "Recommended hands-on labs for this use case")}</div>
       </div>
-      <div class="lpb-head-actions">${walkBtn}<button type="button" class="lpb-close" aria-label="Dismiss learning path">×</button></div>
+      <button type="button" class="lpb-close" aria-label="Dismiss learning path">×</button>
     </div>
     <div class="lpb-steps">${steps.map((e, i) => {
       const url = dcloudPrimaryUrl(e);
@@ -13633,10 +13620,6 @@ function renderLearningPathBanner(useCase){
       </div>`;
     }).join("")}</div>`;
   el.classList.add("show");
-  $("#lpb-walk-btn")?.addEventListener("click", e => {
-    e.preventDefault();
-    window.__cpnV2?.openPortfolioJourney?.(useCase);
-  });
   el.querySelectorAll("[data-dcloud-id]").forEach(a => {
     a.addEventListener("click", () => dcloudMarkLabDone(a.dataset.dcloudId, true));
   });
@@ -14054,17 +14037,11 @@ function buildRefArchBadge(){
   const b = document.createElement("div");
   b.className = "refarch-active";
   b.id = "refarch-badge";
-  b.innerHTML = `<span id="refarch-name"></span>
-    <button type="button" class="refarch-walk-btn" id="refarch-walk-btn" title="3D walk through this solution stack">Walk journey</button>
-    <button type="button" class="refarch-clear-btn" id="refarch-clear-btn" title="Clear reference architecture overlay" aria-label="Clear">×</button>`;
+  b.innerHTML = `<span id="refarch-name"></span> reference architecture · click to clear`;
   const learn = $("#learn-path-banner");
   if (learn && host === $("#top-chips")) host.insertBefore(b, learn);
   else host.appendChild(b);
-  $("#refarch-clear-btn")?.addEventListener("click", e => { e.stopPropagation(); clearRefArch(); });
-  $("#refarch-walk-btn")?.addEventListener("click", e => {
-    e.stopPropagation();
-    if (activeRefArch) window.__cpnV2?.openPortfolioJourney?.(activeRefArch);
-  });
+  b.addEventListener("click", clearRefArch);
 }
 function applyRefArch(ucName){
   const arch = REF_ARCH[ucName]; if (!arch) return;
@@ -14086,7 +14063,7 @@ function applyRefArch(ucName){
   });
   const lab = dcloudRefArchLab(ucName);
   const labHint = lab ? ` · Try <strong>${escapeHtml(lab.linkLabel || lab.name)}</strong> in dCloud` : "";
-  $("#refarch-name").innerHTML = `${escapeHtml(ucName)} <span class="refarch-sub">reference architecture</span>${labHint}`;
+  $("#refarch-name").innerHTML = `${escapeHtml(ucName)}${labHint}`;
   $("#refarch-badge").classList.add("show");
   renderLearningPathBanner(ucName);
 }
@@ -15760,21 +15737,9 @@ if (document.readyState === "complete") boot();
 else window.addEventListener("load", boot);
 
 window.__cpnV2 = {
-  APP_VERSION, DATA_UPDATED, STORAGE_KEYS, ALL_LEGACY, TIERS, COMPAT_RULES, CATS,
+  APP_VERSION, DATA_UPDATED, STORAGE_KEYS, ALL_LEGACY, TIERS, COMPAT_RULES,
   applyCpnTheme, toggleCpnTheme, syncCpnThemeButtons,
   REF_ARCH, INDUSTRY_TEMPLATES, FIELD_NOTICES, FIELD_NOTICE_BY_PROD,
-  portfolioGraph: {
-    getFamily: id => nodeById[id],
-    findLinks: ids => {
-      const set = new Set(ids);
-      return LINKS.filter(l => set.has(sid(l)) && set.has(tid(l))).map(l => ({
-        source: sid(l), target: tid(l), type: l.type, label: l.label
-      }));
-    },
-    familyHero: id => window.CPN_FAMILY_HERO_IMAGES?.[id] || null,
-    connectionLabel: connectionTypeLabel,
-    connectionDesc: connectionTypeDesc
-  },
   helpers: { $, $$, lsGet, lsSet, lsDel, nameOf, catOf, downloadBlob, escapeHtml, relTime },
   phases: { readState, applyState, clearPlanSession, encodeShareableUrl, decodeShareableUrl,
     exportMarkdown, exportCSV, exportJSON, exportPDF, exportPPTX, exportText,
@@ -15805,8 +15770,7 @@ window.__cpnV2 = {
 <script src="design-studio-walk-audio.js?v=2.79.24"></script>
 <script src="design-studio-walk-models.js?v=2.79.24"></script>
 <script src="design-studio-walk-quest.js?v=2.79.24"></script>
-<script src="design-studio-walk.js?v=2.82.0"></script>
-<script src="portfolio-journey-walk.js?v=2.82.0"></script>
+<script src="design-studio-walk.js?v=2.79.24"></script>
 <script src="design-studio.js?v=2.79.24"></script>
 </body>
 </html>
