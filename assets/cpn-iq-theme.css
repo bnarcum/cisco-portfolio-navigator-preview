@@ -56,17 +56,17 @@
   box-shadow: 0 4px 18px rgba(139, 92, 246, 0.35);
 }
 
-/* Category pills — muted chips */
+/* Category pills — distinct hues (cyan / magenta / green / blue / orange) */
 :root:not([data-theme="light"]) .cp.off {
   background: var(--surface2) !important;
   border-color: var(--border) !important;
   color: var(--muted) !important;
 }
-:root:not([data-theme="light"]) .pn { background: rgba(91, 140, 255, 0.18); color: #c7d7ff; border: 1px solid rgba(91, 140, 255, 0.35); }
-:root:not([data-theme="light"]) .ps { background: rgba(192, 38, 211, 0.14); color: #f0abfc; border: 1px solid rgba(192, 38, 211, 0.3); }
-:root:not([data-theme="light"]) .pc { background: rgba(99, 102, 241, 0.16); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.32); }
-:root:not([data-theme="light"]) .po { background: rgba(59, 130, 246, 0.16); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.32); }
-:root:not([data-theme="light"]) .pb { background: rgba(139, 92, 246, 0.14); color: #ddd6fe; border: 1px solid rgba(139, 92, 246, 0.3); }
+:root:not([data-theme="light"]) .pn { background: rgba(2, 200, 255, 0.2); color: #7eeaff; border: 1px solid rgba(2, 200, 255, 0.55); }
+:root:not([data-theme="light"]) .ps { background: rgba(255, 0, 127, 0.18); color: #ff9fd4; border: 1px solid rgba(255, 0, 127, 0.55); }
+:root:not([data-theme="light"]) .pc { background: rgba(52, 211, 153, 0.18); color: #86efac; border: 1px solid rgba(52, 211, 153, 0.55); }
+:root:not([data-theme="light"]) .po { background: rgba(10, 96, 255, 0.2); color: #93c5fd; border: 1px solid rgba(10, 96, 255, 0.55); }
+:root:not([data-theme="light"]) .pb { background: rgba(255, 144, 0, 0.18); color: #fdba74; border: 1px solid rgba(255, 144, 0, 0.55); }
 
 /* Buttons */
 :root:not([data-theme="light"]) #design-studio-btn {
