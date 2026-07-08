@@ -14,10 +14,10 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.80.1"/>
-  <link rel="stylesheet" href="assets/cpn-light.css?v=2.80.1"/>
-  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.80.1"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.80.1"/>
+  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.81.0"/>
+  <link rel="stylesheet" href="assets/cpn-light.css?v=2.81.0"/>
+  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.81.0"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.81.0"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -1327,7 +1327,7 @@ const ONE_CISCO = {
   },
   aiAccelerated: new Set([
     "ai-defense", "silicon-one", "nexus-one", "hypershield", "catalyst-center",
-    "nexus", "room-systems", "webex-app", "webex-cc", "cloud-control"
+    "nexus", "room-systems", "webex-app", "webex-cc", "cloud-control", "cisco-iq"
   ])
 };
 
@@ -1775,7 +1775,13 @@ const NODES = [
    useCases:["Digital Transformation","Cloud Migration","AI Networking","Network Automation"],
    industries:["Financial Services","Healthcare","Retail","Manufacturing","Education"],
    url:"https://www.cisco.com/c/en/us/solutions/full-stack-observability/index.html",
-   docsUrl:"https://www.cisco.com/c/en/us/solutions/full-stack-observability/index.html"}
+   docsUrl:"https://www.cisco.com/c/en/us/solutions/full-stack-observability/index.html"},
+  {id:"cisco-iq",          name:"Cisco IQ",                    category:"observability",
+   desc:"AI-powered CX front door — unified asset inventory, vulnerability prioritization, contextual troubleshooting, and support intelligence across your Cisco estate. Included with Cisco Support and Professional Services.",
+   useCases:["Digital Transformation","Network Automation","Threat Detection & Response"],
+   industries:["Healthcare","Financial Services","Government","Manufacturing","Education","Retail"],
+   url:"https://iq.cisco.com",
+   docsUrl:"https://www.cisco.com/c/en/us/support/cx/cisco-iq.html"}
 ];
 
 const LINKS = [
@@ -1912,7 +1918,21 @@ const LINKS = [
   {source:"cloud-control",    target:"thousandeyes",      type:"direct",   label:"Network assurance"},
   {source:"cloud-control",    target:"catalyst-center",   type:"adjacent", label:"Network ops"},
   {source:"cloud-control",    target:"meraki-mx",         type:"adjacent", label:"Meraki integration"},
-  {source:"cloud-control",    target:"fso",               type:"adjacent", label:"Observability"}
+  {source:"cloud-control",    target:"fso",               type:"adjacent", label:"Observability"},
+  // Cisco IQ (CX)
+  {source:"cisco-iq",         target:"catalyst-center",   type:"direct",   label:"Campus inventory"},
+  {source:"cisco-iq",         target:"intersight",        type:"direct",   label:"Compute & HCI ops"},
+  {source:"cisco-iq",         target:"cloud-control",     type:"direct",   label:"Collab & network ops"},
+  {source:"cisco-iq",         target:"thousandeyes",      type:"direct",   label:"Path & SaaS context"},
+  {source:"cisco-iq",         target:"splunk",            type:"adjacent", label:"SIEM & log context"},
+  {source:"cisco-iq",         target:"xdr",               type:"adjacent", label:"Security incidents"},
+  {source:"cisco-iq",         target:"vuln-mgmt",         type:"direct",   label:"Risk prioritization"},
+  {source:"cisco-iq",         target:"talos",             type:"direct",   label:"Threat intelligence"},
+  {source:"cisco-iq",         target:"sdwan",             type:"adjacent", label:"WAN estate visibility"},
+  {source:"cisco-iq",         target:"nexus",             type:"adjacent", label:"DC asset context"},
+  {source:"cisco-iq",         target:"ucs",               type:"adjacent", label:"Server lifecycle"},
+  {source:"cisco-iq",         target:"webex-app",         type:"adjacent", label:"Collab estate"},
+  {source:"cisco-iq",         target:"sf-branch",         type:"adjacent", label:"Security estate"}
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -3171,7 +3191,25 @@ const PRODUCTS = [
    url:"https://www.cisco.com/site/us/en/products/observability/index.html"},
   {id:"fso-foundation", name:"FSO Foundation",                family:"fso", status:"current",
    desc:"Entry-level FSO bundle including AppDynamics Premium, ThousandEyes, and Splunk Observability foundation.",
-   url:"https://www.cisco.com/site/us/en/products/observability/index.html"}
+   url:"https://www.cisco.com/site/us/en/products/observability/index.html"},
+
+  // ── CISCO IQ (Current)
+  {id:"iq-assistant",    name:"Cisco IQ AI Assistant",       family:"cisco-iq", status:"current",
+   desc:"Contextual AI copilot across your Cisco estate — synthesizes telemetry, contracts, and support history into actionable guidance with session state per asset.",
+   url:"https://iq.cisco.com",
+   docsUrl:"https://www.cisco.com/c/en/us/support/docs/cx/cisco-iq/release-notes/cx225767-cisco-iq-release-notes-april-2026.html"},
+  {id:"iq-troubleshoot", name:"AI-Powered Troubleshooting",  family:"cisco-iq", status:"current",
+   desc:"Certified troubleshooting assistant leveraging Cisco TAC knowledge — guided remediation to resolve issues faster and reduce case volume.",
+   url:"https://iq.cisco.com",
+   docsUrl:"https://www.cisco.com/c/en/us/support/cx/cisco-iq.html"},
+  {id:"iq-inventory",    name:"Asset Landscape & Inventory", family:"cisco-iq", status:"current",
+   desc:"Real-time, benchmarked view of Cisco assets, configurations, and prioritized risks across networking, security, collaboration, and compute.",
+   url:"https://iq.cisco.com",
+   docsUrl:"https://www.cisco.com/c/en/us/support/cx/cisco-iq.html"},
+  {id:"iq-link",         name:"Cisco IQ Link",               family:"cisco-iq", status:"current",
+   desc:"On-premises Cisco IQ modality — tethered or air-gapped deployment for environments that require local data residency while retaining CX intelligence.",
+   url:"https://www.cisco.com/c/en/us/support/cx/cisco-iq.html",
+   docsUrl:"https://www.cisco.com/c/en/us/support/docs/cx/cisco-iq/faq/cx225779-cisco-iq-frequently-asked-questions.html"}
 ];
 
 // Build lookup maps
@@ -3741,7 +3779,10 @@ const BUNDLES = [
    desc:"Cloud-native omnichannel contact center with AI-powered routing, digital channels, and secure agent access."},
   {name:"Cloud Control Platform",
    products:["cloud-control","webex-app","webex-calling","thousandeyes","catalyst-center"],
-   desc:"AI-native AgenticOps — unified Control Hub, AI Canvas, inventory, alerts, and cross-domain troubleshooting."}
+   desc:"AI-native AgenticOps — unified Control Hub, AI Canvas, inventory, alerts, and cross-domain troubleshooting."},
+  {name:"Cisco IQ Operations",
+   products:["cisco-iq","catalyst-center","intersight","thousandeyes","vuln-mgmt","xdr"],
+   desc:"CX intelligence layer — unified asset landscape, AI troubleshooting, and risk prioritization across your deployed Cisco stack."}
 ];
 
 const LEGACY_NODES = [
@@ -4445,6 +4486,7 @@ function productIconKey(p){
   if (/hyperflex/.test(s)) return "hyperflex";
   if (/ucs|server|blade|c220|c240/.test(s)) return "server";
   if (p?.family === "intersight") return "intersight";
+  if (p?.family === "cisco-iq") return "cx-platform";
   if (/thousandeyes|\bte-/.test(s)) return "thousandeyes";
   if (/\bxdr\b|securex/.test(s)) return "insights";
   if (/splunk|appdynamics|fso/.test(s)) return "chart-line";
@@ -4515,6 +4557,7 @@ function iconKey(n) {
   if (id === "appdynamics")                                      return "chart-line";
   if (id === "splunk")                                           return "chart-bars";
   if (id === "fso")                                              return "dashboard";
+  if (id === "cisco-iq")                                       return "cx-platform";
   // Fallback by category
   return ({networking:"fabric", security:"shield", collaboration:"telepresence",
            computing:"chip", observability:"chart-line"})[n.category] || "product";
@@ -9634,8 +9677,8 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.80.1";
-const DATA_UPDATED  = "2026-06-20";
+const APP_VERSION   = "2.81.0";
+const DATA_UPDATED  = "2026-07-08";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
   current:  "cpn-current-v2",
@@ -9791,6 +9834,7 @@ const TIERS = {
   "appdynamics":       {tier:"Infrastructure / Premium / Enterprise / Enterprise for SAP", model:"Per-CPU subscription", note:"Enterprise required for Business iQ."},
   "splunk":            {tier:"Splunk Cloud / Enterprise / O11y Cloud", model:"Subscription",               note:"Workload pricing or Ingest pricing models."},
   "fso":               {tier:"FSO Platform Subscription",              model:"Subscription",               note:"Unified entry point across Cisco observability portfolio."},
+  "cisco-iq":          {tier:"Included with Cisco Support / PS",       model:"Subscription",               note:"SaaS available now at iq.cisco.com; on-prem tethered and air-gapped modalities coming. No additional charge for eligible contracts."},
   "silicon-one":       {tier:"Embedded in Cisco 8000 / Nexus",         model:"Included with HW",           note:""},
   "nexus-one":         {tier:"Hosting / NaaS / OEM",                   model:"Varies",                     note:""},
 };
@@ -9824,6 +9868,10 @@ const COMPAT_RULES = [
    has:["appdynamics"], anyMissing:["thousandeyes"],
    title:"Pair AppDynamics with ThousandEyes",
    detail:"AppDynamics covers app/business transactions; ThousandEyes covers internet, SaaS, and ISP paths. Together you eliminate the 'blamestorm' between app + network teams."},
+  {id:"iq-cx-visibility", level:"info",
+   has:["catalyst-center","intersight"], anyMissing:["cisco-iq"],
+   title:"Cisco IQ unifies CX visibility across domains",
+   detail:"With campus (Catalyst Center) and compute (Intersight) in scope, Cisco IQ provides a single AI-powered inventory and troubleshooting front door — included with eligible Support contracts."},
   {id:"xdr-needs-sensors", level:"warn",
    has:["xdr"], anyMissing:["secure-endpoint","sf-branch","sf-enterprise","secure-email"],
    title:"XDR needs sensors to correlate",
@@ -9879,6 +9927,10 @@ const REF_ARCH = {
     products:["nexus","aci","silicon-one","splunk"],
     desc:"Nexus 9000 (Silicon One) fabric + ACI for intent-based policy + Splunk for telemetry analytics."
   },
+  "Operational Resilience": {
+    products:["cisco-iq","catalyst-center","intersight","thousandeyes","vuln-mgmt","xdr","talos"],
+    desc:"Cisco IQ as the CX intelligence layer — unified asset landscape, AI troubleshooting, and risk prioritization wired to management planes, observability, and security operations."
+  },
 };
 
 /* ────────────────────────────────────────────────────────────────
@@ -9886,23 +9938,23 @@ const REF_ARCH = {
    ────────────────────────────────────────────────────────────────*/
 const INDUSTRY_TEMPLATES = [
   {id:"hospital", name:"Hospital / Health System", desc:"Clinical Wi-Fi, biomed segmentation, telehealth, secure clinician access.",
-   products:["catalyst-access","catalyst-wireless","catalyst-center","ise","cyber-vision","duo","secure-access","webex-app","webex-calling","ucs","intersight","thousandeyes"]},
+   products:["catalyst-access","catalyst-wireless","catalyst-center","ise","cyber-vision","duo","secure-access","webex-app","webex-calling","ucs","intersight","thousandeyes","cisco-iq"]},
   {id:"k12", name:"K-12 School District", desc:"Cloud-managed Wi-Fi, content filtering, hybrid learning, simple operations.",
    products:["meraki-switches","meraki-wireless","meraki-mx","umbrella","webex-app","duo","ise"]},
   {id:"university", name:"Higher Education Campus", desc:"Hi-density Wi-Fi, research compute, BYOD posture, hybrid collaboration.",
-   products:["catalyst-access","catalyst-core","catalyst-wireless","catalyst-center","ise","duo","webex-app","webex-meetings","room-systems","ucs","intersight","splunk"]},
+   products:["catalyst-access","catalyst-core","catalyst-wireless","catalyst-center","ise","duo","webex-app","webex-meetings","room-systems","ucs","intersight","splunk","cisco-iq"]},
   {id:"bank-branch", name:"Bank Branch + Headquarters", desc:"Secure SD-WAN, ZTNA for staff, robust DC, fraud & SOC analytics.",
-   products:["sdwan","sf-branch","sf-enterprise","secure-access","duo","umbrella","nexus","aci","ucs","hyperflex","intersight","xdr","splunk","talos","webex-cc","webex-calling","thousandeyes"]},
+   products:["sdwan","sf-branch","sf-enterprise","secure-access","duo","umbrella","nexus","aci","ucs","hyperflex","intersight","xdr","splunk","talos","webex-cc","webex-calling","thousandeyes","cisco-iq"]},
   {id:"retail-chain", name:"Retail Chain", desc:"Meraki branch stack, in-store engagement, POS security, contact center.",
    products:["meraki-mx","meraki-switches","meraki-wireless","umbrella","duo","secure-access","webex-cc","webex-app","thousandeyes"]},
   {id:"manufacturing", name:"Manufacturing Plant", desc:"OT/IT convergence, industrial Wi-Fi, plant-floor visibility, edge compute.",
-   products:["industrial-eth","catalyst-wireless","cyber-vision","ise","sf-branch","ucs","intersight","catalyst-center","webex-app"]},
+   products:["industrial-eth","catalyst-wireless","cyber-vision","ise","sf-branch","ucs","intersight","catalyst-center","webex-app","cisco-iq"]},
   {id:"smb", name:"SMB / Mid-Market", desc:"Simple cloud-managed networking, calling, basic security.",
    products:["meraki-mx","meraki-switches","meraki-wireless","webex-calling","webex-app","duo","umbrella"]},
   {id:"saas-startup", name:"SaaS / Cloud-Native Startup", desc:"Identity-first, observability, full-stack monitoring, modern collab.",
    products:["duo","secure-access","umbrella","appdynamics","thousandeyes","splunk","fso","webex-app"]},
   {id:"federal", name:"Federal Agency", desc:"FedRAMP-aligned stack: ZTA, certified hardware, segmentation, audit.",
-   products:["catalyst-access","catalyst-core","catalyst-wireless","catalyst-center","ise","duo","sf-enterprise","secure-access","umbrella","xdr","secure-endpoint","talos","splunk","ucs","intersight","webex-app","webex-meetings"]},
+   products:["catalyst-access","catalyst-core","catalyst-wireless","catalyst-center","ise","duo","sf-enterprise","secure-access","umbrella","xdr","secure-endpoint","talos","splunk","ucs","intersight","webex-app","webex-meetings","cisco-iq"]},
 ];
 
 /* ────────────────────────────────────────────────────────────────

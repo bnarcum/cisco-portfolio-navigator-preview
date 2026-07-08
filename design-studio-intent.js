@@ -80,7 +80,7 @@
     const scores = { "ai-dc": 0, workplaces: 0, resilience: 0 };
     if (/ai-?ready|gpu|nexus|spine|leaf|data center|datacenter|ucs|hyperflex|\baci\b|ml fabric|ndfc/i.test(t)) scores["ai-dc"] += 3;
     if (/webex|room kit|board pro|collab|hybrid|campus|wireless|catalyst center|workplace/i.test(t)) scores.workplaces += 3;
-    if (/sd-?wan|zero trust|sase|firewall|ise|umbrella|resilien|thousandeyes|secure/i.test(t)) scores.resilience += 3;
+    if (/sd-?wan|zero trust|sase|firewall|ise|umbrella|resilien|thousandeyes|secure|cisco\s*iq|troubleshoot|support case/i.test(t)) scores.resilience += 3;
     if (/future-?proofed workplace/i.test(t)) scores.workplaces += 5;
     if (/digital resilience/i.test(t)) scores.resilience += 5;
     if (/ai-?ready data center/i.test(t)) scores["ai-dc"] += 5;

@@ -61,6 +61,7 @@ const ICON_MAP = {
   touch: "icon_tablet.svg",
   product: "icon_software.svg",
   thousandeyes: "icon_thousandeyes.svg",
+  "cx-platform": "icon_customer_journey_platform.svg",
 };
 
 const ART_LAYER_IDS = ["art", "Layer_2", "Outlines_"];
