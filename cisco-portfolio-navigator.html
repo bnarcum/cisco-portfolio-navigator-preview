@@ -14,10 +14,10 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.80.0"/>
-  <link rel="stylesheet" href="assets/cpn-light.css?v=2.80.0"/>
-  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.80.0"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.80.0"/>
+  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.80.1"/>
+  <link rel="stylesheet" href="assets/cpn-light.css?v=2.80.1"/>
+  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.80.1"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.80.1"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -92,17 +92,17 @@
     /* Bottom band — pinned static so drift/beams never shimmer the lower canvas */
     .bg-glow-floor{position:absolute;inset:0;pointer-events:none;
       background:
-        radial-gradient(ellipse 52% 44% at 78% 68%, rgba(91,140,255,.2) 0%, transparent 65%),
-        radial-gradient(ellipse 46% 38% at 50% 88%, rgba(139,92,246,.14) 0%, transparent 62%)}
+        radial-gradient(ellipse 52% 44% at 78% 68%, rgba(91,140,255,.28) 0%, transparent 65%),
+        radial-gradient(ellipse 46% 38% at 50% 88%, rgba(139,92,246,.2) 0%, transparent 62%)}
     .bg-glow{position:absolute;inset:-20%;opacity:1;
       background:
-        radial-gradient(ellipse 58% 48% at 22% 32%, rgba(59,130,246,.26) 0%, transparent 68%),
-        radial-gradient(ellipse 40% 35% at 50% 42%, rgba(139,92,246,.14) 0%, transparent 70%)}
+        radial-gradient(ellipse 58% 48% at 22% 32%, rgba(59,130,246,.34) 0%, transparent 68%),
+        radial-gradient(ellipse 40% 35% at 50% 42%, rgba(139,92,246,.2) 0%, transparent 70%)}
     .bg-grid{position:absolute;inset:0;opacity:1;
       background-image:
-        linear-gradient(rgba(91,140,255,.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(91,140,255,.05) 1px, transparent 1px),
-        radial-gradient(circle, rgba(139,92,246,.18) 1px, transparent 1px);
+        linear-gradient(rgba(91,140,255,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(91,140,255,.08) 1px, transparent 1px),
+        radial-gradient(circle, rgba(139,92,246,.26) 1px, transparent 1px);
       background-size:72px 72px, 72px 72px, 36px 36px;
       background-position:0 0, 0 0, 18px 18px;
       animation:bg-grid-pan 58.33s linear infinite}
@@ -9634,7 +9634,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.80.0";
+const APP_VERSION   = "2.80.1";
 const DATA_UPDATED  = "2026-06-20";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -15439,10 +15439,10 @@ function initAmbientBackground(){
         const dx = a.x - b.x, dy = a.y - b.y;
         const dist = Math.hypot(dx, dy);
         if (dist < LINK_DIST){
-          const alpha = 0.12;
+          const alpha = 0.18;
           const violet = (i + j) % 5 === 0;
           ctx.strokeStyle = violet
-            ? `rgba(139,92,246,${alpha * 0.75})`
+            ? `rgba(139,92,246,${alpha * 0.8})`
             : `rgba(91,140,255,${alpha})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -15454,8 +15454,8 @@ function initAmbientBackground(){
     }
 
     for (const n of nodes){
-      const alpha = 0.3;
-      const radius = 1.65;
+      const alpha = 0.38;
+      const radius = 1.75;
       ctx.fillStyle = `rgba(91,140,255,${alpha})`;
       ctx.beginPath();
       ctx.arc(n.x, n.y, radius, 0, Math.PI * 2);

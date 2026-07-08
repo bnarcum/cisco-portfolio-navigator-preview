@@ -140,15 +140,16 @@
   box-shadow: 0 4px 18px rgba(91, 140, 255, 0.3);
 }
 
-/* Animated background — idle calm, bloom on focus */
+/* Animated background — visible at idle, full bloom on focus */
 :root:not([data-theme="light"]) .bg-grid {
-  opacity: 0.72;
+  opacity: 0.95;
 }
 :root:not([data-theme="light"]) #bg-mesh {
-  opacity: 0.55;
+  opacity: 0.88;
 }
-:root:not([data-theme="light"]) .bg-glow {
-  opacity: 0.85;
+:root:not([data-theme="light"]) .bg-glow,
+:root:not([data-theme="light"]) .bg-glow-floor {
+  opacity: 1;
 }
 :root:not([data-theme="light"]) body.pillar-focus .bg-grid,
 :root:not([data-theme="light"]) body.graph-focus .bg-grid {
@@ -156,10 +157,6 @@
 }
 :root:not([data-theme="light"]) body.pillar-focus #bg-mesh,
 :root:not([data-theme="light"]) body.graph-focus #bg-mesh {
-  opacity: 0.82;
-}
-:root:not([data-theme="light"]) body.pillar-focus .bg-glow,
-:root:not([data-theme="light"]) body.graph-focus .bg-glow {
   opacity: 1;
 }
 
