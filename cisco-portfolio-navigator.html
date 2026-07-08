@@ -16,7 +16,7 @@
   </script>
   <link rel="stylesheet" href="assets/cpn-ui.css?v=2.81.2"/>
   <link rel="stylesheet" href="assets/cpn-light.css?v=2.81.2"/>
-  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.82.0"/>
+  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.82.1"/>
   <link rel="stylesheet" href="design-studio.css?v=2.81.2"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -3927,8 +3927,8 @@ ucEl.addEventListener("change",  () => { activeUC  = ucEl.value;  applyFilters()
 indEl.addEventListener("change", () => {
   activeInd = indEl.value;
   if (activeIndustryTemplate) {
-    const expected = WIZARD_INDUSTRY_VERTICAL[activeIndustryTemplate] || "";
-    if (activeInd !== expected) clearIndustryTemplate({ keepStack: true });
+    const expected = window.WIZARD_INDUSTRY_VERTICAL?.[activeIndustryTemplate] || "";
+    if (activeInd !== expected) window.clearIndustryTemplate?.({ keepStack: true });
   }
   applyFilters();
 });
@@ -3941,6 +3941,13 @@ const VIEW_MODE_KEY  = "cpn-view-mode-v2";
 const VIEW_FOCUS_KEY = "cpn-view-focus-v2";
 let viewMode  = "overview";   // "overview" | "families" | "composition" | "spatial"
 let viewFocus = null;         // family id when in composition mode
+function updateIndustryDockVisibility() {
+  const dock = document.getElementById("industry-dock");
+  if (!dock) return;
+  const show = viewMode === "overview" && !activeIndustryTemplate;
+  dock.hidden = !show;
+  dock.classList.toggle("show", show);
+}
 let viewNodes = NODES.slice();
 let viewLinks = LINKS.slice();
 
@@ -8616,7 +8623,7 @@ function resetAll() {
   if (window.__cpnV2?.phases?.clearPlanSession) window.__cpnV2.phases.clearPlanSession();
 
   activeCats=new Set(Object.keys(CATS)); activeUC=""; activeInd=""; clearPillarFilter();
-  clearIndustryTemplate();
+  window.clearIndustryTemplate?.();
   ucEl.value=""; indEl.value="";
   facetState.status = new Set(["current"]);
   facetState.tier.clear();
@@ -9797,7 +9804,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.82.0";
+const APP_VERSION   = "2.82.1";
 const DATA_UPDATED  = "2026-07-08";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -12088,14 +12095,9 @@ function renderIndustryBanner() {
   el.classList.add("show");
 }
 function hideIndustryBanner() { $("#industry-banner")?.classList.remove("show"); }
-function updateIndustryDockVisibility() {
-  const dock = $("#industry-dock"); if (!dock) return;
-  const show = viewMode === "overview" && !activeIndustryTemplate;
-  dock.hidden = !show;
-  dock.classList.toggle("show", show);
-}
 window.applyIndustryTemplate = applyIndustryTemplate;
 window.clearIndustryTemplate = clearIndustryTemplate;
+window.WIZARD_INDUSTRY_VERTICAL = WIZARD_INDUSTRY_VERTICAL;
 function wizardUpdateHeader() {
   const panel = $("#gw-panel");
   const meta = WIZARD_STEP_META[wizardState.step] || WIZARD_STEP_META.default;
