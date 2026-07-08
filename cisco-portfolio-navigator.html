@@ -293,6 +293,60 @@
     #tn{font-weight:600;margin-bottom:2px;color:var(--text)}
     #tc{font-size:11px;color:var(--muted);line-height:1.45}
 
+    /* HOLOGRAM VIDEO PLAYER */
+    #holo-player{position:fixed;display:none;z-index:420;pointer-events:auto;
+      width:min(280px,88vw);filter:drop-shadow(0 16px 42px rgba(0,212,255,.22))}
+    #holo-player.is-visible{display:block}
+    #holo-player.is-pinned .holo-frame{border-color:rgba(0,212,255,.65);
+      box-shadow:0 0 0 1px rgba(0,212,255,.25),0 20px 50px rgba(0,0,0,.55)}
+    .holo-frame{position:relative;border-radius:10px;overflow:hidden;
+      background:linear-gradient(165deg,rgba(6,18,32,.96),rgba(4,12,22,.98));
+      border:1px solid rgba(0,212,255,.35)}
+    .holo-scanlines{pointer-events:none;position:absolute;inset:0;z-index:3;opacity:.18;
+      background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.08) 2px,rgba(0,212,255,.08) 4px)}
+    .holo-projector{pointer-events:none;position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+      width:42px;height:6px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,212,255,.55),transparent 70%)}
+    .holo-media{position:relative;aspect-ratio:16/9;background:#020810}
+    .holo-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+    .holo-embed,.holo-video{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;background:#000}
+    .holo-embed.is-playing,.holo-video.is-playing{display:block}
+    .holo-poster.is-hidden{display:none}
+    .holo-meta{padding:8px 10px 4px}
+    .holo-title{font-size:12px;font-weight:600;color:#e8f6ff;line-height:1.35}
+    .holo-dur{font-size:10px;color:#7dd3fc;margin-top:2px}
+    .holo-actions{display:flex;align-items:center;gap:8px;padding:4px 10px 10px}
+    .holo-play-btn,.holo-close{
+      font:inherit;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;transition:all .15s}
+    .holo-play-btn{flex:1;padding:6px 10px;border:1px solid rgba(0,212,255,.45);
+      background:rgba(0,212,255,.12);color:#b8f0ff}
+    .holo-play-btn:hover{background:rgba(0,212,255,.22)}
+    .holo-ext{font-size:10px;color:#7dd3fc;text-decoration:none;white-space:nowrap}
+    .holo-ext:hover{color:#fff;text-decoration:underline}
+    .holo-close{position:absolute;top:6px;right:6px;z-index:5;width:24px;height:24px;padding:0;
+      border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.55);color:#fff;line-height:1}
+    .holo-close:hover{border-color:rgba(0,212,255,.6);color:#7dd3fc}
+    g.nd .vid-badge{pointer-events:none;font-size:9px;font-weight:700;fill:#02C8FF;
+      text-shadow:0 0 6px rgba(0,212,255,.8)}
+    .p-video-card{
+      border-radius:10px;padding:12px 14px;margin-bottom:12px;
+      background:linear-gradient(145deg,rgba(0,40,60,.55),rgba(0,20,35,.7));
+      border:1px solid rgba(0,212,255,.28)}
+    .p-video-tagline{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px}
+    .p-video-hint{font-size:11px;color:#d8ecfa;margin-bottom:10px;line-height:1.45}
+    .p-video-entry{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,212,255,.12)}
+    .p-video-entry:last-child{border-bottom:none;padding-bottom:0}
+    .p-video-thumb{width:96px;height:54px;border-radius:6px;object-fit:cover;flex-shrink:0;
+      border:1px solid rgba(0,212,255,.25)}
+    .p-video-entry-title{font-size:12px;font-weight:600;color:#e8f6ff;line-height:1.35}
+    .p-video-entry-meta{font-size:10px;color:#7dd3fc;margin-top:3px}
+    .p-video-entry-link{font-size:10px;color:#00d4ff;margin-top:4px;display:inline-block}
+    @media (hover:none){
+      #holo-player{width:min(300px,92vw)}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .holo-scanlines{display:none}
+    }
+
     /* LINK "WHY CONNECTED" CARD */
     #link-why-card{position:fixed;display:none;z-index:410;pointer-events:none;
       max-width:min(300px,92vw);padding:11px 13px;border-radius:10px;
@@ -1188,6 +1242,27 @@
   <svg id="gs"></svg>
 </div>
 <div id="tip"><div id="tn"></div><div id="tc"></div></div>
+<div id="holo-player" aria-hidden="true" role="complementary" aria-label="Product video preview">
+  <div class="holo-frame">
+    <div class="holo-scanlines"></div>
+    <div class="holo-projector"></div>
+    <button type="button" class="holo-close" aria-label="Close video preview">×</button>
+    <div class="holo-media">
+      <img class="holo-poster" alt="" decoding="async">
+      <iframe class="holo-embed" title="Product video" allow="autoplay; encrypted-media; picture-in-picture"
+        referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
+      <video class="holo-video" muted playsinline loop preload="metadata"></video>
+    </div>
+    <div class="holo-meta">
+      <div class="holo-title"></div>
+      <div class="holo-dur"></div>
+    </div>
+    <div class="holo-actions">
+      <button type="button" class="holo-play-btn">▶ Preview</button>
+      <a class="holo-ext" target="_blank" rel="noopener noreferrer">Open ↗</a>
+    </div>
+  </div>
+</div>
 <div id="link-why-card" aria-hidden="true">
   <div class="lwc-head"><span class="lwc-type"></span><span class="lwc-label"></span></div>
   <div class="lwc-nodes"></div>
@@ -4670,6 +4745,10 @@ function buildNodeGroup(sel){
     .attr("y", d => d._r + 14).text(d => d._shortName || d.name)
     .style("font-size","11px").style("font-weight","500").style("fill", graphLabels().default)
     .style("text-anchor","middle").style("pointer-events","none");
+  inner.append("text").attr("class", "vid-badge")
+    .attr("x", d => d._r * 0.62).attr("y", d => -d._r * 0.62)
+    .attr("text-anchor", "middle").text("▶")
+    .style("display", "none").style("pointer-events", "none");
 }
 
 // Create or refresh matrix photo thumbnails on update — not only on enter.
@@ -5668,6 +5747,195 @@ function updateOverviewDeck(){
     .text(ONE_CISCO.aiLabel);
 }
 
+// ── Hologram video player (phases A–C) — must init before rebindGraph / applyViewLevel
+let VIDEO_ENTRIES = [];
+let VIDEO_DEFAULTS = {};
+const videoByProduct = new Map();
+const videoByFamily = new Map();
+const HOLO_PREVIEW_DELAY = 520;
+const HOLO_SHORT_MAX_SEC = 60;
+let holoPinned = false;
+let holoHoverTimer = null;
+let holoPreviewTimer = null;
+let holoCurrentEntry = null;
+let holoCurrentNodeId = null;
+const holoEl = document.getElementById("holo-player");
+const holoPoster = holoEl?.querySelector(".holo-poster");
+const holoEmbed = holoEl?.querySelector(".holo-embed");
+const holoVideo = holoEl?.querySelector(".holo-video");
+const holoTitle = holoEl?.querySelector(".holo-title");
+const holoDur = holoEl?.querySelector(".holo-dur");
+const holoPlayBtn = holoEl?.querySelector(".holo-play-btn");
+const holoExt = holoEl?.querySelector(".holo-ext");
+const holoCloseBtn = holoEl?.querySelector(".holo-close");
+const holoTouchDevice = () => window.matchMedia("(hover: none), (pointer: coarse)").matches;
+
+function rebuildVideoIndex(){
+  videoByProduct.clear();
+  videoByFamily.clear();
+  for (const e of VIDEO_ENTRIES){
+    const rank = (e.primary ? 2 : 1) - ((e.durationSec || 999) / 10000);
+    for (const p of e.products || []){
+      const cur = videoByProduct.get(p);
+      if (!cur || rank > cur._rank) videoByProduct.set(p, Object.assign({}, e, { _rank: rank }));
+    }
+    for (const f of e.families || []){
+      const cur = videoByFamily.get(f);
+      if (!cur || rank > cur._rank) videoByFamily.set(f, Object.assign({}, e, { _rank: rank }));
+    }
+  }
+}
+
+function holoEnabledForView(){
+  return viewMode === "all-products" || viewMode === "composition";
+}
+
+function holoForNode(d){
+  if (!VIDEO_ENTRIES.length || !d) return null;
+  if (d._kind === "product"){
+    return videoByProduct.get(d.id) || videoByProduct.get(d._productRef?.id) || null;
+  }
+  if (d._kind === "family") return videoByFamily.get(d.id) || null;
+  if (prodById[d.id]) return videoByProduct.get(d.id) || videoByFamily.get(prodById[d.id].family) || null;
+  return videoByFamily.get(d.id) || null;
+}
+
+function holoEnabledForNode(d){
+  if (!holoEnabledForView() || !d) return false;
+  if (viewMode === "composition" && d._kind !== "product" && d._kind !== "family") return false;
+  if (viewMode === "all-products" && d._kind === "pillar") return false;
+  return !!holoForNode(d);
+}
+
+function holoVisible(){ return holoEl?.classList.contains("is-visible"); }
+
+function holoStopPlayback(){
+  if (holoEmbed){
+    holoEmbed.classList.remove("is-playing");
+    holoEmbed.removeAttribute("src");
+  }
+  if (holoVideo){
+    holoVideo.classList.remove("is-playing");
+    holoVideo.pause();
+    holoVideo.removeAttribute("src");
+  }
+  holoPoster?.classList.remove("is-hidden");
+}
+
+function holoEmbedSrc(entry, autoplay){
+  if (!entry?.embedUrl) return "";
+  const sep = entry.embedUrl.includes("?") ? "&" : "?";
+  return `${entry.embedUrl}${sep}autoplay=${autoplay ? 1 : 0}&mute=1&controls=${autoplay ? 0 : 1}&modestbranding=1&rel=0`;
+}
+
+function holoStartPlayback(entry){
+  if (!entry || !holoEl) return;
+  holoStopPlayback();
+  if (entry.previewUrl && entry.provider !== "youtube"){
+    holoVideo.src = entry.previewUrl;
+    holoVideo.classList.add("is-playing");
+    holoPoster?.classList.add("is-hidden");
+    holoVideo.play().catch(() => {});
+    return;
+  }
+  if (entry.embedUrl && holoEmbed){
+    holoEmbed.src = holoEmbedSrc(entry, true);
+    holoEmbed.classList.add("is-playing");
+    holoPoster?.classList.add("is-hidden");
+  }
+}
+
+function holoRenderEntry(entry){
+  if (!entry || !holoEl) return;
+  holoCurrentEntry = entry;
+  holoTitle.textContent = entry.linkLabel || entry.name || "Product video";
+  holoDur.textContent = entry.duration ? `▶ ${entry.duration}` : "";
+  if (holoPoster){
+    holoPoster.src = entry.thumbnail || "";
+    holoPoster.alt = entry.linkLabel || entry.name || "";
+    holoPoster.classList.remove("is-hidden");
+  }
+  if (holoExt){
+    holoExt.href = entry.url || "#";
+    holoExt.style.display = entry.url ? "" : "none";
+  }
+  holoStopPlayback();
+}
+
+function moveHolo(ev){
+  if (!holoEl || !holoVisible()) return;
+  const { w, h } = getDims();
+  const cardW = holoEl.offsetWidth || 280;
+  const cardH = holoEl.offsetHeight || 200;
+  let x = ev.clientX + 18;
+  let y = ev.clientY - cardH - 12;
+  if (x + cardW > w - 8) x = ev.clientX - cardW - 18;
+  if (y < 8) y = ev.clientY + 18;
+  if (y + cardH > h - 8) y = h - cardH - 8;
+  holoEl.style.left = `${Math.max(8, x)}px`;
+  holoEl.style.top = `${Math.max(8, y)}px`;
+}
+
+function clearHoloTimers(){
+  if (holoHoverTimer){ clearTimeout(holoHoverTimer); holoHoverTimer = null; }
+  if (holoPreviewTimer){ clearTimeout(holoPreviewTimer); holoPreviewTimer = null; }
+}
+
+function hideHolo(force){
+  if (holoPinned && !force) return;
+  clearHoloTimers();
+  holoEl?.classList.remove("is-visible", "is-pinned");
+  holoEl?.setAttribute("aria-hidden", "true");
+  holoStopPlayback();
+  holoCurrentEntry = null;
+  holoCurrentNodeId = null;
+  holoPinned = false;
+  if (holoPlayBtn) holoPlayBtn.textContent = "▶ Preview";
+}
+
+function scheduleHoloPreview(entry){
+  clearHoloTimers();
+  if (holoTouchDevice() || holoPinned) return;
+  if (!entry || (entry.durationSec || 999) > HOLO_SHORT_MAX_SEC) return;
+  holoPreviewTimer = setTimeout(() => {
+    if (holoCurrentEntry?.id === entry.id && holoVisible()) holoStartPlayback(entry);
+  }, HOLO_PREVIEW_DELAY);
+}
+
+function showHolo(ev, d){
+  const entry = holoForNode(d);
+  if (!entry) return false;
+  if (typeof hideTip === "function") hideTip();
+  if (holoCurrentNodeId === d.id && holoVisible()){ moveHolo(ev); return true; }
+  holoCurrentNodeId = d.id;
+  holoRenderEntry(entry);
+  holoEl.classList.add("is-visible");
+  holoEl.setAttribute("aria-hidden", "false");
+  moveHolo(ev);
+  scheduleHoloPreview(entry);
+  return true;
+}
+
+function pinHolo(){
+  if (!holoCurrentEntry) return;
+  holoPinned = true;
+  holoEl?.classList.add("is-pinned");
+  clearHoloTimers();
+  holoStartPlayback(holoCurrentEntry);
+  if (holoPlayBtn) holoPlayBtn.textContent = "▶ Playing";
+}
+
+function applyVideoNodeBadges(){
+  if (!ndEl) return;
+  ndEl.select(".vid-badge").style("display", d => holoEnabledForView() && holoForNode(d) ? null : "none");
+}
+
+if (holoPlayBtn) holoPlayBtn.addEventListener("click", e => { e.stopPropagation(); pinHolo(); });
+if (holoCloseBtn) holoCloseBtn.addEventListener("click", e => { e.stopPropagation(); hideHolo(true); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && holoVisible()) hideHolo(true);
+});
+
 // ── Rebind selections to current viewNodes / viewLinks and restart simulation.
 //    Called by applyViewLevel() and any other code that mutates the view set.
 function rebindGraph(opts){
@@ -5781,6 +6049,8 @@ function rebindGraph(opts){
             if (viewMode === "composition"){
               compositionHoverId = d.id;
               applyCompositionInteractionStyles(selected);
+              if (holoEnabledForNode(d)) showHolo(ev, d);
+              else if (d !== selected) showCompositionNodeTip(ev, d);
             } else {
               if (usePillarLayout()){
                 pillarHoverId = d.id;
@@ -5788,13 +6058,17 @@ function rebindGraph(opts){
                 applyPillarNodeVisualState(selected);
                 const zk = d3.zoomTransform(svgEl).k;
                 const zf = singlePillarFocused() ? 0 : pillarZoomLabelFade(zk);
-                if (zf === 0 && d !== selected) showNodeTip(ev, d);
+                if (zf === 0 && d !== selected && !holoEnabledForNode(d)) showNodeTip(ev, d);
               }
               else if (viewMode === "all-products"){ pillarHoverId = d.id; applyAllProductsNodeStyles(selected); }
-              if (d !== selected) showNodeTip(ev, d);
+              if (holoEnabledForNode(d)) showHolo(ev, d);
+              else if (d !== selected) showNodeTip(ev, d);
             }
           })
-          .on("mousemove", ev => { if (hoverCardsEnabled()) moveTip(ev); })
+          .on("mousemove", ev => {
+            if (holoVisible()) moveHolo(ev);
+            else if (hoverCardsEnabled()) moveTip(ev);
+          })
           .on("mouseout", ()=>{
             if (viewMode === "composition"){
               compositionHoverId = null;
@@ -5807,6 +6081,7 @@ function rebindGraph(opts){
               pillarHoverId = null;
               applyAllProductsNodeStyles(selected);
             }
+            if (!holoPinned) hideHolo();
             hideTip();
           });
         buildNodeGroup(g);
@@ -5895,9 +6170,10 @@ function rebindGraph(opts){
     } else sim.alpha(0.85).restart();
   }
   if (typeof watchDirectNodeClicks === "function") watchDirectNodeClicks();
+  if (typeof applyVideoNodeBadges === "function") applyVideoNodeBadges();
 }
 
-svg.on("click",() => { selected=null; clearLinkSelection(); resetHL(); closePanel(); });
+svg.on("click",() => { selected=null; clearLinkSelection(); resetHL(); closePanel(); if (typeof hideHolo === "function") hideHolo(true); });
 sim.on("tick",() => {
   if (viewMode === "composition") syncCompositionPositions();
   if (lviz) lviz.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y)
@@ -7788,6 +8064,8 @@ function applyViewLevel(mode, opts){
   updateCanvasFocusState();
   if (opts.focusPillar) setAmbientPillarTint(opts.focusPillar);
   else if (mode === "overview" || mode === "all-products" || mode === "composition") setAmbientPillarTint(null);
+  if (typeof hideHolo === "function") hideHolo(true);
+  if (typeof applyVideoNodeBadges === "function") applyVideoNodeBadges();
   };
 
   if (opts.initial || prev === mode) applySwitch();
@@ -9718,7 +9996,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.81.3";
+const APP_VERSION   = "2.83.0";
 const DATA_UPDATED  = "2026-07-08";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -12991,19 +13269,23 @@ const PANEL_LEARNING_TIER = {
     dcloudLimit: 1,
     skillsLimit: 1,
     partnerLimit: 1,
+    videoLimit: 1,
     starter: true,
     dcloudHint: "Recommended starting point for this family — open a product below for SKU-specific labs.",
     skillsHint: "Foundational course for this portfolio area.",
-    dcloudNote: "Open a product in this family for hands-on labs matched to that device or platform."
+    dcloudNote: "Open a product in this family for hands-on labs matched to that device or platform.",
+    videoHint: "Family overview clip — open a product for device-specific videos."
   },
   product: {
     dcloudLimit: 4,
     skillsLimit: 2,
     partnerLimit: 1,
+    videoLimit: 2,
     starter: false,
     dcloudHint: null,
     skillsHint: null,
-    dcloudNote: null
+    dcloudNote: null,
+    videoHint: null
   }
 };
 
@@ -13069,6 +13351,119 @@ async function loadLearningLinks(){
   if (typeof window.__LEARNING_BOOT !== "undefined" && window.__LEARNING_BOOT) {
     apply(window.__LEARNING_BOOT);
     try { delete window.__LEARNING_BOOT; } catch (_) {}
+  }
+}
+
+async function loadVideoLinks(){
+  const apply = (data) => {
+    VIDEO_ENTRIES = (Array.isArray(data) ? data : (data.entries || []));
+    Object.assign(VIDEO_DEFAULTS, data.defaults || {});
+    rebuildVideoIndex();
+    if (typeof applyVideoNodeBadges === "function") applyVideoNodeBadges();
+  };
+  try {
+    const res = await fetch("video-links.json", { cache: "no-cache" });
+    if (res.ok) {
+      apply(await res.json());
+      return;
+    }
+  } catch (_) { /* file:// or offline */ }
+  if (typeof window.__VIDEO_BOOT !== "undefined" && window.__VIDEO_BOOT) {
+    apply(window.__VIDEO_BOOT);
+    try { delete window.__VIDEO_BOOT; } catch (_) {}
+  }
+}
+
+function videoRankEntries({ familyIds = [], productIds = [], limit = 2, requireProductOrFamily = true } = {}){
+  if (!VIDEO_ENTRIES.length) return [];
+  const connected = dcloudConnectedFamilyIds(familyIds);
+  const ctx = { familyIds, productIds, connected, connectedBonus: true };
+  const scored = VIDEO_ENTRIES.map(e => {
+    const productSpecific = (e.products?.length ?? 0) > 0;
+    const familyHit = familyIds.some(f => e.families?.includes(f));
+    const productHit = productIds.some(p => e.products?.includes(p));
+    if (productSpecific){
+      if (!productHit && !familyHit) return null;
+    } else if (requireProductOrFamily && !familyHit && !productHit) {
+      return null;
+    }
+    const score = learningScoreEntry(e, ctx);
+    return { entry: e, score };
+  }).filter(Boolean);
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (b.entry.primary !== a.entry.primary) return (b.entry.primary ? 1 : 0) - (a.entry.primary ? 1 : 0);
+    const bSpec = (b.entry.products?.length || 99) + (b.entry.families?.length || 99);
+    const aSpec = (a.entry.products?.length || 99) + (a.entry.families?.length || 99);
+    if (aSpec !== bSpec) return aSpec - bSpec;
+    return (a.entry.linkLabel || a.entry.name).localeCompare(b.entry.linkLabel || b.entry.name);
+  });
+  const seen = new Set();
+  const out = [];
+  for (const { entry } of scored) {
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    out.push(entry);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+function videoLinksFor({ familyId, productId, kind = "node", limit } = {}){
+  const product = productId ? prodById[productId] : null;
+  const fam = familyId || product?.family;
+  const tier = panelLearningTier(kind);
+  return videoRankEntries({
+    familyIds: fam ? [fam] : [],
+    productIds: productId ? [productId] : [],
+    limit: limit ?? tier.videoLimit,
+    requireProductOrFamily: true
+  });
+}
+
+function renderVideoPanelEntries(entries){
+  return entries.map(e => `<div class="p-video-entry">
+    <img class="p-video-thumb" src="${escapeHtml(e.thumbnail || "")}" alt="" loading="lazy" decoding="async">
+    <div>
+      <div class="p-video-entry-title">${escapeHtml(e.linkLabel || e.name)}</div>
+      <div class="p-video-entry-meta">${escapeHtml(e.duration || "")}${e.hint ? ` · ${escapeHtml(e.hint)}` : ""}</div>
+      <a class="p-video-entry-link" href="${escapeHtml(e.url || "#")}" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+  </div>`).join("");
+}
+
+function insertVideoSection(id, kind){
+  const pb = $("#pbody");
+  if (!pb || pb.querySelector(".p-video")) return;
+  if (!VIDEO_ENTRIES.length) return;
+  const product = kind === "product" ? prodById[id] : null;
+  const familyId = kind === "product" ? product?.family : id;
+  const tier = panelLearningTier(kind);
+  const entries = videoLinksFor(
+    kind === "product"
+      ? { productId: id, familyId, kind: "product" }
+      : { familyId: id, kind: "node" }
+  );
+  if (!entries.length) return;
+  const hint = tier.videoHint || VIDEO_DEFAULTS.sectionHint || VIDEO_DEFAULTS.familyHint || "";
+  const sec = document.createElement("div");
+  sec.className = "p-sec p-video" + (tier.starter ? " p-video--starter" : "");
+  sec.innerHTML = `<div class="p-video-card">
+    <div class="p-video-tagline">${escapeHtml(VIDEO_DEFAULTS.sectionTitle || "Watch first")}</div>
+    ${hint ? `<div class="p-video-hint">${escapeHtml(hint)}</div>` : ""}
+    ${renderVideoPanelEntries(entries)}
+    ${VIDEO_DEFAULTS.hoverNote ? `<div class="p-video-hint" style="margin-top:8px;margin-bottom:0;font-size:10px;opacity:.85">${escapeHtml(VIDEO_DEFAULTS.hoverNote)}</div>` : ""}
+  </div>`;
+  const matrix = pb.querySelector(".p-matrix-link");
+  if (matrix) matrix.insertAdjacentElement("afterend", sec);
+  else {
+    const desc = pb.querySelector(".p-desc");
+    if (desc) desc.insertAdjacentElement("afterend", sec);
+    else {
+      const anchor = pb.querySelector(".add-stack-btn");
+      if (anchor) pb.insertBefore(sec, anchor);
+      else pb.appendChild(sec);
+    }
   }
 }
 
@@ -13514,7 +13909,9 @@ function dcloudGuidedRecommendationsHtml(){
 }
 
 function insertDcloudLinks(id, kind){
-  const pb = $("#pbody"); if (!pb || pb.querySelector(".p-dcloud")) return;
+  const pb = $("#pbody"); if (!pb) return;
+  insertVideoSection(id, kind);
+  if (pb.querySelector(".p-dcloud")) return;
   const product = kind === "product" ? prodById[id] : null;
   const familyId = kind === "product" ? product?.family : id;
   const tier = panelLearningTier(kind);
@@ -13561,6 +13958,7 @@ function refreshDcloudPanelIfOpen(){
   const pb = $("#pbody");
   const panel = $("#panel");
   if (!pb || !panel?.classList.contains("open") || !pb.dataset.lastId) return;
+  pb.querySelector(".p-video")?.remove();
   pb.querySelector(".p-dcloud")?.remove();
   pb.querySelectorAll(".p-learn").forEach(el => el.remove());
   insertDcloudLinks(pb.dataset.lastId, pb.dataset.lastKind || "node");
@@ -15652,11 +16050,14 @@ function wireThemeToggle(){
 function boot(){
   initAmbientBackground();
   wireThemeToggle();
-  Promise.all([loadDcloudLinks(), loadLearningLinks()]).then(() => {
+  Promise.all([loadDcloudLinks(), loadLearningLinks(), loadVideoLinks()]).then(() => {
     refreshDcloudPanelIfOpen();
     window.DCLOUD_PATHS = DCLOUD_PATHS;
     window.DCLOUD_ENTRIES = DCLOUD_ENTRIES;
     window.LEARNING_ENTRIES = LEARNING_ENTRIES;
+    window.VIDEO_ENTRIES = VIDEO_ENTRIES;
+    window.videoRankEntries = videoRankEntries;
+    window.holoForNode = holoForNode;
     window.dcloudSearchEntries = dcloudSearchEntries;
     window.dcloudEntryFamiliesLabel = dcloudEntryFamiliesLabel;
     window.dcloudPrimaryUrl = dcloudPrimaryUrl;
