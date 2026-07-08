@@ -16,7 +16,7 @@
   </script>
   <link rel="stylesheet" href="assets/cpn-ui.css?v=2.81.2"/>
   <link rel="stylesheet" href="assets/cpn-light.css?v=2.81.2"/>
-  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.81.2"/>
+  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.81.3"/>
   <link rel="stylesheet" href="design-studio.css?v=2.81.2"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -34,7 +34,7 @@
       --bg:#07182d;--surface:#0a2240;--surface2:#0d2847;--surface3:#102f54;
       --border:rgba(214,214,214,.14);--text:#ffffff;--muted:#b4b9c0;--subtle:#525e6c;
       --accent:#02c8ff;--green:#02c8ff;--orange:#ff9000;--red:#ff007f;
-      --net:#02c8ff;--sec:#ff9000;--col:#02c8ff;--com:#0a60ff;--obs:#ff9000;
+      --net:#02c8ff;--sec:#ff007f;--col:#34d399;--com:#0a60ff;--obs:#ff9000;
       --topbar-h:102px;
       --glass-bg:rgba(10,34,64,.72);--glass-bg2:rgba(13,40,71,.68);
       --glass-blur:14px;--glass-edge:rgba(2,200,255,.22);
@@ -195,9 +195,9 @@
     .cp{padding:3px 9px;border-radius:20px;border:1px solid transparent;
       font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
     .cp.off{background:transparent!important;border-color:var(--border);color:var(--subtle)!important}
-    .pn{background:var(--net);color:#000}.ps{background:var(--sec);color:#000}
-    .pc{background:var(--col);color:#000}.po{background:var(--com);color:#fff}
-    .pb{background:var(--obs);color:#000}
+    .pn{background:var(--net);color:#001a24}.ps{background:var(--sec);color:#fff}
+    .pc{background:var(--col);color:#042f1e}.po{background:var(--com);color:#fff}
+    .pb{background:var(--obs);color:#2a1600}
     .tbs{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
       color:var(--text);font-size:12px;padding:5px 7px;outline:none;cursor:pointer}
     .tbs option{background:var(--surface)}
@@ -1282,8 +1282,8 @@
 // ═══════════════════════════════════════════════════════════════
 const CATS = {
   networking:    {label:"Networking",    color:"#02C8FF"},
-  security:      {label:"Security",      color:"#FF9000"},
-  collaboration: {label:"Collaboration", color:"#2dce5c"},
+  security:      {label:"Security",      color:"#FF007F"},
+  collaboration: {label:"Collaboration", color:"#34D399"},
   computing:     {label:"Computing",     color:"#0A60FF"},
   observability: {label:"Observability", color:"#FF9000"}
 };
@@ -9718,7 +9718,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.81.2";
+const APP_VERSION   = "2.81.3";
 const DATA_UPDATED  = "2026-07-08";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
