@@ -24,6 +24,7 @@ async function stats(page) {
       const op = parseFloat(el.style.opacity || "0");
       return op > 0.1 && (el.textContent || "").length > 0;
     });
+    const visibleLabelCount = productLabels.length;
     const links = [...document.querySelectorAll("line.lk")];
     const visibleLinks = links.filter((l) => l.style.display !== "none");
     const layersEl = document.getElementById("all-products-layers");
@@ -31,6 +32,7 @@ async function stats(page) {
       viewMode: window.getViewMode?.(),
       zoomK: t.k,
       zoomBand: window.getAllProductsZoomBand?.(),
+      autoLabelCount: window.getAllProductsAutoLabelCount?.(),
       layers: window.getAllProductsLayers?.(),
       layersVisible: layersEl ? !layersEl.hidden : false,
       layerButtons: layersEl ? layersEl.querySelectorAll("button[data-layer]").length : 0,
@@ -43,6 +45,7 @@ async function stats(page) {
         const rad = r ? parseFloat(r.getAttribute("r") || "0") : 99;
         return rad < 20;
       }).length,
+      visibleLabelCount,
       visibleLinkCount: visibleLinks.length,
     };
   });
@@ -77,7 +80,13 @@ if (mid.visibleProductLabels > 3) throw new Error(`mid zoom should hide most pro
 await setZoom(page, 2.0);
 const close = await stats(page);
 if (close.zoomBand !== "close") throw new Error(`expected close band at k=2.0, got ${close.zoomBand}`);
-if (close.visibleProductLabels < 15) throw new Error(`close zoom should show product labels, saw ${close.visibleProductLabels}`);
+if (close.visibleLabelCount > 35) throw new Error(`close zoom labels should be collision-culled, saw ${close.visibleLabelCount}`);
+if (close.visibleLabelCount < 1) throw new Error(`close zoom should show at least some labels, saw ${close.visibleLabelCount}`);
+
+await setZoom(page, 3.2);
+const deep = await stats(page);
+if (deep.visibleLabelCount > 90) throw new Error(`deep zoom still too many labels: ${deep.visibleLabelCount}`);
+if (deep.visibleLabelCount <= close.visibleLabelCount) throw new Error("deeper zoom should reveal more labels gradually");
 
 await page.click('#all-products-layers button[data-layer="succession"]');
 await page.waitForTimeout(80);

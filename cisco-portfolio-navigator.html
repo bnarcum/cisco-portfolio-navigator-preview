@@ -1382,7 +1382,7 @@ const PILLAR_FIT = {
 /** All-products graph — full network ~68% wide × ~77% tall with margin. */
 const ALL_FIT = { padExtra: 22, widthFill: 0.68, heightFill: 0.77, maxK: 2.35, minK: 0.52, marginX: 48, marginY: 96 };
 /** Semantic zoom bands for All view (families → product dots → full labels). */
-const ALL_ZOOM = { farMax: 0.78, midMax: 1.38, closeLabels: 1.72 };
+const ALL_ZOOM = { farMax: 0.78, midMax: 1.38, closeLabels: 1.72, labelDensity: 38, labelCap: 96 };
 const ALL_LAYERS_KEY = "cpn-all-products-layers-v1";
 const ALL_LAYER_SPEC = [
   { key: "families", label: "Families", title: "Family nodes" },
@@ -4224,24 +4224,171 @@ function updatePillarLabelVisibility(_k){
   if (!usePillarLayout() || !ndEl) return;
   applyPillarLabelStyles(selected);
 }
+function allProductsLabelDisplayText(d, abbreviated){
+  if (d._kind === "family"){
+    const max = abbreviated ? 12 : (allProductsZoomK >= 2.4 ? 18 : 16);
+    return pillarShortName(d.name, max);
+  }
+  const p = d._productRef || prodById[d.id];
+  if (abbreviated) return compositionShortName(p || { name: d.name });
+  let n = (p?.name || d.name || "").replace(/^Cisco\s+/i, "");
+  if (n.length > 28) n = n.slice(0, 26) + "…";
+  return n;
+}
+function allProductsLocalDensity(d){
+  const x = d.fx != null ? d.fx : d.x;
+  const y = d.fy != null ? d.fy : d.y;
+  if (x == null || y == null) return 0;
+  let n = 0;
+  for (const o of viewNodes){
+    if (o._kind !== "product" || o.id === d.id) continue;
+    if (!allProductsNodeDisplayed(o)) continue;
+    const ox = o.fx != null ? o.fx : o.x;
+    const oy = o.fy != null ? o.fy : o.y;
+    if (ox == null || oy == null) continue;
+    if (Math.hypot(ox - x, oy - y) < 44) n++;
+  }
+  return n;
+}
+function allProductsLabelScreenBox(d, text){
+  const gx = d.fx != null ? d.fx : d.x;
+  const gy = d.fy != null ? d.fy : d.y;
+  if (gx == null || gy == null || !svgEl) return null;
+  const t = d3.zoomTransform(svgEl);
+  const sx = gx * t.k + t.x;
+  const sy = gy * t.k + t.y;
+  const isFamily = d._kind === "family";
+  const dense = !isFamily && allProductsLocalDensity(d) >= 4;
+  const fontPx = isFamily ? 11 : (dense ? 8 : 9);
+  const label = text || allProductsLabelDisplayText(d, true);
+  const w = Math.max(24, pillarLabelTextWidth(label, fontPx) + (dense ? 4 : 8));
+  const h = fontPx + 6;
+  const yOff = (d._r + (isFamily ? 14 : 11)) * t.k;
+  return {
+    id: d.id,
+    minX: sx - w / 2,
+    maxX: sx + w / 2,
+    minY: sy + yOff - 2,
+    maxY: sy + yOff + h + 2,
+    w, h, fontPx, dense,
+  };
+}
+function allProductsLabelBoxesOverlap(a, b, pad){
+  pad = pad ?? 5;
+  return !(a.maxX + pad < b.minX || a.minX - pad > b.maxX || a.maxY + pad < b.minY || a.minY - pad > b.maxY);
+}
+function allProductsNodeDisplayed(d){
+  if (!ndEl) return false;
+  if (allProductsFilterVis && !allProductsFilterVis.has(d.id)) return false;
+  if (d._kind === "family" && !allProductsLayers.families) return false;
+  if (d._kind === "product"){
+    if (!allProductsLayers.products) return false;
+    if (allProductsZoomBand(allProductsZoomK) === "far") return false;
+  }
+  let shown = false;
+  ndEl.each(function(node){
+    if (node.id !== d.id) return;
+    shown = this.style.display !== "none";
+  });
+  return shown;
+}
+function allProductsCollisionLabelSet(selectedNode){
+  const allowed = new Map();
+  const k = allProductsZoomK;
+  if (allProductsZoomBand(k) !== "close" || k < ALL_ZOOM.closeLabels) return allowed;
+  const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
+  const maxAuto = Math.min(ALL_ZOOM.labelCap,
+    Math.floor(Math.max(0, k - ALL_ZOOM.closeLabels) * ALL_ZOOM.labelDensity));
+  const placed = [];
+  const candidates = [];
+  const { w, h } = getDims();
+  const t = d3.zoomTransform(svgEl);
+  const vcx = (w / 2 - t.x) / Math.max(k, 0.001);
+  const vcy = (h / 2 - t.y) / Math.max(k, 0.001);
+  viewNodes.forEach(d => {
+    if (!allProductsNodeDisplayed(d)) return;
+    let priority = 60;
+    if (selectedNode && d.id === selectedNode.id) priority = 0;
+    else if (d.id === pillarHoverId) priority = 1;
+    else if (conn?.has(d.id)) priority = 2;
+    else if (stack.has(d.id)) priority = 8;
+    else if (d._kind === "family") return;
+    else {
+      const gx = d.fx != null ? d.fx : d.x;
+      const gy = d.fy != null ? d.fy : d.y;
+      const dist = (gx != null && gy != null) ? Math.hypot(gx - vcx, gy - vcy) : 9999;
+      priority = 16 + dist * 0.015 + allProductsLocalDensity(d) * 3;
+    }
+    candidates.push({ d, priority });
+  });
+  candidates.sort((a, b) => a.priority - b.priority);
+  let autoCount = 0;
+  for (const { d, priority } of candidates){
+    const isHot = priority <= 2;
+    if (!isHot && autoCount >= maxAuto) continue;
+    const dense = allProductsLocalDensity(d) >= 4;
+    const tryTexts = isHot
+      ? [allProductsLabelDisplayText(d, false), allProductsLabelDisplayText(d, true)]
+      : dense
+        ? [allProductsLabelDisplayText(d, true)]
+        : [allProductsLabelDisplayText(d, true), allProductsLabelDisplayText(d, false)];
+    let chosen = null;
+    let chosenBox = null;
+    for (const text of tryTexts){
+      const box = allProductsLabelScreenBox(d, text);
+      if (!box) continue;
+      const pad = box.dense ? 3 : 5;
+      if (!placed.some(p => allProductsLabelBoxesOverlap(p, box, pad))){
+        chosen = text;
+        chosenBox = box;
+        break;
+      }
+    }
+    if (!chosen){
+      if (!isHot) continue;
+      chosen = tryTexts[tryTexts.length - 1];
+      chosenBox = allProductsLabelScreenBox(d, chosen);
+      if (!chosenBox) continue;
+    }
+    if (!isHot) autoCount++;
+    placed.push(chosenBox);
+    allowed.set(d.id, { text: chosen, fontPx: chosenBox.fontPx });
+  }
+  return allowed;
+}
+let allProductsAutoLabels = new Map();
+
 function applyAllProductsLabelStyles(selectedNode){
   if (!ndEl || viewMode !== "all-products") return;
   const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
   const band = allProductsZoomBand(allProductsZoomK);
-  const showAllProductLabels = band === "close" && allProductsZoomK >= ALL_ZOOM.closeLabels;
+  allProductsAutoLabels = allProductsCollisionLabelSet(selectedNode);
+  const familyFarMid = band !== "close";
   ndEl.select("text.nl")
     .text(d => {
-      if (d._kind === "family") return pillarShortName(d.name, 20);
-      if (showAllProductLabels && d.name.length > 22) return d.name.slice(0, 20) + "…";
-      return d.name;
+      const auto = allProductsAutoLabels.get(d.id);
+      if (auto) return auto.text;
+      if (d._kind === "family" && familyFarMid) return allProductsLabelDisplayText(d, band === "mid");
+      if (d._kind === "family" && (selectedNode?.id === d.id || d.id === pillarHoverId)) return allProductsLabelDisplayText(d, true);
+      if (selectedNode && (d.id === selectedNode.id || conn?.has(d.id))) return allProductsLabelDisplayText(d, false);
+      if (d.id === pillarHoverId) return allProductsLabelDisplayText(d, false);
+      return allProductsLabelDisplayText(d, true);
     })
     .attr("y", d => d._r + (d._kind === "family" ? 14 : 11))
-    .style("font-size", d => d._kind === "family" ? "11px" : "9px")
+    .style("font-size", d => {
+      const auto = allProductsAutoLabels.get(d.id);
+      if (auto?.fontPx) return `${auto.fontPx}px`;
+      return d._kind === "family" ? "11px" : "9px";
+    })
     .style("opacity", d => {
-      if (d._kind === "family") return 1;
+      if (d._kind === "family"){
+        if (familyFarMid) return 1;
+        if (selectedNode?.id === d.id || d.id === pillarHoverId) return 0.95;
+        return 0;
+      }
       if (selectedNode && (d.id === selectedNode.id || conn?.has(d.id))) return 1;
       if (d.id === pillarHoverId) return 1;
-      if (showAllProductLabels) return 0.78;
+      if (allProductsAutoLabels.has(d.id)) return 0.9;
       return 0;
     });
 }
@@ -8278,6 +8425,7 @@ window.getViewMode    = () => viewMode;
 window.getViewFocus   = () => viewFocus;
 window.getAllProductsLayers = () => ({ ...allProductsLayers });
 window.getAllProductsZoomBand = () => allProductsZoomBand(allProductsZoomK);
+window.getAllProductsAutoLabelCount = () => allProductsAutoLabels.size;
 window.__cpnTestZoomK = (k) => {
   const t = d3.zoomTransform(svgEl);
   svg.call(zoom.transform, d3.zoomIdentity.translate(t.x, t.y).scale(k));
@@ -10063,7 +10211,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.83.7";
+const APP_VERSION   = "2.83.8";
 const DATA_UPDATED  = "2026-07-08";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
