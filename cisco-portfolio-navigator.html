@@ -984,6 +984,16 @@
       background:var(--surface);border:1px solid var(--accent);border-radius:20px;
       padding:4px 14px;font-size:11px;color:var(--accent);display:none;pointer-events:none;
       text-align:center;white-space:nowrap;max-width:min(92vw, 680px);overflow:hidden;text-overflow:ellipsis}
+    #all-products-layers{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:5px;
+      background:var(--surface);border:1px solid var(--border);border-radius:18px;
+      padding:5px 8px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+    #all-products-layers[hidden]{display:none!important}
+    #all-products-layers .all-layers-label{font-size:10px;font-weight:700;text-transform:uppercase;
+      letter-spacing:.06em;color:var(--subtle);padding:0 4px}
+    #all-products-layers button{background:transparent;border:1px solid var(--border);color:var(--muted);
+      border-radius:12px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;line-height:1.3}
+    #all-products-layers button:hover{color:var(--text);border-color:var(--accent)}
+    #all-products-layers button.active{background:rgba(4,159,217,.18);border-color:var(--accent);color:var(--accent)}
 
     .nd{cursor:pointer}
     ::-webkit-scrollbar{width:5px}
@@ -1177,6 +1187,9 @@
 
 <div id="top-chips">
   <div id="fbadge"></div>
+  <div id="all-products-layers" role="group" aria-label="All view layers" hidden>
+    <span class="all-layers-label">Layers</span>
+  </div>
   <div id="vm-crumb" aria-live="polite"></div>
 </div>
 <div id="gw">
@@ -1367,7 +1380,17 @@ const PILLAR_FIT = {
 };
 
 /** All-products graph — full network ~68% wide × ~77% tall with margin. */
-const ALL_FIT = { padExtra: 22, widthFill: 0.68, heightFill: 0.77, maxK: 1.02, minK: 0.52, marginX: 48, marginY: 96 };
+const ALL_FIT = { padExtra: 22, widthFill: 0.68, heightFill: 0.77, maxK: 2.35, minK: 0.52, marginX: 48, marginY: 96 };
+/** Semantic zoom bands for All view (families → product dots → full labels). */
+const ALL_ZOOM = { farMax: 0.78, midMax: 1.38, closeLabels: 1.72 };
+const ALL_LAYERS_KEY = "cpn-all-products-layers-v1";
+const ALL_LAYER_SPEC = [
+  { key: "families", label: "Families", title: "Family nodes" },
+  { key: "products", label: "Products", title: "Product nodes (hidden when zoomed out)" },
+  { key: "contains", label: "Contains", title: "Family → product links" },
+  { key: "succession", label: "Succession", title: "Product replacement links" },
+  { key: "crossFamily", label: "Cross-family", title: "Links across pillars or product families" },
+];
 
 /** Spatial 3D mesh — cluster ~72% wide × ~70% tall (style bar + HUD margins). */
 const SPATIAL_FIT = {
@@ -3878,6 +3901,133 @@ let viewMode  = "overview";   // "overview" | "families" | "composition" | "spat
 let viewFocus = null;         // family id when in composition mode
 let viewNodes = NODES.slice();
 let viewLinks = LINKS.slice();
+let allProductsZoomK = 1;
+let allProductsFilterVis = null;
+let allProductsLayers = { families: true, products: true, contains: true, succession: false, crossFamily: false };
+
+function allProductsZoomBand(k){
+  if (k < ALL_ZOOM.farMax) return "far";
+  if (k < ALL_ZOOM.midMax) return "mid";
+  return "close";
+}
+function isAllProductsCrossFamilyLink(l){
+  const sId = sid(l), tId = tid(l);
+  if (l.type === "succession"){
+    const sp = prodById[sId], tp = prodById[tId];
+    return !!(sp && tp && sp.family !== tp.family);
+  }
+  if (l.type === "direct" || l.type === "adjacent"){
+    if (!nodeById[sId] || !nodeById[tId]) return false;
+    return familyPillar(sId) !== familyPillar(tId);
+  }
+  return false;
+}
+function allProductsLinkVisible(l){
+  if (l.type === "composition"){
+    if (!allProductsLayers.contains) return false;
+    if (allProductsZoomBand(allProductsZoomK) === "far") return false;
+    return true;
+  }
+  if (l.type === "succession"){
+    if (!allProductsLayers.succession) return false;
+    if (allProductsZoomBand(allProductsZoomK) !== "close") return false;
+    return true;
+  }
+  if (isAllProductsCrossFamilyLink(l)){
+    if (!allProductsLayers.crossFamily) return false;
+    if (allProductsZoomBand(allProductsZoomK) === "far") return false;
+    return true;
+  }
+  return allProductsLayers.families;
+}
+function syncAllProductsLayersUI(){
+  const el = document.getElementById("all-products-layers");
+  if (!el) return;
+  el.hidden = viewMode !== "all-products";
+  el.querySelectorAll("button[data-layer]").forEach(btn => {
+    const on = !!allProductsLayers[btn.dataset.layer];
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  const hint = document.getElementById("hint");
+  if (hint && viewMode === "all-products"){
+    const band = allProductsZoomBand(allProductsZoomK);
+    const zoomLabel = { far: "Families", mid: "Products", close: "Detail" }[band];
+    hint.textContent = `All view · Zoom level: ${zoomLabel} · Toggle layers above · Scroll to zoom in`;
+  }
+}
+function initAllProductsLayersUI(){
+  const el = document.getElementById("all-products-layers");
+  if (!el || el.dataset.wired) return;
+  el.dataset.wired = "1";
+  try{
+    const saved = JSON.parse(localStorage.getItem(ALL_LAYERS_KEY) || "null");
+    if (saved && typeof saved === "object"){
+      ALL_LAYER_SPEC.forEach(({ key }) => {
+        if (typeof saved[key] === "boolean") allProductsLayers[key] = saved[key];
+      });
+    }
+  }catch(e){}
+  ALL_LAYER_SPEC.forEach(({ key, label, title }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.layer = key;
+    btn.textContent = label;
+    btn.title = title;
+    btn.addEventListener("click", () => {
+      allProductsLayers[key] = !allProductsLayers[key];
+      syncAllProductsLayersUI();
+      applyAllProductsGraphVisibility();
+      try{ localStorage.setItem(ALL_LAYERS_KEY, JSON.stringify(allProductsLayers)); }catch(e){}
+    });
+    el.appendChild(btn);
+  });
+  syncAllProductsLayersUI();
+}
+function applyAllProductsLinkStyles(selectedNode){
+  if (!lviz || viewMode !== "all-products") return;
+  if (selectedNode) return;
+  const band = allProductsZoomBand(allProductsZoomK);
+  lviz.each(function(l){
+    const sel = d3.select(this);
+    if (!allProductsLinkVisible(l)){
+      sel.attr("stroke-opacity", 0).attr("stroke-width", 0.5);
+      return;
+    }
+    const isContains = l.type === "composition";
+    const isSucc = l.type === "succession";
+    let op = l.type === "direct" ? 0.58 : 0.36;
+    if (isContains) op = band === "close" ? 0.44 : 0.26;
+    if (isSucc) op = 0.4;
+    if (isAllProductsCrossFamilyLink(l)) op *= 0.82;
+    sel.attr("stroke", l.type === "direct" ? "#4a5568" : "#2d3748")
+      .attr("stroke-width", l.type === "direct" ? 1.6 : (isContains ? 0.9 : 1.1))
+      .attr("stroke-opacity", op);
+  });
+}
+function applyAllProductsGraphVisibility(){
+  if (viewMode !== "all-products" || !ndEl) return;
+  const filterVis = allProductsFilterVis;
+  const band = allProductsZoomBand(allProductsZoomK);
+  ndEl.style("display", d => {
+    if (filterVis && !filterVis.has(d.id)) return "none";
+    if (d._kind === "family" && !allProductsLayers.families) return "none";
+    if (d._kind === "product"){
+      if (!allProductsLayers.products) return "none";
+      if (band === "far") return "none";
+    }
+    return null;
+  });
+  const linkDisplay = l => {
+    const s = sid(l), t = tid(l);
+    if (filterVis && (!filterVis.has(s) || !filterVis.has(t))) return "none";
+    return allProductsLinkVisible(l) ? null : "none";
+  };
+  if (lviz) lviz.style("display", linkDisplay);
+  if (lhit) lhit.style("display", linkDisplay);
+  applyAllProductsNodeStyles(selected);
+  applyAllProductsLinkStyles(selected);
+}
 
 function usePillarLayout(){
   if (viewMode !== "families") return false;
@@ -4077,14 +4227,21 @@ function updatePillarLabelVisibility(_k){
 function applyAllProductsLabelStyles(selectedNode){
   if (!ndEl || viewMode !== "all-products") return;
   const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
+  const band = allProductsZoomBand(allProductsZoomK);
+  const showAllProductLabels = band === "close" && allProductsZoomK >= ALL_ZOOM.closeLabels;
   ndEl.select("text.nl")
-    .text(d => d._kind === "family" ? pillarShortName(d.name, 20) : d.name)
+    .text(d => {
+      if (d._kind === "family") return pillarShortName(d.name, 20);
+      if (showAllProductLabels && d.name.length > 22) return d.name.slice(0, 20) + "…";
+      return d.name;
+    })
     .attr("y", d => d._r + (d._kind === "family" ? 14 : 11))
     .style("font-size", d => d._kind === "family" ? "11px" : "9px")
     .style("opacity", d => {
       if (d._kind === "family") return 1;
       if (selectedNode && (d.id === selectedNode.id || conn?.has(d.id))) return 1;
       if (d.id === pillarHoverId) return 1;
+      if (showAllProductLabels) return 0.78;
       return 0;
     });
 }
@@ -4092,6 +4249,8 @@ function applyAllProductsLabelStyles(selectedNode){
 function applyAllProductsNodeStyles(selectedNode){
   if (!ndEl || viewMode !== "all-products") return;
   const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
+  const band = allProductsZoomBand(allProductsZoomK);
+  const midScale = band === "mid" ? 0.78 : 1;
   ndEl.each(function(d){
     const g = d3.select(this);
     const isFamily = d._kind === "family";
@@ -4103,26 +4262,27 @@ function applyAllProductsNodeStyles(selectedNode){
     const hot = isSel || isHov || isConn;
     const inStk = stack.has(d.id);
     const dim = selectedNode && !hot && !inStk;
+    const prodGlow = isFamily || hot || inStk;
     g.classed("nd-dim", dim);
     g.select(".gr")
-      .attr("r", d._r + (isFamily ? 10 : 5))
+      .attr("r", d._r + (isFamily ? 10 : (band === "mid" ? 3 : 5)))
       .attr("fill", color)
-      .attr("fill-opacity", hot ? 0.40 : (dim ? 0.06 : (inStk ? 0.32 : (isFamily ? 0.24 : 0.16))))
-      .attr("filter", hot ? "url(#glow)" : (dim ? null : "url(#glow)"));
+      .attr("fill-opacity", hot ? 0.40 : (dim ? 0.06 : (inStk ? 0.32 : (isFamily ? 0.24 : (band === "mid" ? 0.12 : 0.16)))))
+      .attr("filter", prodGlow ? "url(#glow)" : (dim ? null : (isFamily ? "url(#glow)" : null)));
     g.select(".mc")
-      .attr("r", d._r)
+      .attr("r", isFamily ? d._r : d._r * (band === "mid" ? 0.82 : 1))
       .attr("fill", color)
       .attr("fill-opacity", hot || inStk ? 1 : (dim ? 0.22 : (isFamily ? 0.98 : 0.94)))
       .attr("stroke", isSel ? "#ffffff" : (inStk ? "#FFD700" : (p?.status === "eol" ? "#ef4444" : p?.status === "eos" ? "#FF9000" : color)))
-      .attr("stroke-width", isSel ? 2.6 : (inStk ? 2.2 : (isFamily ? 2.35 : 2)))
+      .attr("stroke-width", isSel ? 2.6 : (inStk ? 2.2 : (isFamily ? 2.35 : 1.8)))
       .attr("stroke-opacity", hot || inStk || isFamily ? 1 : (dim ? 0.35 : 0.9));
     g.select("image.pimg").remove();
     g.select("circle.mring").attr("stroke", "transparent").attr("stroke-width", 0);
     g.select("use.icn")
       .attr("href", "#icon-" + iconKey(d))
-      .style("display", null)
+      .style("display", isFamily || band !== "mid" ? null : "none")
       .attr("opacity", hot || inStk ? 1 : (dim ? 0.18 : (isFamily ? 1 : 0.96)));
-    g.select(".node-scaler").attr("transform", hot ? "scale(1.08)" : null);
+    g.select(".node-scaler").attr("transform", hot ? "scale(1.08)" : (isFamily ? null : `scale(${midScale})`));
   });
   applyAllProductsLabelStyles(selectedNode);
 }
@@ -4585,6 +4745,11 @@ const zoom = d3.zoom().scaleExtent([0.2,4]).on("zoom", ev => {
   root.attr("transform", ev.transform);
   updateCompositionLabelVisibility(ev.transform.k);
   updatePillarLabelVisibility(ev.transform.k);
+  if (viewMode === "all-products"){
+    allProductsZoomK = ev.transform.k;
+    applyAllProductsGraphVisibility();
+    syncAllProductsLayersUI();
+  }
 });
 svg.call(zoom);
 
@@ -7891,6 +8056,8 @@ function applyViewLevel(mode, opts){
   } else if (mode === "all-products"){
     const v = buildAllProductsView();
     viewNodes = v.nodes; viewLinks = v.links;
+    allProductsZoomK = svgEl ? d3.zoomTransform(svgEl).k : 1;
+    syncAllProductsLayersUI();
   } else {
     // Families mode = the full graph; optionally focus a category by activating it.
     if (opts.focusPillar) focusPillarOnly(opts.focusPillar);
@@ -8036,6 +8203,7 @@ function updateViewModeUI(){
   });
   document.body.classList.toggle("families-mode", viewMode === "families");
   document.body.classList.toggle("overview-mode", viewMode === "overview");
+  syncAllProductsLayersUI();
 }
 
 // ── Breadcrumb chip rendering (used by Phase-3 polish; built in now so
@@ -8095,6 +8263,7 @@ document.addEventListener("click", ev => {
 });
 
 // Wire up the segmented control buttons.
+initAllProductsLayersUI();
 document.querySelectorAll("#vm-seg button[data-vm]").forEach(btn => {
   btn.addEventListener("click", () => {
     if (btn.disabled) return;
@@ -8107,6 +8276,12 @@ document.querySelectorAll("#vm-seg button[data-vm]").forEach(btn => {
 window.applyViewLevel = applyViewLevel;
 window.getViewMode    = () => viewMode;
 window.getViewFocus   = () => viewFocus;
+window.getAllProductsLayers = () => ({ ...allProductsLayers });
+window.getAllProductsZoomBand = () => allProductsZoomBand(allProductsZoomK);
+window.__cpnTestZoomK = (k) => {
+  const t = d3.zoomTransform(svgEl);
+  svg.call(zoom.transform, d3.zoomIdentity.translate(t.x, t.y).scale(k));
+};
 window.getSpatialFocus = () => spatialState.focusFamily;
 window.__cpnSpatialGraph = () => spatialState.graph;
 window.__cpnSpatialCameraStats = () => {
@@ -8270,6 +8445,7 @@ function resetHL() {
   }
   if (viewMode === "all-products"){
     applyAllProductsNodeStyles(null);
+    applyAllProductsLinkStyles(null);
     return;
   }
   if (viewMode === "composition"){
@@ -8622,12 +8798,15 @@ function applyFilters() {
   if (viewMode === "all-products"){
     NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
     PRODUCTS.forEach(p => { if (productMatchesFilters(p)) vis.add(p.id); });
+    allProductsFilterVis = vis;
+    applyAllProductsGraphVisibility();
   } else {
+    allProductsFilterVis = null;
     NODES.forEach(n => { if (familyNodeVisible(n)) vis.add(n.id); });
+    if (ndEl) ndEl.style("display",d=>vis.has(d.id)?null:"none");
+    if (lviz) lviz.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
+    if (lhit) lhit.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
   }
-  if (ndEl) ndEl.style("display",d=>vis.has(d.id)?null:"none");
-  if (lviz) lviz.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
-  if (lhit) lhit.style("display",l=>vis.has(sid(l))&&vis.has(tid(l))?null:"none");
   const badge=document.getElementById("fbadge");
   const f=activePillars.size>0||activeUC||activeInd||activeCats.size<Object.keys(CATS).length
     || facetState.status.size !== 1 || !facetState.status.has("current") || facetState.tier.size > 0;
@@ -8638,7 +8817,7 @@ function applyFilters() {
       const names = [...activePillars].map(id => PILLAR_ZONE_BY_ID[id]?.shortLabel || id).join(" + ");
       badge.textContent = `${names} · ${vis.size} families · Click All pillars or Reset to show all`;
     } else if (viewMode === "all-products"){
-      badge.textContent = `Showing ${vis.size} of ${total} ${label} · Hover products for names · dense power-user view`;
+      badge.textContent = `Showing ${vis.size} of ${total} ${label} · Zoom in for product detail · Layer chips filter links`;
     } else {
       badge.textContent=`Showing ${vis.size} of ${total} ${label}`;
     }
@@ -9884,7 +10063,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.83.6";
+const APP_VERSION   = "2.83.7";
 const DATA_UPDATED  = "2026-07-08";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
