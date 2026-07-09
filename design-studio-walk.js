@@ -44,13 +44,6 @@
   const WALK_PACKETS_KEY = "cpn-ds-walk-packets";
   const WALK_STYLE_KEY = "cpn-ds-walk-style";
   const WALK_STYLES = {
-    presentation: {
-      label: "Presentation",
-      title: "Solution Walkthrough",
-      hint: "Select a device, follow a link, or use Where to? — camera glides through the design",
-      className: "ds-walk-presentation",
-      features: { manualMove: false, quest: false, avatar: false, voxel: false, dpad: false, pointerLock: false, viewmodel: false }
-    },
     explore: {
       label: "Explore",
       title: "Solution Explore",
@@ -100,7 +93,7 @@
     semanticFrame: null, layerFilter: "all",
     packetsEnabled: true, packetSpeedIdx: 1,
     quest: null,
-    walkStyle: "presentation"
+    walkStyle: "lab"
   };
 
   function savedWalkStyle() {
@@ -108,11 +101,11 @@
       const saved = localStorage.getItem(WALK_STYLE_KEY);
       if (WALK_STYLES[saved]) return saved;
     } catch (e) { /* ignore */ }
-    return "presentation";
+    return "lab";
   }
 
   function setWalkStyle(key) {
-    state.walkStyle = WALK_STYLES[key] ? key : "presentation";
+    state.walkStyle = WALK_STYLES[key] ? key : "lab";
     try { localStorage.setItem(WALK_STYLE_KEY, state.walkStyle); } catch (e) { /* ignore */ }
   }
 
@@ -120,11 +113,11 @@
     if (WALK_STYLES[state.walkStyle]) return state.walkStyle;
     state.walkStyle = savedWalkStyle();
     if (WALK_STYLES[state.walkStyle]) return state.walkStyle;
-    return "presentation";
+    return "lab";
   }
 
   function activeWalkStyle() {
-    return WALK_STYLES[currentWalkStyle()] || WALK_STYLES.presentation;
+    return WALK_STYLES[currentWalkStyle()] || WALK_STYLES.lab;
   }
 
   function esc(s) {

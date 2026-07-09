@@ -1124,45 +1124,28 @@
 #ds-walk-overlay.ds-walk-epic #ds-walk-canvas{
   filter:contrast(1.06) saturate(1.12)}
 
-#ds-walk-overlay.ds-walk-presentation,
 #ds-walk-overlay.ds-walk-explore{background:#030a14}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-hud,
 #ds-walk-overlay.ds-walk-explore .ds-walk-hud{
   position:absolute;top:10px;left:10px;right:auto;z-index:8;width:min(620px,calc(100% - 20px));
   background:linear-gradient(180deg,rgba(5,14,28,.74),rgba(3,10,20,.64));
   border:1px solid rgba(126,234,255,.18);border-radius:14px;backdrop-filter:blur(18px);
   box-shadow:0 18px 52px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.06);padding:9px 12px}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-title,
 #ds-walk-overlay.ds-walk-explore .ds-walk-title{
   font-size:12px;letter-spacing:.18em;color:#fff;text-shadow:0 0 22px rgba(2,200,255,.38)}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-hint,
 #ds-walk-overlay.ds-walk-explore .ds-walk-hint{color:#bdd6e8}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-crosshair,
-#ds-walk-overlay.ds-walk-presentation .ds-walk-dpad,
 #ds-walk-overlay.ds-walk-explore .ds-walk-crosshair{display:none!important}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-devices,
 #ds-walk-overlay.ds-walk-explore .ds-walk-devices{
   display:flex;position:absolute;bottom:52px;left:50%;transform:translateX(-50%);z-index:6;
   max-width:min(92vw,760px);margin:0;padding:7px 10px;border-radius:12px;
   background:rgba(3,10,20,.58);backdrop-filter:blur(12px);border:1px solid rgba(2,200,255,.22);
   box-shadow:0 16px 42px rgba(0,0,0,.36)}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-minimap,
 #ds-walk-overlay.ds-walk-explore .ds-walk-minimap{
   border:1px solid rgba(126,234,255,.28);border-radius:10px;background:rgba(3,10,20,.72);
   box-shadow:0 12px 36px rgba(0,0,0,.42)}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-focus,
-#ds-walk-overlay.ds-walk-presentation .ds-walk-status{display:none}
-#ds-walk-overlay.ds-walk-presentation.ds-walk-loading .ds-walk-status,
 #ds-walk-overlay.ds-walk-explore.ds-walk-loading .ds-walk-status{display:block!important;color:#7ee8ff}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-vignette,
 #ds-walk-overlay.ds-walk-explore .ds-walk-vignette{
   position:absolute;inset:0;z-index:2;pointer-events:none;
   background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.58) 100%)}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-letterbox{
-  position:absolute;left:0;right:0;z-index:2;pointer-events:none;background:rgba(0,0,0,.64)}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-letterbox-top{top:0;height:5vh;min-height:24px}
-#ds-walk-overlay.ds-walk-presentation .ds-walk-letterbox-bottom{bottom:0;height:5vh;min-height:24px}
-#ds-walk-overlay.ds-walk-presentation #ds-walk-canvas,
 #ds-walk-overlay.ds-walk-explore #ds-walk-canvas{filter:contrast(1.06) saturate(1.1)}
 .ds-walk-audio-btn{min-width:28px;padding:4px 8px!important;font-size:13px!important}
 .ds-walk-audio-btn.muted{opacity:.45}

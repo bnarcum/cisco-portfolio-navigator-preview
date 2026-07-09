@@ -14,11 +14,11 @@ const must = (ok, msg) => { if (!ok) errors.push(msg); };
 
 must(/const WALK_STYLE_KEY\s*=\s*"cpn-ds-walk-style"/.test(walk), "walk style preference key is missing");
 must(/const WALK_STYLES\s*=/.test(walk), "walk style registry is missing");
-must(/presentation:\s*\{[\s\S]*label:\s*"Presentation"/.test(walk), "Presentation mode definition is missing");
+must(!/presentation:\s*\{[\s\S]*label:\s*"Presentation"/.test(walk), "Presentation mode should be removed");
 must(/explore:\s*\{[\s\S]*label:\s*"Explore"/.test(walk), "Explore mode definition is missing");
 must(/lab:\s*\{[\s\S]*label:\s*"Lab"/.test(walk), "Lab mode definition is missing");
 must(/function currentWalkStyle/.test(walk), "currentWalkStyle resolver is missing");
-must(/currentWalkStyle\(\)[\s\S]*return "presentation"/.test(walk), "Presentation must be the default fallback");
+must(/currentWalkStyle\(\)[\s\S]*return "lab"/.test(walk), "Lab must be the default fallback");
 must(/setupDiagramWorld\(THREE, scene, bounds, graph, currentWalkStyle\(\)\)/.test(walk), "world setup must receive the active walk style");
 must(/setupAvatar\(THREE, scene, currentWalkStyle\(\)\)/.test(walk), "avatar setup must receive the active walk style");
 must(/data-action="walk-style"/.test(walk), "walk style HUD buttons are missing");
@@ -28,11 +28,9 @@ must(/style\.features\.avatar/.test(walk), "avatar must be gated by style featur
 must(/if \(style\.features\.avatar\) state\.thirdPerson = true;/.test(walk), "Lab avatar mode must restore third-person avatar visibility");
 
 must(/function addExecutiveWorld/.test(walk), "professional executive world is missing");
-must(/ds-walk-presentation/.test(css), "Presentation CSS class is missing");
+must(!/ds-walk-presentation/.test(css), "Presentation CSS should be removed");
 must(/ds-walk-explore/.test(css), "Explore CSS class is missing");
 must(/ds-walk-lab/.test(css), "Lab CSS class is missing");
-must(/#ds-walk-overlay\.ds-walk-presentation \.ds-walk-crosshair/.test(css), "Presentation must hide crosshair");
-must(/#ds-walk-overlay\.ds-walk-presentation \.ds-walk-dpad/.test(css), "Presentation must hide D-pad");
 must(/#ds-walk-overlay\.ds-walk-lab/.test(css), "Lab mode style must keep the playful skin");
 
 must(/Generate sample walkthrough/.test(studio), "Quickstart copy should say walkthrough, not 3D walk");
