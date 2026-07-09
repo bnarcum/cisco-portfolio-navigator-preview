@@ -3902,6 +3902,9 @@ let viewFocus = null;         // family id when in composition mode
 let viewNodes = NODES.slice();
 let viewLinks = LINKS.slice();
 let allProductsZoomK = 1;
+let allProductsZoomBandCache = null;
+let allProductsZoomGesturing = false;
+let allProductsLabelTimer = null;
 let allProductsFilterVis = null;
 let allProductsLayers = { families: true, products: true, contains: true, succession: false, crossFamily: false };
 
@@ -4005,7 +4008,8 @@ function applyAllProductsLinkStyles(selectedNode){
       .attr("stroke-opacity", op);
   });
 }
-function applyAllProductsGraphVisibility(){
+function applyAllProductsGraphVisibility(opts){
+  opts = opts || {};
   if (viewMode !== "all-products" || !ndEl) return;
   const filterVis = allProductsFilterVis;
   const band = allProductsZoomBand(allProductsZoomK);
@@ -4025,7 +4029,7 @@ function applyAllProductsGraphVisibility(){
   };
   if (lviz) lviz.style("display", linkDisplay);
   if (lhit) lhit.style("display", linkDisplay);
-  applyAllProductsNodeStyles(selected);
+  applyAllProductsNodeStyles(selected, { labels: opts.labels !== false });
   applyAllProductsLinkStyles(selected);
 }
 
@@ -4235,22 +4239,7 @@ function allProductsLabelDisplayText(d, abbreviated){
   if (n.length > 28) n = n.slice(0, 26) + "…";
   return n;
 }
-function allProductsLocalDensity(d){
-  const x = d.fx != null ? d.fx : d.x;
-  const y = d.fy != null ? d.fy : d.y;
-  if (x == null || y == null) return 0;
-  let n = 0;
-  for (const o of viewNodes){
-    if (o._kind !== "product" || o.id === d.id) continue;
-    if (!allProductsNodeDisplayed(o)) continue;
-    const ox = o.fx != null ? o.fx : o.x;
-    const oy = o.fy != null ? o.fy : o.y;
-    if (ox == null || oy == null) continue;
-    if (Math.hypot(ox - x, oy - y) < 44) n++;
-  }
-  return n;
-}
-function allProductsLabelScreenBox(d, text){
+function allProductsLabelScreenBox(d, text, densityCtx){
   const gx = d.fx != null ? d.fx : d.x;
   const gy = d.fy != null ? d.fy : d.y;
   if (gx == null || gy == null || !svgEl) return null;
@@ -4258,7 +4247,7 @@ function allProductsLabelScreenBox(d, text){
   const sx = gx * t.k + t.x;
   const sy = gy * t.k + t.y;
   const isFamily = d._kind === "family";
-  const dense = !isFamily && allProductsLocalDensity(d) >= 4;
+  const dense = !isFamily && allProductsLocalDensity(d, densityCtx) >= 4;
   const fontPx = isFamily ? 11 : (dense ? 8 : 9);
   const label = text || allProductsLabelDisplayText(d, true);
   const w = Math.max(24, pillarLabelTextWidth(label, fontPx) + (dense ? 4 : 8));
@@ -4277,20 +4266,117 @@ function allProductsLabelBoxesOverlap(a, b, pad){
   pad = pad ?? 5;
   return !(a.maxX + pad < b.minX || a.minX - pad > b.maxX || a.maxY + pad < b.minY || a.minY - pad > b.maxY);
 }
-function allProductsNodeDisplayed(d){
-  if (!ndEl) return false;
-  if (allProductsFilterVis && !allProductsFilterVis.has(d.id)) return false;
+function allProductsNodeDisplayedFast(d){
+  const filterVis = allProductsFilterVis;
+  const band = allProductsZoomBand(allProductsZoomK);
+  if (filterVis && !filterVis.has(d.id)) return false;
   if (d._kind === "family" && !allProductsLayers.families) return false;
   if (d._kind === "product"){
     if (!allProductsLayers.products) return false;
-    if (allProductsZoomBand(allProductsZoomK) === "far") return false;
+    if (band === "far") return false;
   }
-  let shown = false;
-  ndEl.each(function(node){
-    if (node.id !== d.id) return;
-    shown = this.style.display !== "none";
+  return true;
+}
+function allProductsNodeDisplayed(d){
+  return allProductsNodeDisplayedFast(d);
+}
+function allProductsViewportBounds(pad){
+  pad = pad ?? 100;
+  const { w, h } = getDims();
+  const t = d3.zoomTransform(svgEl);
+  const k = Math.max(t.k, 0.001);
+  return {
+    minX: (-t.x - pad) / k,
+    maxX: (w - t.x + pad) / k,
+    minY: (-t.y - pad) / k,
+    maxY: (h - t.y + pad) / k,
+  };
+}
+function allProductsNodeInViewport(d, vp){
+  const x = d.fx != null ? d.fx : d.x;
+  const y = d.fy != null ? d.fy : d.y;
+  if (x == null || y == null) return false;
+  return x >= vp.minX && x <= vp.maxX && y >= vp.minY && y <= vp.maxY;
+}
+function buildAllProductsDensityGrid(cellSize){
+  cellSize = cellSize || 48;
+  const grid = new Map();
+  const products = [];
+  viewNodes.forEach(o => {
+    if (o._kind !== "product" || !allProductsNodeDisplayedFast(o)) return;
+    const ox = o.fx != null ? o.fx : o.x;
+    const oy = o.fy != null ? o.fy : o.y;
+    if (ox == null || oy == null) return;
+    products.push(o);
+    const cx = Math.floor(ox / cellSize);
+    const cy = Math.floor(oy / cellSize);
+    const key = cx + "," + cy;
+    if (!grid.has(key)) grid.set(key, []);
+    grid.get(key).push(o);
   });
-  return shown;
+  return { grid, cellSize, products };
+}
+function allProductsLocalDensity(d, densityCtx){
+  const x = d.fx != null ? d.fx : d.x;
+  const y = d.fy != null ? d.fy : d.y;
+  if (x == null || y == null) return 0;
+  if (!densityCtx) return 0;
+  const { grid, cellSize } = densityCtx;
+  const cx = Math.floor(x / cellSize);
+  const cy = Math.floor(y / cellSize);
+  let n = 0;
+  for (let dx = -1; dx <= 1; dx++){
+    for (let dy = -1; dy <= 1; dy++){
+      const bucket = grid.get((cx + dx) + "," + (cy + dy));
+      if (!bucket) continue;
+      for (const o of bucket){
+        if (o.id === d.id) continue;
+        const ox = o.fx != null ? o.fx : o.x;
+        const oy = o.fy != null ? o.fy : o.y;
+        if (Math.hypot(ox - x, oy - y) < 44) n++;
+      }
+    }
+  }
+  return n;
+}
+function applyAllProductsLabelsDuringGesture(){
+  if (!ndEl || viewMode !== "all-products") return;
+  const conn = selected ? connectionNodeSet(selected.id, connectionHighlightDepth) : null;
+  const band = allProductsZoomBand(allProductsZoomK);
+  const familyFarMid = band !== "close";
+  ndEl.select("text.nl").style("opacity", d => {
+    if (d._kind === "family") return familyFarMid ? 1 : 0;
+    if (selected && (d.id === selected.id || conn?.has(d.id))) return 1;
+    if (d.id === pillarHoverId) return 1;
+    return 0;
+  });
+}
+function scheduleAllProductsLabelRefresh(){
+  clearTimeout(allProductsLabelTimer);
+  allProductsLabelTimer = setTimeout(() => {
+    allProductsLabelTimer = null;
+    if (viewMode !== "all-products" || allProductsZoomGesturing) return;
+    applyAllProductsLabelStyles(selected);
+    syncAllProductsLayersUI();
+  }, 32);
+}
+function onAllProductsZoom(k, opts){
+  opts = opts || {};
+  const prevBand = allProductsZoomBandCache;
+  allProductsZoomK = k;
+  const band = allProductsZoomBand(k);
+  const bandChanged = band !== prevBand;
+  allProductsZoomBandCache = band;
+  if (bandChanged || opts.force){
+    applyAllProductsGraphVisibility({ labels: !allProductsZoomGesturing });
+    if (!allProductsZoomGesturing) syncAllProductsLayersUI();
+    return;
+  }
+  if (allProductsZoomGesturing){
+    applyAllProductsLabelsDuringGesture();
+    return;
+  }
+  if (opts.labels) scheduleAllProductsLabelRefresh();
 }
 function allProductsCollisionLabelSet(selectedNode){
   const allowed = new Map();
@@ -4301,12 +4387,14 @@ function allProductsCollisionLabelSet(selectedNode){
     Math.floor(Math.max(0, k - ALL_ZOOM.closeLabels) * ALL_ZOOM.labelDensity));
   const placed = [];
   const candidates = [];
+  const densityCtx = buildAllProductsDensityGrid();
+  const vp = allProductsViewportBounds();
   const { w, h } = getDims();
   const t = d3.zoomTransform(svgEl);
   const vcx = (w / 2 - t.x) / Math.max(k, 0.001);
   const vcy = (h / 2 - t.y) / Math.max(k, 0.001);
   viewNodes.forEach(d => {
-    if (!allProductsNodeDisplayed(d)) return;
+    if (!allProductsNodeDisplayedFast(d)) return;
     let priority = 60;
     if (selectedNode && d.id === selectedNode.id) priority = 0;
     else if (d.id === pillarHoverId) priority = 1;
@@ -4314,10 +4402,11 @@ function allProductsCollisionLabelSet(selectedNode){
     else if (stack.has(d.id)) priority = 8;
     else if (d._kind === "family") return;
     else {
+      if (!allProductsNodeInViewport(d, vp)) return;
       const gx = d.fx != null ? d.fx : d.x;
       const gy = d.fy != null ? d.fy : d.y;
       const dist = (gx != null && gy != null) ? Math.hypot(gx - vcx, gy - vcy) : 9999;
-      priority = 16 + dist * 0.015 + allProductsLocalDensity(d) * 3;
+      priority = 16 + dist * 0.015 + allProductsLocalDensity(d, densityCtx) * 3;
     }
     candidates.push({ d, priority });
   });
@@ -4326,7 +4415,7 @@ function allProductsCollisionLabelSet(selectedNode){
   for (const { d, priority } of candidates){
     const isHot = priority <= 2;
     if (!isHot && autoCount >= maxAuto) continue;
-    const dense = allProductsLocalDensity(d) >= 4;
+    const dense = allProductsLocalDensity(d, densityCtx) >= 4;
     const tryTexts = isHot
       ? [allProductsLabelDisplayText(d, false), allProductsLabelDisplayText(d, true)]
       : dense
@@ -4335,7 +4424,7 @@ function allProductsCollisionLabelSet(selectedNode){
     let chosen = null;
     let chosenBox = null;
     for (const text of tryTexts){
-      const box = allProductsLabelScreenBox(d, text);
+      const box = allProductsLabelScreenBox(d, text, densityCtx);
       if (!box) continue;
       const pad = box.dense ? 3 : 5;
       if (!placed.some(p => allProductsLabelBoxesOverlap(p, box, pad))){
@@ -4347,7 +4436,7 @@ function allProductsCollisionLabelSet(selectedNode){
     if (!chosen){
       if (!isHot) continue;
       chosen = tryTexts[tryTexts.length - 1];
-      chosenBox = allProductsLabelScreenBox(d, chosen);
+      chosenBox = allProductsLabelScreenBox(d, chosen, densityCtx);
       if (!chosenBox) continue;
     }
     if (!isHot) autoCount++;
@@ -4393,7 +4482,8 @@ function applyAllProductsLabelStyles(selectedNode){
     });
 }
 
-function applyAllProductsNodeStyles(selectedNode){
+function applyAllProductsNodeStyles(selectedNode, opts){
+  opts = opts || {};
   if (!ndEl || viewMode !== "all-products") return;
   const conn = selectedNode ? connectionNodeSet(selectedNode.id, connectionHighlightDepth) : null;
   const band = allProductsZoomBand(allProductsZoomK);
@@ -4431,7 +4521,7 @@ function applyAllProductsNodeStyles(selectedNode){
       .attr("opacity", hot || inStk ? 1 : (dim ? 0.18 : (isFamily ? 1 : 0.96)));
     g.select(".node-scaler").attr("transform", hot ? "scale(1.08)" : (isFamily ? null : `scale(${midScale})`));
   });
-  applyAllProductsLabelStyles(selectedNode);
+  if (opts.labels !== false) applyAllProductsLabelStyles(selectedNode);
 }
 
 // D3 Graph
@@ -4888,16 +4978,26 @@ function iconKey(n) {
 }
 
 const root = svg.append("g");
-const zoom = d3.zoom().scaleExtent([0.2,4]).on("zoom", ev => {
-  root.attr("transform", ev.transform);
-  updateCompositionLabelVisibility(ev.transform.k);
-  updatePillarLabelVisibility(ev.transform.k);
-  if (viewMode === "all-products"){
-    allProductsZoomK = ev.transform.k;
-    applyAllProductsGraphVisibility();
-    syncAllProductsLayersUI();
-  }
-});
+const zoom = d3.zoom().scaleExtent([0.2,4])
+  .on("start", () => {
+    allProductsZoomGesturing = viewMode === "all-products";
+    if (allProductsZoomGesturing) root.style("will-change", "transform");
+  })
+  .on("zoom", ev => {
+    root.attr("transform", ev.transform);
+    updateCompositionLabelVisibility(ev.transform.k);
+    updatePillarLabelVisibility(ev.transform.k);
+    if (viewMode === "all-products") onAllProductsZoom(ev.transform.k);
+  })
+  .on("end", ev => {
+    root.style("will-change", null);
+    if (viewMode === "all-products"){
+      allProductsZoomGesturing = false;
+      onAllProductsZoom(ev.transform.k, { force: true });
+    } else {
+      allProductsZoomGesturing = false;
+    }
+  });
 svg.call(zoom);
 
 const clipDefHost = svg.select("defs").append("g").attr("class", "product-clip-defs");
@@ -8204,6 +8304,7 @@ function applyViewLevel(mode, opts){
     const v = buildAllProductsView();
     viewNodes = v.nodes; viewLinks = v.links;
     allProductsZoomK = svgEl ? d3.zoomTransform(svgEl).k : 1;
+    allProductsZoomBandCache = allProductsZoomBand(allProductsZoomK);
     syncAllProductsLayersUI();
   } else {
     // Families mode = the full graph; optionally focus a category by activating it.
@@ -8429,6 +8530,7 @@ window.getAllProductsAutoLabelCount = () => allProductsAutoLabels.size;
 window.__cpnTestZoomK = (k) => {
   const t = d3.zoomTransform(svgEl);
   svg.call(zoom.transform, d3.zoomIdentity.translate(t.x, t.y).scale(k));
+  if (viewMode === "all-products") onAllProductsZoom(k, { force: true });
 };
 window.getSpatialFocus = () => spatialState.focusFamily;
 window.__cpnSpatialGraph = () => spatialState.graph;
@@ -10211,7 +10313,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.83.8";
+const APP_VERSION   = "2.83.9";
 const DATA_UPDATED  = "2026-07-08";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
