@@ -1126,20 +1126,12 @@
   padding:6px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.04);color:#dce8f4;font-size:10px;font-weight:700}
 #ds-walk-overlay .ds-walk-hud-glass .ds-walk-btn-ghost:hover{border-color:rgba(126,234,255,.4);background:rgba(2,200,255,.08)}
+#ds-walk-overlay .ds-walk-hud-glass .ds-walk-btn-ghost.active{
+  border-color:rgba(2,200,255,.45);background:rgba(2,200,255,.12);color:#e8f4ff}
+#ds-walk-overlay .ds-walk-hud-glass .ds-walk-btn-ghost:disabled{opacity:.45;cursor:default}
+#ds-walk-overlay .ds-walk-hud-glass .ds-walk-btn-spaces.active{
+  border-color:rgba(111,66,193,.55);background:rgba(111,66,193,.18);color:#d8b8ff}
 #ds-walk-overlay .ds-walk-hud-glass .ds-walk-btn-ico{opacity:.85;margin-right:2px;font-size:11px}
-#ds-walk-overlay .ds-walk-hud-glass .ds-walk-hud-row2 .ds-walk-btn-ghost[data-action="wayfind-open"]{margin-left:auto}
-#ds-walk-overlay .ds-walk-hud-glass .ds-walk-more-wrap{position:relative}
-#ds-walk-overlay .ds-walk-hud-glass .ds-walk-more-menu{
-  position:absolute;top:calc(100% + 4px);right:0;z-index:20;min-width:152px;padding:4px;
-  border-radius:10px;background:rgba(6,14,28,.96);border:1px solid rgba(126,234,255,.22);
-  box-shadow:0 12px 32px rgba(0,0,0,.42);backdrop-filter:blur(16px)}
-#ds-walk-overlay .ds-walk-hud-glass .ds-walk-more-menu[hidden]{display:none!important}
-#ds-walk-overlay .ds-walk-hud-glass .ds-walk-more-item{
-  display:block;width:100%;padding:7px 10px;border-radius:7px;border:0;background:transparent;
-  color:#dce8f4;font-size:11px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit}
-#ds-walk-overlay .ds-walk-hud-glass .ds-walk-more-item:hover{background:rgba(2,200,255,.1);color:#fff}
-#ds-walk-overlay .ds-walk-hud-glass .ds-walk-more-item.active{color:#7ee8ff}
-#ds-walk-overlay .ds-walk-hud-glass .ds-walk-more-item:disabled{opacity:.45;cursor:default}
 #ds-walk-overlay .ds-walk-hud-glass .ds-walk-link-chips{
   display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:7px;padding:0;
   background:transparent;border:0}

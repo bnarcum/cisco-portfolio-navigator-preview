@@ -35,6 +35,8 @@ must(/function usesGlassHud/.test(walk), "Glass HUD helper is missing");
 must(/return hudHtmlGlass/.test(walk), "Walk HUD must use glass layout for Lab and Explore");
 must(/#ds-walk-overlay \.ds-walk-hud-glass[\s\S]*left:10px/.test(css), "Glass HUD must anchor top-left");
 must(/#ds-walk-overlay \.ds-walk-hud-glass[\s\S]*width:min\(400px/.test(css), "Glass HUD must use compact width");
+must(!/hud-more-toggle/.test(walk), "Walk HUD overflow menu should be removed");
+must(/ds-walk-hud-row2[\s\S]*data-action="packets"[\s\S]*data-action="packet-speed"/.test(walk), "Packets and speed belong in main HUD row");
 
 must(/Generate sample walkthrough/.test(studio), "Quickstart copy should say walkthrough, not 3D walk");
 must(/id="ds-walk-corridor"[\s\S]*>Present</.test(studio), "Toolbar should use Present label");

@@ -94,8 +94,7 @@
     packetsEnabled: true, packetSpeedIdx: 1,
     quest: null,
     walkStyle: "lab",
-    linksExpanded: false,
-    hudMoreOpen: false
+    linksExpanded: false
   };
 
   function savedWalkStyle() {
@@ -1976,22 +1975,6 @@
     el.textContent = `${ch.label} · ${conn} · ${controls}`;
   }
 
-  function closeHudMoreMenu() {
-    state.hudMoreOpen = false;
-    const menu = document.getElementById("ds-walk-more-menu");
-    const btn = state.overlay?.querySelector('[data-action="hud-more-toggle"]');
-    if (menu) menu.hidden = true;
-    btn?.setAttribute("aria-expanded", "false");
-  }
-
-  function toggleHudMoreMenu() {
-    state.hudMoreOpen = !state.hudMoreOpen;
-    const menu = document.getElementById("ds-walk-more-menu");
-    const btn = state.overlay?.querySelector('[data-action="hud-more-toggle"]');
-    if (menu) menu.hidden = !state.hudMoreOpen;
-    btn?.setAttribute("aria-expanded", state.hudMoreOpen ? "true" : "false");
-  }
-
   function highlightNavChip(id) {
     document.querySelectorAll(".ds-walk-dev").forEach(el => {
       el.classList.toggle("active", el.dataset.chamber === id);
@@ -2737,7 +2720,7 @@
     if (!btn) return;
     if (state.outcomes) {
       btn.classList.add("active");
-      btn.textContent = "Insights: on";
+      btn.textContent = usesGlassHud() ? "Insights · on" : "Insights: on";
       panel?.removeAttribute("hidden");
     } else {
       btn.classList.remove("active");
@@ -2873,7 +2856,7 @@
 
   function hudHtmlGlass(tab, style) {
     const outcomesBtn = tab === "room"
-      ? `<button type="button" class="ds-walk-more-item" data-action="outcomes">Insights</button>`
+      ? `<button type="button" class="ds-walk-btn ds-walk-btn-ghost ds-walk-btn-spaces" data-action="outcomes" title="Simulated occupancy, location &amp; IoT overlay">Insights</button>`
       : "";
     const styleBtns = Object.entries(WALK_STYLES).map(([key, cfg]) =>
       `<button type="button" class="ds-walk-style${key === currentWalkStyle() ? " active" : ""}" data-action="walk-style" data-style="${key}" title="${esc(cfg.hint)}">${esc(cfg.label.toUpperCase())}</button>`
@@ -2891,14 +2874,9 @@
         <button type="button" class="ds-walk-btn ds-walk-btn-ghost" data-action="wayfind-open" title="Where to? — get directions">
           <span class="ds-walk-btn-ico" aria-hidden="true">◎</span> Where to?
         </button>
-        <div class="ds-walk-more-wrap">
-          <button type="button" class="ds-walk-btn ds-walk-btn-ghost" data-action="hud-more-toggle" aria-expanded="false" aria-haspopup="true" title="More tools">⋯ More</button>
-          <div class="ds-walk-more-menu" id="ds-walk-more-menu" hidden>
-            ${outcomesBtn}
-            <button type="button" class="ds-walk-more-item" data-action="packets">Packets</button>
-            <button type="button" class="ds-walk-more-item" data-action="packet-speed">Speed · Normal</button>
-          </div>
-        </div>
+        ${outcomesBtn}
+        <button type="button" class="ds-walk-btn ds-walk-btn-ghost" data-action="packets" title="Show or hide data packets on links">Packets</button>
+        <button type="button" class="ds-walk-btn ds-walk-btn-ghost ds-walk-pkt-speed" data-action="packet-speed" title="Packet speed">Speed · Normal</button>
       </div>
       ${layerFilterHtml(tab)}
       <div class="ds-walk-outcomes" id="ds-walk-outcomes" hidden></div>
@@ -2952,20 +2930,12 @@
     bindDpad();
     state.overlay?.querySelector(".ds-walk-close")?.addEventListener("click", () => close());
     state.overlay?.addEventListener("click", e => {
-      if (state.hudMoreOpen && !e.target.closest(".ds-walk-more-wrap")) closeHudMoreMenu();
-    });
-    state.overlay?.addEventListener("click", e => {
       const btn = e.target.closest("[data-action]");
       if (!btn) return;
       const a = btn.dataset.action;
-      if (a === "outcomes") { e.preventDefault(); e.stopPropagation(); closeHudMoreMenu(); toggleOutcomes(); }
+      if (a === "outcomes") { e.preventDefault(); e.stopPropagation(); toggleOutcomes(); }
       else if (a === "packets") { e.preventDefault(); e.stopPropagation(); togglePackets(); }
       else if (a === "packet-speed") { e.preventDefault(); e.stopPropagation(); cyclePacketSpeed(); }
-      else if (a === "hud-more-toggle") {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleHudMoreMenu();
-      }
       else if (a === "links-expand") {
         e.preventDefault();
         e.stopPropagation();
@@ -2982,7 +2952,7 @@
         close(true);
         open(studio);
       }
-      else if (a === "wayfind-open") { closeHudMoreMenu(); openWayfindMenu(); }
+      else if (a === "wayfind-open") openWayfindMenu();
       else if (a === "wayfind-close") closeWayfindMenu();
       else if (a === "wayfind-stop") { clearWayfinding(); setStatus("Wayfinding stopped"); }
       else if (a === "prev-dev") cycleDevice(-1);
