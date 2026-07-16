@@ -4,13 +4,12 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cisco Portfolio Navigator</title>
-  <link rel="icon" type="image/png" href="assets/cpn-favicon.png"/>
   <link rel="icon" type="image/svg+xml" href="assets/cpn-favicon.svg"/>
   <meta name="theme-color" content="#07070f"/>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.90.5";
+  window.__CPN_BUILD="2.90.6";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -174,27 +173,9 @@
       .actionbar-end{margin-left:0;justify-content:flex-start;width:100%}
       .vm-seg{max-width:100%;flex-wrap:wrap}
     }
-    .logo{display:flex;align-items:center;gap:10px;white-space:nowrap;flex-shrink:0;
-      font-family:"CiscoSansTT",system-ui,sans-serif;text-decoration:none;color:inherit}
-    .logo-mark{width:48px;height:48px;flex-shrink:0;display:block;border-radius:10px;
-      filter:drop-shadow(0 0 10px rgba(2,200,255,.28)) drop-shadow(0 2px 8px rgba(0,0,0,.35))}
-    .logo-text{display:flex;flex-direction:column;gap:3px;line-height:1.05;min-width:0}
-    .logo-title{font-size:15px;font-weight:700;letter-spacing:.015em;color:#eef6fc;
-      text-shadow:0 0 18px rgba(2,200,255,.22)}
-    .logo-rule{display:block;height:1px;width:100%;max-width:168px;border:0;margin:0;
-      background:linear-gradient(90deg,rgba(2,200,255,.55) 0%,rgba(255,144,0,.42) 48%,rgba(2,200,255,.08) 100%);
-      box-shadow:0 0 8px rgba(2,200,255,.35),0 0 3px rgba(255,144,0,.18)}
-    .logo-sub{font-size:13px;font-weight:300;letter-spacing:.06em;color:#b8d4ea;
-      text-shadow:0 0 12px rgba(2,200,255,.12)}
-    [data-theme="light"] .logo-title{color:#07182d;text-shadow:none}
-    [data-theme="light"] .logo-sub{color:#525e6c;text-shadow:none}
-    [data-theme="light"] .logo-rule{background:linear-gradient(90deg,rgba(10,96,255,.45) 0%,rgba(255,144,0,.35) 48%,rgba(10,96,255,.08) 100%);
-      box-shadow:none}
-    @media (max-width:520px){
-      .logo-sub{font-size:12px}
-      .logo-title{font-size:14px}
-      .logo-mark{width:40px;height:40px}
-    }
+    .logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;
+      color:var(--accent);white-space:nowrap;flex-shrink:0}
+    .logo img,.logo svg{width:44px;height:44px;flex-shrink:0}
     .dv{width:1px;height:26px;background:var(--border);flex-shrink:0}
     .sw{position:relative;flex:1 1 480px;min-width:280px;max-width:none;z-index:3}
     @media (max-width: 720px){
@@ -1160,17 +1141,9 @@
 <script>if(/cisco-portfolio-navigator-preview/i.test(location.pathname))document.getElementById("preview-banner").classList.add("visible");</script>
 <div id="app-chrome">
 <div id="topbar">
-  <div class="logo" aria-label="Cisco Portfolio Navigator">
-    <picture>
-      <source srcset="assets/cpn-logo-mark.webp 1x, assets/cpn-logo-mark@2x.webp 2x" type="image/webp"/>
-      <img class="logo-mark" src="assets/cpn-logo-mark.png" srcset="assets/cpn-logo-mark.png 1x, assets/cpn-logo-mark@2x.png 2x"
-           alt="" width="48" height="48" decoding="async"/>
-    </picture>
-    <div class="logo-text">
-      <span class="logo-title">Cisco Portfolio</span>
-      <span class="logo-rule" aria-hidden="true"></span>
-      <span class="logo-sub">Navigator</span>
-    </div>
+  <div class="logo">
+    <img src="assets/cpn-logo.svg" alt="" width="44" height="44"/>
+    Cisco Portfolio Navigator
   </div>
   <div class="dv"></div>
   <div class="sw">
