@@ -1,5 +1,6 @@
 /**
- * Click header logo to play Premium intro, then return to Overview home.
+ * Click header logo to play Premium lockup intro (CSS animation; optional WebM/MP4).
+ * Returns to Overview home only when the intro finishes on its own.
  */
 (function () {
   "use strict";
@@ -19,7 +20,6 @@
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let playing = false;
-    let returnHomeOnClose = false;
     let closeTimer = null;
 
     function clearCloseTimer() {
@@ -37,35 +37,32 @@
       }
     }
 
-    function closeIntro() {
-      const shouldHome = returnHomeOnClose;
+    function closeIntro(returnHome) {
       clearCloseTimer();
       overlay.classList.remove("is-active", "is-playing", "logo-intro-out");
       overlay.hidden = true;
       overlay.setAttribute("aria-hidden", "true");
       document.body.classList.remove("logo-intro-open");
       playing = false;
-      returnHomeOnClose = false;
       if (video) {
         video.onended = null;
         video.pause();
         video.currentTime = 0;
         video.hidden = true;
       }
-      if (staticImg) {
-        staticImg.hidden = true;
-        staticImg.classList.remove("is-cinematic");
-      }
       if (animBlock) animBlock.hidden = false;
-      if (shouldHome) goOverviewHome();
+      if (staticImg) staticImg.hidden = true;
+      if (returnHome) goOverviewHome();
+    }
+
+    function finishIntro() {
+      overlay.classList.add("logo-intro-out");
+      setTimeout(() => closeIntro(true), 420);
     }
 
     function scheduleClose(ms) {
       clearCloseTimer();
-      closeTimer = setTimeout(() => {
-        overlay.classList.add("logo-intro-out");
-        setTimeout(closeIntro, 420);
-      }, ms);
+      closeTimer = setTimeout(finishIntro, ms);
     }
 
     async function videoAvailable() {
@@ -76,7 +73,10 @@
         if (!url) continue;
         try {
           const res = await fetch(url, { method: "HEAD", cache: "no-store" });
-          if (res.ok) return true;
+          if (res.ok) {
+            src.setAttribute("data-ok", "1");
+            return true;
+          }
         } catch (e) { /* optional asset */ }
       }
       return false;
@@ -90,16 +90,11 @@
       scheduleClose(INTRO_MS);
     }
 
-    function playPosterIntro(cinematic) {
+    function playStaticIntro() {
       if (animBlock) animBlock.hidden = true;
       if (video) video.hidden = true;
-      if (!staticImg) {
-        playCssIntro();
-        return;
-      }
-      staticImg.hidden = false;
-      staticImg.classList.toggle("is-cinematic", !!cinematic);
-      scheduleClose(cinematic ? INTRO_MS : REDUCED_MS);
+      if (staticImg) staticImg.hidden = false;
+      scheduleClose(REDUCED_MS);
     }
 
     async function playVideoIntro() {
@@ -107,28 +102,24 @@
       if (staticImg) staticImg.hidden = true;
       video.hidden = false;
       video.currentTime = 0;
-      video.onended = () => {
-        overlay.classList.add("logo-intro-out");
-        setTimeout(closeIntro, 200);
-      };
+      video.onended = finishIntro;
       try {
         await video.play();
       } catch (e) {
-        playPosterIntro(true);
+        playCssIntro();
       }
     }
 
     async function openIntro() {
       if (playing) return;
       playing = true;
-      returnHomeOnClose = true;
       overlay.hidden = false;
       overlay.setAttribute("aria-hidden", "false");
       document.body.classList.add("logo-intro-open");
       requestAnimationFrame(() => overlay.classList.add("is-active"));
 
       if (reduced) {
-        playPosterIntro(false);
+        playStaticIntro();
         return;
       }
 
@@ -137,16 +128,16 @@
         return;
       }
 
-      playPosterIntro(true);
+      playCssIntro();
     }
 
     trigger.addEventListener("click", openIntro);
-    skipBtn?.addEventListener("click", closeIntro);
+    skipBtn?.addEventListener("click", () => closeIntro(false));
     overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) closeIntro();
+      if (e.target === overlay) closeIntro(false);
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !overlay.hidden) closeIntro();
+      if (e.key === "Escape" && !overlay.hidden) closeIntro(false);
     });
   }
 
