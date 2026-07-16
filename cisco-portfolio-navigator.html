@@ -1989,9 +1989,6 @@ const PRODUCTS = [
   {id:"board-pro-g3-75", name:"Cisco Board Pro 75 G3",      family:"room-systems",   status:"current",
    desc:"75\" 4K AI collaboration board with 96 MP dual camera, 14-element mic array, spatial speakers, NVIDIA AI compute, MDEP Teams Rooms, and a larger canvas for training rooms and boardrooms.",
    url:"https://www.webex.com/us/en/devices/board-series/cisco-board-pro.html"},
-  {id:"board-pro-g3",   name:"Cisco Board Pro G3",          family:"room-systems",   status:"current",
-   desc:"Next-gen all-in-one AI collaboration board (55\"/75\") with dual 48 MP cameras, 14-mic beamforming array, spatial audio, RoomOS 26.7+, and Microsoft Device Ecosystem Platform (MDEP).",
-   url:"https://www.webex.com/us/en/devices/board-series/cisco-board-pro.html"},
   {id:"room-kit-mini",  name:"Cisco Webex Room Kit Mini",   family:"room-systems",   status:"current",
    desc:"AI-powered huddle video system (3–5 people): all-in-one bar with 4K camera, 120° field of view, mic array, speakers, and codec. (Last day to order June 18, 2024; superseded by Cisco Room Bar.)",
    url:"https://www.cisco.com/c/en/us/products/collateral/collaboration-endpoints/webex-room-series/datasheet-c78-741523.html"},
@@ -4594,7 +4591,7 @@ let nodeClickTimer = null;
 
 const MATRIX_SITE = "https://bnarcum.github.io/collaboration-device-matrix/";
 /** Bust iframe cache when Device Matrix deploys — bump with each matrix release. */
-const MATRIX_RELEASE = "20260716b";
+const MATRIX_RELEASE = "20260716c";
 const MATRIX_NODE_FILL = "#ffffff";
 const MATRIX_NODE_RING = "#cbd5e1";
 const MATRIX_IMG_BASE = MATRIX_SITE + "devices/";
@@ -4607,7 +4604,6 @@ let MATRIX_BRIDGE = {
     "room-bar-pro-g2": { matrixId: "room-bar-pro", hash: "985d42e216" },
     "board-pro-g3-55": { matrixId: "board-pro-g3-55", hash: "9dc39ce9a6" },
     "board-pro-g3-75": { matrixId: "board-pro-g3-75", hash: "9dc39ce9a6" },
-    "board-pro-g3": { matrixId: "board-pro-g3-75", hash: "9dc39ce9a6" },
     "room-kit-mini": { matrixId: "room-bar", hash: "5930e7bad9" },
     "room-kit-eq": { matrixId: "room-kit-eq", hash: "5dffa60f11" },
     "room-kit-pro": { matrixId: "room-kit-pro-g2", hash: "d451a37ab5" },
@@ -10313,7 +10309,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = "2.86.0";
+const APP_VERSION   = "2.86.1";
 const DATA_UPDATED  = "2026-07-16";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",

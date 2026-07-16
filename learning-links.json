@@ -172,7 +172,7 @@
       "hint": "Official Webex Academy course — plan, install, and manage Room Kit, Board, and room systems.",
       "url": "https://academy.webex.com/learn",
       "families": ["room-systems", "desk-devices"],
-      "products": ["room-kit-pro", "room-kit-eq", "room-bar", "room-bar-pro", "room-bar-pro-g2", "board-pro-g3", "board-pro-g3-55", "board-pro-g3-75", "desk-pro", "desk-mini"],
+      "products": ["room-kit-pro", "room-kit-eq", "room-bar", "room-bar-pro", "room-bar-pro-g2", "board-pro-g3-55", "board-pro-g3-75", "desk-pro", "desk-mini"],
       "useCases": ["Hybrid Work"],
       "level": "Foundational",
       "duration": "2 hrs",
@@ -188,7 +188,7 @@
       "hint": "Official Board Pro G3 wall, floor, and wheel-stand mounting, cabling, RoomOS, and MDEP Teams Rooms.",
       "url": "https://www.cisco.com/c/en/us/products/collateral/collaboration-endpoints/webex-board/board-pro-g3-ds.html",
       "families": ["room-systems"],
-      "products": ["board-pro-g3", "board-pro-g3-55", "board-pro-g3-75"],
+      "products": ["board-pro-g3-55", "board-pro-g3-75"],
       "useCases": ["Hybrid Work"],
       "level": "Foundational",
       "primary": true

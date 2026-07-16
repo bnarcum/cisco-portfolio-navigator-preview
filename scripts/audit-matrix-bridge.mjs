@@ -32,11 +32,11 @@ if (!matrixTs) {
   }
 }
 
-const requiredBoard = ["board-pro-g3-55", "board-pro-g3-75", "board-pro-g3"];
+const requiredBoard = ["board-pro-g3-55", "board-pro-g3-75"];
 for (const id of requiredBoard) {
   const e = bridge.products?.[id];
   if (!e) issues.push(`missing bridge entry: ${id}`);
-  else if (e.matrixId !== id && id !== "board-pro-g3") {
+  else if (e.matrixId !== id) {
     issues.push(`${id}: matrixId should be ${id}, got ${e.matrixId}`);
   } else if (e.hash !== "9dc39ce9a6") {
     issues.push(`${id}: expected G3 hash 9dc39ce9a6, got ${e.hash || "none"}`);

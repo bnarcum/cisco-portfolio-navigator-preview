@@ -72,8 +72,7 @@ try {
 
   const exploreCtx = await page.evaluate(() => window.__DS_EXPLORE.resolveContext(window.DesignStudio.instance));
   if (!exploreCtx.bomProductIds?.length) errors.push("resolveContext missing bomProductIds for boardroom");
-  if (!exploreCtx.bomProductIds?.includes("board-pro-g3-75")
-      && !exploreCtx.bomProductIds?.includes("board-pro-g3"))
+  if (!exploreCtx.bomProductIds?.includes("board-pro-g3-75"))
     errors.push(`boardroom BOM should include board product, got ${exploreCtx.bomProductIds?.join(", ")}`);
   if (!exploreCtx.skills?.length) errors.push("learn mode should surface skill cards for boardroom BOM");
   const skillLabels = (exploreCtx.skills || []).map(s => s.linkLabel || s.id).join(" ");

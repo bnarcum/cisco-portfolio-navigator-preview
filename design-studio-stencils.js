@@ -230,7 +230,7 @@
     "room-kit-eq": { products: ["room-kit-eq"], families: ["room-systems"] },
     "room-kit-pro": { products: ["room-kit-pro"], families: ["room-systems"] },
     "room-bar": { products: ["room-bar"], families: ["room-systems"] },
-    "board-pro": { products: ["board-pro-g3"], families: ["room-systems"] },
+    "board-pro": { products: ["board-pro-g3-75"], families: ["room-systems"] },
     "desk-pro": { products: ["desk-pro"], families: ["desk-devices", "room-systems"] },
     "desk-mini": { products: ["desk-mini"], families: ["desk-devices", "room-systems"] },
     "desk-phone": { families: ["ip-phones"] },
