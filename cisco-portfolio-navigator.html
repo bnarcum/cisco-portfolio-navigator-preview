@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.86.8";
+  window.__CPN_BUILD="2.86.9";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -43,10 +43,10 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.86.8"/>
-  <link rel="stylesheet" href="assets/cpn-light.css?v=2.86.8"/>
-  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.86.8"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.86.8"/>
+  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.86.9"/>
+  <link rel="stylesheet" href="assets/cpn-light.css?v=2.86.9"/>
+  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.86.9"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.86.9"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -4620,7 +4620,7 @@ let nodeClickTimer = null;
 
 const MATRIX_SITE = "https://bnarcum.github.io/collaboration-device-matrix/";
 /** Bust iframe cache when Device Matrix deploys — bump with each matrix release. */
-const MATRIX_RELEASE = "20260716j";
+const MATRIX_RELEASE = "20260716k";
 const MATRIX_NODE_FILL = "#ffffff";
 const MATRIX_NODE_RING = "#cbd5e1";
 const MATRIX_IMG_BASE = MATRIX_SITE + "devices/";
@@ -5009,6 +5009,8 @@ document.addEventListener("mouseenter", e => {
 }, true);
 /** Matrix photos on the graph — room + desk collaboration endpoints only. */
 const MATRIX_PHOTO_FAMILIES = new Set(["room-systems", "desk-devices"]);
+/** Prefer crisp Cisco symbols over low-quality matrix cutouts. */
+const MATRIX_ICON_ONLY_FAMILIES = new Set(["cisco-headsets"]);
 function productAllowsMatrixPhoto(id){
   const p = prodById[id];
   return !!(p && MATRIX_PHOTO_FAMILIES.has(p.family) && matrixImageUrl(id));
@@ -10505,7 +10507,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = window.__CPN_BUILD || "2.86.8";
+const APP_VERSION   = window.__CPN_BUILD || "2.86.9";
 const DATA_UPDATED  = "2026-07-16";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -14479,6 +14481,8 @@ function enhanceProductPanel(id){
   }, 0);
 }
 function productMatrixHeroUrl(id){
+  const p = prodById[id];
+  if (p && MATRIX_ICON_ONLY_FAMILIES.has(p.family)) return null;
   if (!matrixBridgeEntry(id)) return null;
   return matrixImageUrl(id);
 }
@@ -16541,23 +16545,23 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/family-heroes.js?v=2.86.8"></script>
+<script src="assets/family-heroes.js?v=2.86.9"></script>
 <script>window.__DS_ASSET_V=window.__CPN_BUILD;</script>
-<script src="design-studio-photos.js?v=2.86.8"></script>
-<script src="design-studio-stencils.js?v=2.86.8"></script>
-<script src="design-studio-templates.js?v=2.86.8"></script>
-<script src="design-studio-rules.js?v=2.86.8"></script>
-<script src="design-studio-intent.js?v=2.86.8"></script>
-<script src="design-studio-explore.js?v=2.86.8"></script>
-<script src="design-studio-premium.js?v=2.86.8"></script>
-<script src="design-studio-expert.js?v=2.86.8"></script>
-<script src="design-studio-walk-layout.js?v=2.86.8"></script>
-<script src="design-studio-walk-voxel.js?v=2.86.8"></script>
-<script src="design-studio-field-panel.js?v=2.86.8"></script>
-<script src="design-studio-walk-audio.js?v=2.86.8"></script>
-<script src="design-studio-walk-models.js?v=2.86.8"></script>
-<script src="design-studio-walk-quest.js?v=2.86.8"></script>
-<script src="design-studio-walk.js?v=2.86.8"></script>
-<script src="design-studio.js?v=2.86.8"></script>
+<script src="design-studio-photos.js?v=2.86.9"></script>
+<script src="design-studio-stencils.js?v=2.86.9"></script>
+<script src="design-studio-templates.js?v=2.86.9"></script>
+<script src="design-studio-rules.js?v=2.86.9"></script>
+<script src="design-studio-intent.js?v=2.86.9"></script>
+<script src="design-studio-explore.js?v=2.86.9"></script>
+<script src="design-studio-premium.js?v=2.86.9"></script>
+<script src="design-studio-expert.js?v=2.86.9"></script>
+<script src="design-studio-walk-layout.js?v=2.86.9"></script>
+<script src="design-studio-walk-voxel.js?v=2.86.9"></script>
+<script src="design-studio-field-panel.js?v=2.86.9"></script>
+<script src="design-studio-walk-audio.js?v=2.86.9"></script>
+<script src="design-studio-walk-models.js?v=2.86.9"></script>
+<script src="design-studio-walk-quest.js?v=2.86.9"></script>
+<script src="design-studio-walk.js?v=2.86.9"></script>
+<script src="design-studio.js?v=2.86.9"></script>
 </body>
 </html>
