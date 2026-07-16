@@ -204,14 +204,13 @@
     return LINK_MEDIA_STYLE[mediaId] || LINK_MEDIA_STYLE.cat6;
   }
 
-  function oneCiscoPillarCard(p, wide) {
-    const cls = wide ? "ds-oc-pillar ds-oc-pillar-wide ds-oc-pillar-resilience" : "ds-oc-pillar";
-    return `<button type="button" class="${cls}" data-pillar="${escapeAttr(p.id)}"
+  function oneCiscoPillarCard(p) {
+    return `<button type="button" class="ds-oc-pillar" data-pillar="${escapeAttr(p.id)}"
       style="--pillar-color:${escapeAttr(p.color)}"
       title="${escapeAttr(p.promise)} — click to prefill brief">
       <svg class="ds-oc-icon" aria-hidden="true"><use href="#icon-${escapeAttr(p.icon)}"/></svg>
       <span class="ds-oc-pillar-text">
-        <strong class="ds-oc-pillar-label">${escapeHtml(p.label)}</strong>
+        <strong class="ds-oc-pillar-label">${escapeHtml(p.shortLabel || p.label)}</strong>
         <span class="ds-oc-pillar-promise">${escapeHtml(p.promise)}</span>
       </span>
     </button>`;
@@ -219,28 +218,11 @@
 
   function buildOneCiscoHeroHtml() {
     const S = ONE_CISCO_STORY;
-    const top = S.pillars.filter(p => p.id !== "resilience");
-    const res = S.pillars.find(p => p.id === "resilience");
     return `
-      <section class="ds-one-cisco" aria-labelledby="ds-oc-title">
-        <p class="ds-oc-eyebrow">${escapeHtml(S.eyebrow)}</p>
-        <h2 class="ds-oc-headline" id="ds-oc-title">${escapeHtml(S.headline)}</h2>
-        <p class="ds-oc-sub">${escapeHtml(S.subhead)}</p>
-        <div class="ds-oc-deck" id="ds-one-cisco-deck">
-          <div class="ds-oc-top">
-            ${top.map(p => oneCiscoPillarCard(p, false)).join("")}
-          </div>
-          <div class="ds-oc-spine" aria-hidden="true">
-            <span class="ds-oc-spine-line ds-oc-spine-line-l"></span>
-            <span class="ds-oc-spine-label">${escapeHtml(S.connectivityLabel)}</span>
-            <span class="ds-oc-spine-line ds-oc-spine-line-r"></span>
-          </div>
-          ${res ? oneCiscoPillarCard(res, true) : ""}
-          <div class="ds-oc-ai" aria-hidden="true">
-            <span class="ds-oc-chevron ds-oc-chevron-l">‹ ‹ ‹</span>
-            <span class="ds-oc-ai-label">${escapeHtml(S.aiLabel)}</span>
-            <span class="ds-oc-chevron ds-oc-chevron-r">› › ›</span>
-          </div>
+      <section class="ds-one-cisco ds-one-cisco--compact" aria-labelledby="ds-oc-title">
+        <h2 class="ds-oc-lead" id="ds-oc-title">Pick a starting point, or describe your opportunity below.</h2>
+        <div class="ds-oc-deck ds-oc-deck--pillars" id="ds-one-cisco-deck">
+          ${S.pillars.map(p => oneCiscoPillarCard(p)).join("")}
         </div>
       </section>`;
   }
@@ -671,10 +653,7 @@
         <div id="ds-body">
           <div id="ds-main">
             <div id="ds-intent" hidden>
-              <details class="ds-intent-fold ds-intent-fold--hero" id="ds-intent-hero-fold" open>
-                <summary>One Cisco story</summary>
-                <div class="ds-intent-fold-body">${buildOneCiscoHeroHtml()}</div>
-              </details>
+              <div class="ds-intent-hero">${buildOneCiscoHeroHtml()}</div>
               <div class="ds-intent-work">
                 <label class="ds-intent-label" for="ds-intent-text">Opportunity brief</label>
                 <div id="ds-intent-chips"></div>

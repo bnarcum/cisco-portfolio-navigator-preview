@@ -236,7 +236,7 @@
     {
       sel: "#ds-one-cisco-deck",
       place: "bottom",
-      text: "Start from a One Cisco pillar or starter phrase. Parsed chips preview room mix and architecture before you generate.",
+      text: "Pick a One Cisco pillar to prefill your brief, or type your own. Parsed chips preview room mix before you generate.",
       before: (studio) => studio.setTab("intent")
     },
     {
