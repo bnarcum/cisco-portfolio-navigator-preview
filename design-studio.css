@@ -162,12 +162,9 @@
 #ds-sidebar.ds-side-learn .ds-explore-fold{flex:1;display:flex;flex-direction:column;margin:8px;min-height:0;border-color:rgba(0,212,255,.35)}
 #ds-sidebar.ds-side-learn .ds-explore-fold summary{display:none}
 #ds-sidebar.ds-side-learn .ds-explore-fold #ds-explore-dock{flex:1;overflow-y:auto;max-height:none}
-#design-studio.ds-tab-intent #ds-sidebar-modes,
-#design-studio.ds-tab-intent #ds-sidebar-build,
-#design-studio.ds-tab-intent #ds-explore-fold{display:none!important}
-#design-studio.ds-tab-intent #ds-sidebar-tools{flex:1}
-#design-studio.ds-tab-intent #ds-panel-tabs button:not([data-panel="bom"]),
-#design-studio.ds-tab-intent #ds-panel-more-fold{display:none}
+#design-studio.ds-tab-intent #ds-sidebar{display:none!important}
+#design-studio.ds-tab-intent #ds-intent{max-width:min(1280px,100%)}
+#design-studio.ds-tab-intent #ds-export-ccw,
 
 #ds-palette-head{padding:8px 10px 4px;border-bottom:1px solid var(--border);flex-shrink:0}
 #ds-palette-search{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);
