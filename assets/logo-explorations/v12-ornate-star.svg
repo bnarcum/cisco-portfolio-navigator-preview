@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+  <defs>
+    <radialGradient id="sphere" cx="47%" cy="38%" r="60%"><stop offset="0%" stop-color="#e8fbff"/><stop offset="50%" stop-color="#02c8ff"/><stop offset="100%" stop-color="#0a60ff"/></radialGradient>
+    <linearGradient id="metal" x1="20" y1="15" x2="80" y2="85"><stop offset="0%" stop-color="#eef8fc"/><stop offset="40%" stop-color="#58acd8"/><stop offset="100%" stop-color="#2e75b6"/></linearGradient>
+    <linearGradient id="metalDark" x1="80" y1="20" x2="20" y2="80"><stop offset="0%" stop-color="#1a4a72"/><stop offset="100%" stop-color="#7ec0e8"/></linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="60%" stop-color="#02c8ff" stop-opacity="0"/><stop offset="90%" stop-color="#02c8ff" stop-opacity=".25"/><stop offset="100%" stop-color="#02c8ff" stop-opacity="0"/></radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="50" cy="50" r="46" fill="url(#halo)"/>
+  <circle cx="50" cy="50" r="43" stroke="url(#metal)" stroke-width="1.5" opacity=".8"/>
+  <circle cx="50" cy="50" r="37" stroke="#58acd8" stroke-width=".55" opacity=".38"/>
+  <g stroke="#c8dce8" stroke-width=".55" opacity=".55" stroke-linecap="round">
+    <g transform="rotate(0 50 50)"><line x1="50" y1="8" x2="50" y2="10.5"/></g>
+    <g transform="rotate(22.5 50 50)"><line x1="50" y1="8" x2="50" y2="10"/></g>
+    <g transform="rotate(45 50 50)"><line x1="50" y1="8" x2="50" y2="10.5"/></g>
+    <g transform="rotate(67.5 50 50)"><line x1="50" y1="8" x2="50" y2="10"/></g>
+    <g transform="rotate(90 50 50)"><line x1="50" y1="8" x2="50" y2="10.5"/></g>
+    <g transform="rotate(112.5 50 50)"><line x1="50" y1="8" x2="50" y2="10"/></g>
+    <g transform="rotate(135 50 50)"><line x1="50" y1="8" x2="50" y2="10.5"/></g>
+    <g transform="rotate(157.5 50 50)"><line x1="50" y1="8" x2="50" y2="10"/></g>
+    <g transform="rotate(180 50 50)"><line x1="50" y1="8" x2="50" y2="10.5"/></g>
+    <g transform="rotate(202.5 50 50)"><line x1="50" y1="8" x2="50" y2="10"/></g>
+    <g transform="rotate(225 50 50)"><line x1="50" y1="8" x2="50" y2="10.5"/></g>
+    <g transform="rotate(247.5 50 50)"><line x1="50" y1="8" x2="50" y2="10"/></g>
+    <g transform="rotate(270 50 50)"><line x1="50" y1="8" x2="50" y2="10.5"/></g>
+    <g transform="rotate(292.5 50 50)"><line x1="50" y1="8" x2="50" y2="10"/></g>
+    <g transform="rotate(315 50 50)"><line x1="50" y1="8" x2="50" y2="10.5"/></g>
+    <g transform="rotate(337.5 50 50)"><line x1="50" y1="8" x2="50" y2="10"/></g>
+  </g>
+  <circle cx="50" cy="50" r="30" stroke="#58acd8" stroke-width=".75" opacity=".4"/>
+  <circle cx="50" cy="50" r="22" stroke="#58acd8" stroke-width=".8" opacity=".52"/>
+  <g filter="url(#glow)">
+    <path fill="url(#metal)" d="M50 8 L53 20 L50 18 L47 20 Z"/>
+    <path fill="url(#metal)" d="M50 8 L56 36 L50 32 L44 36 Z"/>
+    <path fill="url(#metalDark)" d="M50 92 L56 64 L50 68 L44 64 Z"/>
+    <path fill="url(#metal)" d="M8 50 L36 44 L32 50 L36 56 Z"/>
+    <path fill="url(#metalDark)" d="M92 50 L64 44 L68 50 L64 56 Z"/>
+    <path fill="url(#metal)" opacity=".9" d="M50 10 L54.5 38 L50 34 L45.5 38 Z"/><path fill="url(#metalDark)" d="M50 90 L54.5 62 L50 66 L45.5 62 Z"/>
+    <path fill="url(#metal)" d="M10 50 L38 45.5 L34 50 L38 54.5 Z"/><path fill="url(#metalDark)" d="M90 50 L62 45.5 L66 50 L62 54.5 Z"/>
+    <path fill="url(#metal)" opacity=".88" d="M22 22 L42 40 L38 44 L20 26 Z"/><path fill="url(#metalDark)" opacity=".88" d="M78 78 L58 60 L62 56 L80 74 Z"/>
+    <path fill="url(#metalDark)" opacity=".88" d="M78 22 L60 40 L56 36 L74 18 Z"/><path fill="url(#metal)" opacity=".88" d="M22 78 L40 60 L44 64 L26 82 Z"/>
+  </g>
+  <path d="M64 20 A26 26 0 0 1 82 44" stroke="#02c8ff" stroke-width=".75" opacity=".3"/>
+  <path d="M82 56 A26 26 0 0 1 64 80" stroke="#ff9000" stroke-width=".75" opacity=".34"/>
+  <path d="M36 80 A26 26 0 0 1 18 56" stroke="#70ad47" stroke-width=".75" opacity=".3"/>
+  <g filter="url(#soft)">
+    <circle cx="76" cy="22" r="4.8" fill="#02c8ff"/><circle cx="78" cy="74" r="4.8" fill="#ff9000"/>
+    <circle cx="24" cy="76" r="4.8" fill="#70ad47"/>
+  </g>
+  <circle cx="50" cy="50" r="10" fill="url(#sphere)" filter="url(#glow)"/>
+  <circle cx="47" cy="46.5" r="3" fill="#fff" opacity=".62"/>
+</svg>

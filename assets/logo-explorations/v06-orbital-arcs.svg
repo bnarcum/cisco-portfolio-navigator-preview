@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="m" x1="0" y1="0" x2="100" y2="100"><stop offset="0%" stop-color="#d8f0ff"/><stop offset="100%" stop-color="#2e75b6"/></linearGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="50" cy="50" r="44" stroke="#58acd8" stroke-width=".8" opacity=".35"/>
+  <path d="M68 20 A30 30 0 0 1 88 50" stroke="#02c8ff" stroke-width="1.2" opacity=".55"/>
+  <path d="M88 50 A30 30 0 0 1 68 80" stroke="#ff9000" stroke-width="1.2" opacity=".55"/>
+  <path d="M32 80 A30 30 0 0 1 12 50" stroke="#70ad47" stroke-width="1.2" opacity=".55"/>
+  <path d="M12 50 A30 30 0 0 1 32 20" stroke="#02c8ff" stroke-width="1.2" opacity=".4"/>
+  <circle cx="50" cy="50" r="26" stroke="#58acd8" stroke-width=".9" opacity=".5"/>
+  <g filter="url(#g)">
+    <path d="M50 22 L53 42 L50 39 L47 42 Z" fill="url(#m)"/>
+    <path d="M50 78 L53 58 L50 61 L47 58 Z" fill="url(#m)" opacity=".8"/>
+    <path d="M22 50 L42 47 L39 50 L42 53 Z" fill="url(#m)"/>
+    <path d="M78 50 L58 47 L61 50 L58 53 Z" fill="url(#m)" opacity=".8"/>
+  </g>
+  <circle cx="68" cy="20" r="4.5" fill="#02c8ff"/>
+  <circle cx="88" cy="50" r="4.5" fill="#ff9000"/>
+  <circle cx="68" cy="80" r="4.5" fill="#ff9000"/>
+  <circle cx="32" cy="80" r="4.5" fill="#70ad47"/>
+  <circle cx="12" cy="50" r="4.5" fill="#02c8ff"/>
+  <circle cx="50" cy="50" r="9" fill="#02c8ff" opacity=".9"/>
+  <circle cx="47.5" cy="47" r="2.5" fill="#fff" opacity=".55"/>
+</svg>

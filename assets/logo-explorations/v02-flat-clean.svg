@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+  <circle cx="50" cy="50" r="42" stroke="#58acd8" stroke-width="1.2" opacity=".5"/>
+  <circle cx="50" cy="50" r="30" stroke="#58acd8" stroke-width="1" opacity=".65"/>
+  <circle cx="50" cy="50" r="18" stroke="#58acd8" stroke-width="1" opacity=".8"/>
+  <line x1="50" y1="50" x2="74" y2="26" stroke="#ff9000" stroke-width="1.5"/>
+  <line x1="50" y1="50" x2="74" y2="74" stroke="#ff9000" stroke-width="1.5"/>
+  <line x1="50" y1="50" x2="26" y2="74" stroke="#70ad47" stroke-width="1.5"/>
+  <line x1="50" y1="50" x2="30" y2="30" stroke="#02c8ff" stroke-width="1.5"/>
+  <circle cx="74" cy="26" r="5" fill="#ff9000"/>
+  <circle cx="74" cy="74" r="5" fill="#ff9000"/>
+  <circle cx="26" cy="74" r="5" fill="#70ad47"/>
+  <circle cx="30" cy="30" r="5" fill="#02c8ff"/>
+  <path d="M50 12 L55 42 L50 38 L45 42 Z" fill="#58acd8"/>
+  <path d="M50 88 L55 58 L50 62 L45 58 Z" fill="#2e75b6"/>
+  <path d="M12 50 L42 45 L38 50 L42 55 Z" fill="#58acd8"/>
+  <path d="M88 50 L58 45 L62 50 L58 55 Z" fill="#2e75b6"/>
+  <circle cx="50" cy="50" r="8" fill="#02c8ff"/>
+  <circle cx="47" cy="47" r="2.5" fill="#fff" opacity=".6"/>
+</svg>

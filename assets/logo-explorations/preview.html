@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CPN Logo Explorations</title>
+  <style>
+    :root {
+      --bg: #07070f;
+      --card: #0d1b2a;
+      --border: rgba(88,172,216,.25);
+      --text: #eef6fc;
+      --sub: #b8d4ea;
+      --accent: #02c8ff;
+      --orange: #ff9000;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: radial-gradient(ellipse at 20% 0%, #0d2847 0%, var(--bg) 55%);
+      color: var(--text);
+      padding: 28px 24px 48px;
+    }
+    h1 { margin: 0 0 6px; font-size: 1.5rem; font-weight: 700; }
+    p.lead { margin: 0 0 24px; color: var(--sub); max-width: 720px; line-height: 1.5; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: rgba(13,27,42,.85);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .card:hover {
+      border-color: rgba(2,200,255,.45);
+      box-shadow: 0 0 24px rgba(2,200,255,.08);
+    }
+    .card h2 {
+      margin: 0 0 4px;
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .card .desc {
+      margin: 0 0 14px;
+      font-size: .8rem;
+      color: var(--sub);
+      line-height: 1.4;
+    }
+    .preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #07182d;
+      border-radius: 8px;
+      min-height: 76px;
+    }
+    .mark {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+    }
+    .mark.glow { filter: drop-shadow(0 0 10px rgba(2,200,255,.28)) drop-shadow(0 2px 8px rgba(0,0,0,.35)); }
+    .mark.strong { filter: drop-shadow(0 0 14px rgba(2,200,255,.45)) drop-shadow(0 0 6px rgba(255,144,0,.2)); }
+    .mark.none { filter: none; }
+    .wordmark { display: flex; flex-direction: column; gap: 3px; line-height: 1.05; }
+    .title { font-size: 15px; font-weight: 700; letter-spacing: .015em; color: #eef6fc; text-shadow: 0 0 18px rgba(2,200,255,.22); }
+    .title.tight { letter-spacing: -.01em; }
+    .title.wide { letter-spacing: .04em; }
+    .rule { display: block; height: 1px; width: 168px; max-width: 100%; border: 0; margin: 0;
+      background: linear-gradient(90deg, rgba(2,200,255,.55) 0%, rgba(255,144,0,.42) 48%, rgba(2,200,255,.08) 100%);
+      box-shadow: 0 0 8px rgba(2,200,255,.35), 0 0 3px rgba(255,144,0,.18); }
+    .rule.bright { background: linear-gradient(90deg, rgba(2,200,255,.75) 0%, rgba(255,144,0,.6) 50%, rgba(2,200,255,.15) 100%); }
+    .rule.thin { height: .5px; opacity: .85; }
+    .sub { font-size: 13px; font-weight: 300; letter-spacing: .06em; color: #b8d4ea; text-shadow: 0 0 12px rgba(2,200,255,.12); }
+    .sub.caps { text-transform: uppercase; letter-spacing: .14em; font-size: 11px; }
+    .sub.heavy { font-weight: 500; color: #d4e8f4; }
+    .file { margin-top: 10px; font-size: .72rem; color: #525e6c; font-family: ui-monospace, monospace; }
+    .section { margin-top: 36px; }
+    .section h2 { font-size: 1.1rem; margin: 0 0 12px; }
+    .light-row .preview { background: #f4f7fa; }
+    .light-row .title { color: #07182d; text-shadow: none; }
+    .light-row .sub { color: #525e6c; text-shadow: none; }
+    .light-row .rule { box-shadow: none; background: linear-gradient(90deg, rgba(10,96,255,.45) 0%, rgba(255,144,0,.35) 48%, rgba(10,96,255,.08) 100%); }
+  </style>
+</head>
+<body>
+  <h1>Cisco Portfolio Navigator — Logo Explorations</h1>
+  <p class="lead">Premium lockup series (v09–v16) extends <strong>v01-current</strong> — metallic star, glowing sphere, orbital nodes, instrument ticks. Pick a mark + wordmark combo (e.g. <strong>v16 + WM-C</strong>). Nothing here is wired into the app yet.</p>
+
+  <div class="section" style="margin-top:0">
+    <h2>Premium series — v01 + Concept lockup</h2>
+    <div class="grid" id="premium"></div>
+  </div>
+
+  <div class="section">
+    <h2>Original explorations (v01–v08)</h2>
+    <div class="grid" id="variants"></div>
+  </div>
+
+  <div class="section">
+    <h2>Wordmark-only tweaks (same v01 mark)</h2>
+    <div class="grid" id="wordmarks"></div>
+  </div>
+
+  <div class="section light-row">
+    <h2>Light theme preview (v01 mark)</h2>
+    <div class="grid" id="light"></div>
+  </div>
+
+  <div class="section">
+    <h2>Raster concept boards (reference only — production stays SVG)</h2>
+    <div class="grid">
+      <article class="card"><h2>Concept — Premium lockup</h2><p class="desc">Closest to your Gemini reference. Use as mood board for SVG polish.</p><img src="logo-concept-premium-lockup.png" alt="Premium lockup concept" style="width:100%;border-radius:8px"/></article>
+      <article class="card"><h2>Concept — Flat lockup</h2><p class="desc">Cleaner, flatter direction — maps to v02/v04.</p><img src="logo-concept-flat-lockup.png" alt="Flat lockup concept" style="width:100%;border-radius:8px"/></article>
+      <article class="card"><h2>Concept — Instrument lockup</h2><p class="desc">Brass dial / tick marks — maps to v05/v08.</p><img src="logo-concept-instrument-lockup.png" alt="Instrument lockup concept" style="width:100%;border-radius:8px"/></article>
+      <article class="card"><h2>Concept — Premium v2</h2><p class="desc">Dense ticks + gold bezel + cinematic core glow. Maps to v13/v16.</p><img src="logo-concept-premium-v2.png" alt="Premium lockup v2" style="width:100%;border-radius:8px"/></article>
+      <article class="card"><h2>Concept — Premium v3</h2><p class="desc">Close-up compass + lens flare. Maps to v15 cinematic glow.</p><img src="logo-concept-premium-v3.png" alt="Premium lockup v3" style="width:100%;border-radius:8px"/></article>
+    </div>
+  </div>
+
+  <script>
+    const premium = [
+      { id: "v09", file: "v09-premium-ticks.svg", name: "v09 — Premium ticks", desc: "v01 + 24 tick marks, warmer bezel, brighter sphere.", glow: "glow" },
+      { id: "v10", file: "v10-luminous-core.svg", name: "v10 — Luminous core", desc: "Larger, brighter cyan core glow — hero mark at 48px.", glow: "strong" },
+      { id: "v11", file: "v11-gold-rim.svg", name: "v11 — Gold rim", desc: "Champagne-gold outer ring with warm metal star.", glow: "strong" },
+      { id: "v12", file: "v12-ornate-star.svg", name: "v12 — Ornate star", desc: "Finer ticks + layered star points, refined instrument feel.", glow: "glow" },
+      { id: "v13", file: "v13-lockup-hero.svg", name: "v13 — Lockup hero", desc: "Full premium treatment: dense ticks, gold bezel, max core bloom.", glow: "strong" },
+      { id: "v14", file: "v14-refined-star.svg", name: "v14 — Refined star", desc: "Cleaner geometry, spoke lines to nodes, triple inner rings.", glow: "glow" },
+      { id: "v15", file: "v15-cinematic-glow.svg", name: "v15 — Cinematic glow", desc: "Warm halo, lens-flare core, soft node bloom — moodiest.", glow: "strong" },
+      { id: "v16", file: "v16-premium-synthesis.svg", name: "v16 — Premium synthesis", desc: "Best-of v01 + gold rim + ticks + glow. Recommended starting point.", glow: "strong" },
+    ];
+
+    const marks = [
+      { id: "v01", file: "v01-current.svg", name: "v01 — Current (live)", desc: "Premium metallic 8-point star, glow sphere, orbital nodes. What's on production now.", glow: "glow" },
+      { id: "v02", file: "v02-flat-clean.svg", name: "v02 — Flat clean", desc: "Simpler rings and 4-point star. Closer to the original pre-refresh logo.", glow: "none" },
+      { id: "v03", file: "v03-neon-glow.svg", name: "v03 — Neon glow", desc: "Stronger cyan bloom and brighter star. More sci-fi / dashboard feel.", glow: "strong" },
+      { id: "v04", file: "v04-cyan-mono.svg", name: "v04 — Cyan mono", desc: "Single accent family, no orange/green nodes. Cleaner on busy headers.", glow: "glow" },
+      { id: "v05", file: "v05-instrument-panel.svg", name: "v05 — Instrument panel", desc: "Brass bezel + 24 tick marks. Aviation / precision instrument vibe.", glow: "glow" },
+      { id: "v06", file: "v06-orbital-arcs.svg", name: "v06 — Orbital arcs", desc: "Emphasized orbit paths around a compact star. Network topology feel.", glow: "glow" },
+      { id: "v07", file: "v07-minimal-star.svg", name: "v07 — Minimal star", desc: "Stripped to essentials — best at small favicon / mobile sizes.", glow: "none" },
+      { id: "v08", file: "v08-warm-metal.svg", name: "v08 — Warm metal", desc: "Gold-silver compass with cyan gem. Closest to the Gemini reference mood.", glow: "strong" },
+    ];
+
+    const wordmarks = [
+      { name: "WM-A — Default", title: "", sub: "", rule: "" },
+      { name: "WM-B — Tight title", title: "tight", sub: "", rule: "" },
+      { name: "WM-C — Bright rule", title: "", sub: "", rule: "bright" },
+      { name: "WM-D — Thin rule + caps sub", title: "", sub: "caps", rule: "thin" },
+      { name: "WM-E — Heavy Navigator", title: "", sub: "heavy", rule: "" },
+    ];
+
+    function renderCard(mark, wm, light) {
+      const titleCls = ["title", wm.title].filter(Boolean).join(" ");
+      const subCls = ["sub", wm.sub].filter(Boolean).join(" ");
+      const ruleCls = ["rule", wm.rule].filter(Boolean).join(" ");
+      const glowCls = ["mark", mark.glow].join(" ");
+      return `<article class="card">
+        <h2>${mark.name}${wm.name ? " · " + wm.name : ""}</h2>
+        <p class="desc">${mark.desc || wm.name}</p>
+        <div class="preview">
+          <img class="${glowCls}" src="${mark.file}" alt="" width="48" height="48"/>
+          <div class="wordmark">
+            <span class="${titleCls}">Cisco Portfolio</span>
+            <span class="${ruleCls}" aria-hidden="true"></span>
+            <span class="${subCls}">Navigator</span>
+          </div>
+        </div>
+        <div class="file">${mark.file}</div>
+      </article>`;
+    }
+
+    document.getElementById("premium").innerHTML = premium.map(m => renderCard(m, { name: "", title: "", sub: "", rule: "bright" }, false)).join("");
+    document.getElementById("variants").innerHTML = marks.map(m => renderCard(m, { name: "", title: "", sub: "", rule: "" }, false)).join("");
+    document.getElementById("wordmarks").innerHTML = wordmarks.map(wm => renderCard(marks[0], wm, false)).join("");
+    document.getElementById("light").innerHTML = [marks[0], marks[4], marks[7]].map(m => renderCard(m, { name: "", title: "", sub: "", rule: "" }, true)).join("");
+  </script>
+</body>
+</html>

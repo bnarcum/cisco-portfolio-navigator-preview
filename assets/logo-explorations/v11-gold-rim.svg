@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+  <defs>
+    <radialGradient id="sphere" cx="48%" cy="40%" r="58%"><stop offset="0%" stop-color="#fff8e8"/><stop offset="30%" stop-color="#7ee8ff"/><stop offset="65%" stop-color="#02c8ff"/><stop offset="100%" stop-color="#0a60ff"/></radialGradient>
+    <linearGradient id="metal" x1="10" y1="8" x2="90" y2="92"><stop offset="0%" stop-color="#fff4d8"/><stop offset="25%" stop-color="#d4b88a"/><stop offset="55%" stop-color="#58acd8"/><stop offset="100%" stop-color="#2e75b6"/></linearGradient>
+    <linearGradient id="metalDark" x1="90" y1="10" x2="10" y2="90"><stop offset="0%" stop-color="#6a4a20"/><stop offset="40%" stop-color="#2e75b6"/><stop offset="100%" stop-color="#9ecae8"/></linearGradient>
+    <linearGradient id="rim" x1="0" y1="50" x2="100" y2="50"><stop offset="0%" stop-color="#c9a05a"/><stop offset="50%" stop-color="#f0e0c0"/><stop offset="100%" stop-color="#c9a05a"/></linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="55%" stop-color="#ff9000" stop-opacity="0"/><stop offset="85%" stop-color="#ff9000" stop-opacity=".12"/><stop offset="100%" stop-color="#02c8ff" stop-opacity="0"/></radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="50" cy="50" r="46" fill="url(#halo)"/>
+  <circle cx="50" cy="50" r="44.5" stroke="url(#rim)" stroke-width="2" opacity=".9"/>
+  <circle cx="50" cy="50" r="40" stroke="#58acd8" stroke-width=".7" opacity=".35"/>
+  <g stroke="#e8d8b8" stroke-width=".8" opacity=".6" stroke-linecap="round">
+    <line x1="50" y1="7" x2="50" y2="11"/><line x1="50" y1="89" x2="50" y2="93"/><line x1="7" y1="50" x2="11" y2="50"/><line x1="89" y1="50" x2="93" y2="50"/>
+    <line x1="23.8" y1="23.8" x2="26.6" y2="26.6"/><line x1="73.4" y1="73.4" x2="76.2" y2="76.2"/><line x1="76.2" y1="23.8" x2="73.4" y2="26.6"/><line x1="26.6" y1="73.4" x2="23.8" y2="76.2"/>
+  </g>
+  <path d="M62 24 A22 22 0 0 1 78 42" stroke="#02c8ff" stroke-width=".8" opacity=".3"/>
+  <path d="M78 58 A22 22 0 0 1 62 76" stroke="#ff9000" stroke-width=".9" opacity=".4"/>
+  <path d="M38 76 A22 22 0 0 1 22 58" stroke="#70ad47" stroke-width=".8" opacity=".3"/>
+  <circle cx="50" cy="50" r="32" stroke="#58acd8" stroke-width=".9" opacity=".4"/>
+  <circle cx="50" cy="50" r="24" stroke="#58acd8" stroke-width=".9" opacity=".5"/>
+  <circle cx="50" cy="50" r="16" stroke="#58acd8" stroke-width=".9" opacity=".6"/>
+  <g filter="url(#glow)">
+    <path fill="url(#metal)" d="M50 10 L55 39 L50 34 L45 39 Z"/><path fill="url(#metalDark)" d="M50 90 L55 61 L50 66 L45 61 Z"/>
+    <path fill="url(#metal)" d="M10 50 L39 45 L34 50 L39 55 Z"/><path fill="url(#metalDark)" d="M90 50 L61 45 L66 50 L61 55 Z"/>
+    <path fill="url(#metal)" opacity=".93" d="M22 22 L42 40 L38 44 L20 26 Z"/><path fill="url(#metalDark)" opacity=".93" d="M78 78 L58 60 L62 56 L80 74 Z"/>
+    <path fill="url(#metalDark)" opacity=".93" d="M78 22 L60 40 L56 36 L74 18 Z"/><path fill="url(#metal)" opacity=".93" d="M22 78 L40 60 L44 64 L26 82 Z"/>
+  </g>
+  <g stroke-width="1.3" opacity=".9">
+    <line x1="50" y1="50" x2="74" y2="24" stroke="#ff9000"/><line x1="50" y1="50" x2="76" y2="72" stroke="#ff9000"/>
+    <line x1="50" y1="50" x2="28" y2="74" stroke="#70ad47"/><line x1="50" y1="50" x2="26" y2="28" stroke="#02c8ff"/>
+    <line x1="50" y1="50" x2="36" y2="58" stroke="#70ad47" stroke-width="1"/><line x1="50" y1="50" x2="40" y2="66" stroke="#70ad47" stroke-width="1"/>
+  </g>
+  <g filter="url(#soft)">
+    <circle cx="74" cy="24" r="5.2" fill="#ff9000"/><circle cx="76" cy="72" r="5.2" fill="#ff9000"/>
+    <circle cx="28" cy="74" r="5.2" fill="#70ad47"/><circle cx="26" cy="28" r="5.2" fill="#02c8ff"/>
+    <circle cx="36" cy="58" r="3.1" fill="#70ad47"/><circle cx="40" cy="66" r="3.1" fill="#70ad47"/>
+  </g>
+  <circle cx="50" cy="50" r="10" fill="url(#sphere)" filter="url(#glow)"/>
+  <circle cx="47" cy="46.5" r="3" fill="#fff" opacity=".6"/>
+</svg>

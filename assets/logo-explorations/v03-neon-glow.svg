@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+  <defs>
+    <radialGradient id="core" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#b8f4ff"/><stop offset="60%" stop-color="#02c8ff"/><stop offset="100%" stop-color="#0a60ff"/></radialGradient>
+    <filter id="neon"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="50" cy="50" r="44" stroke="#02c8ff" stroke-width="1" opacity=".35" filter="url(#neon)"/>
+  <circle cx="50" cy="50" r="34" stroke="#02c8ff" stroke-width="1.2" opacity=".45"/>
+  <circle cx="50" cy="50" r="24" stroke="#02c8ff" stroke-width="1.2" opacity=".55"/>
+  <g filter="url(#neon)">
+    <path d="M50 8 L56 44 L50 40 L44 44 Z" fill="#7ee8ff"/>
+    <path d="M50 92 L56 56 L50 60 L44 56 Z" fill="#0a60ff"/>
+    <path d="M8 50 L44 44 L40 50 L44 56 Z" fill="#7ee8ff"/>
+    <path d="M92 50 L56 44 L60 50 L56 56 Z" fill="#0a60ff"/>
+  </g>
+  <line x1="50" y1="50" x2="76" y2="22" stroke="#ff9000" stroke-width="1.4" opacity=".9" filter="url(#neon)"/>
+  <line x1="50" y1="50" x2="78" y2="74" stroke="#ff9000" stroke-width="1.4" opacity=".9"/>
+  <line x1="50" y1="50" x2="24" y2="76" stroke="#70ad47" stroke-width="1.4" opacity=".9"/>
+  <circle cx="76" cy="22" r="5.5" fill="#ff9000" filter="url(#neon)"/>
+  <circle cx="78" cy="74" r="5.5" fill="#ff9000"/>
+  <circle cx="24" cy="76" r="5.5" fill="#70ad47"/>
+  <circle cx="50" cy="50" r="10" fill="url(#core)" filter="url(#neon)"/>
+</svg>

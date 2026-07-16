@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="warm" x1="10" y1="10" x2="90" y2="90"><stop offset="0%" stop-color="#fff0d8"/><stop offset="35%" stop-color="#d4b88a"/><stop offset="70%" stop-color="#58acd8"/><stop offset="100%" stop-color="#2e75b6"/></linearGradient>
+    <radialGradient id="gem" cx="45%" cy="40%" r="55%"><stop offset="0%" stop-color="#fff"/><stop offset="35%" stop-color="#7ee8ff"/><stop offset="100%" stop-color="#0a60ff"/></radialGradient>
+    <filter id="gl"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="50" cy="50" r="45" stroke="url(#warm)" stroke-width="1.6" opacity=".8"/>
+  <circle cx="50" cy="50" r="36" stroke="#58acd8" stroke-width=".7" opacity=".4"/>
+  <g filter="url(#gl)">
+    <path d="M50 12 L56 40 L50 36 L44 40 Z" fill="url(#warm)"/>
+    <path d="M50 88 L56 60 L50 64 L44 60 Z" fill="url(#warm)" opacity=".85"/>
+    <path d="M12 50 L40 44 L36 50 L40 56 Z" fill="url(#warm)"/>
+    <path d="M88 50 L60 44 L64 50 L60 56 Z" fill="url(#warm)" opacity=".85"/>
+    <path d="M24 24 L40 38 L36 42 L20 28 Z" fill="url(#warm)" opacity=".9"/>
+    <path d="M76 76 L60 62 L64 58 L80 72 Z" fill="url(#warm)" opacity=".9"/>
+    <path d="M76 24 L62 38 L58 34 L72 20 Z" fill="url(#warm)" opacity=".9"/>
+    <path d="M24 76 L38 62 L42 66 L28 80 Z" fill="url(#warm)" opacity=".9"/>
+  </g>
+  <line x1="50" y1="50" x2="74" y2="26" stroke="#ff9000" stroke-width="1.2"/>
+  <line x1="50" y1="50" x2="76" y2="72" stroke="#ff9000" stroke-width="1.2"/>
+  <line x1="50" y1="50" x2="26" y2="74" stroke="#70ad47" stroke-width="1.2"/>
+  <circle cx="74" cy="26" r="4.8" fill="#ff9000"/><circle cx="76" cy="72" r="4.8" fill="#ff9000"/><circle cx="26" cy="74" r="4.8" fill="#70ad47"/>
+  <circle cx="50" cy="50" r="10" fill="url(#gem)" filter="url(#gl)"/>
+</svg>
