@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.90.2";
+  window.__CPN_BUILD="2.90.3";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -1736,7 +1736,7 @@ const NODES = [
 
   // COLLABORATION
   {id:"webex-app",         name:"Webex App",                   category:"collaboration",
-   desc:"Unified collaboration platform combining messaging, meetings, calling, AI assistants, and deep app integrations in a single client.",
+   desc:"Unified collaboration platform combining messaging, meetings, calling, async video (Vidcast), AI assistants, and deep app integrations in a single client.",
    useCases:["Hybrid Work","Contact Center","Digital Transformation"],
    industries:["Healthcare","Financial Services","Education","Government","Retail","Manufacturing"],
    url:"https://www.webex.com", docsUrl:"https://www.webex.com"},
@@ -3053,11 +3053,11 @@ const PRODUCTS = [
 
   // ── WEBEX APP suite (Current)
   {id:"webex-suite-ea", name:"Webex Suite Enterprise Agreement", family:"webex-app", status:"current",
-   desc:"All-employee EA bundle covering Webex App, Meetings, Calling, Webinars, and AI Assistant — predictable price for the workforce.",
-   url:"https://www.webex.com/pricing/index.html"},
+   desc:"All-employee EA bundle covering Webex App, Meetings, Calling, Webinars, Vidcast, Slido, and AI Assistant — predictable price for the workforce.",
+   url:"https://www.cisco.com/c/en/us/products/collateral/unified-communications/cisco-collaboration-flex-plan/collaboration-flex-plan3-data-sheet.html"},
   {id:"webex-suite-named", name:"Webex Suite Named-User",     family:"webex-app", status:"current",
-   desc:"Per-named-user subscription combining Webex App + Meetings + Calling + Webinars with AI Assistant included.",
-   url:"https://www.webex.com/pricing/index.html"},
+   desc:"Per-named-user subscription combining Webex App + Meetings + Calling + Webinars + Vidcast + Slido with AI Assistant included.",
+   url:"https://www.cisco.com/c/en/us/products/collateral/unified-communications/cisco-collaboration-flex-plan/collaboration-flex-plan3-data-sheet.html"},
   {id:"webex-ai",       name:"Webex AI Assistant",            family:"webex-app", status:"current",
    desc:"AI features across Webex — summaries, translation, suggested responses, vibe and sentiment, and meeting follow-ups.",
    url:"https://www.webex.com/ai.html"},
@@ -3076,6 +3076,9 @@ const PRODUCTS = [
   {id:"slido",          name:"Slido",                         family:"webex-app", status:"current",
    desc:"Audience engagement platform: polls, Q&A, quizzes, and word clouds — embedded in Webex Meetings and a standalone offer.",
    url:"https://www.slido.com/"},
+  {id:"vidcast",        name:"Vidcast (Webex Video Messaging)", family:"webex-app", status:"current",
+   desc:"Async video messaging — record screen or camera updates, share via link, and collect time-stamped comments without scheduling a meeting. Basic, Premium, and Enterprise tiers; included in Webex Suite and Flex Plan.",
+   url:"https://help.webex.com/article/nu781um"},
 
   // ── WEBEX MEETINGS family (Current)
   {id:"webex-meetings-plan", name:"Webex Meetings Plan",      family:"webex-meetings", status:"current",
@@ -3841,7 +3844,7 @@ const BUNDLES = [
    products:["duo","ise","sf-branch","secure-access"],
    desc:"Complete Zero Trust architecture: identity, device posture, network access control, and cloud-delivered security."},
   {name:"Hybrid Work Suite",
-   products:["webex-app","webex-calling","room-systems","desk-devices","thousandeyes","secure-access","duo","cloud-control"],
+   products:["webex-app","vidcast","slido","webex-calling","room-systems","desk-devices","thousandeyes","secure-access","duo","cloud-control"],
    desc:"Full hybrid workforce: collaboration, cloud calling, room and desk devices, network assurance, secure access, and Cloud Control ops."},
   {name:"Threat Defense Platform",
    products:["sf-branch","secure-endpoint","xdr","talos","splunk"],
@@ -5073,6 +5076,7 @@ function productIconKey(p){
   const id = (p?.id || "").toLowerCase();
   const name = (p?.name || "").toLowerCase();
   const s = id + " " + name;
+  if (/vidcast|slido/.test(s)) return "video";
   if (/quad-camera|ptz|desk-cam|desk camera/.test(s)) return "camera";
   if (/board-pro|board pro/.test(s)) return "board";
   if (/room-bar|video-bar|room-kit|codec|room kit|telepresence|\bsx\d|\bmx\d|mx700|mx800/.test(s)) return "telepresence";
@@ -10599,6 +10603,8 @@ const COMPETITOR_LEGACY = [
    reason:"Webex Calling + RoomOS devices interoperate with Teams while preserving Cisco device intelligence, ISE policy, and Webex Control Hub manageability."},
   {id:"l-googmeet", name:"Google Meet + Hardware", competitor:true, replaces:["webex-meetings","room-systems"],
    reason:"Webex with WebexAI delivers richer in-room intelligence (gesture, framing, speaker tracking) and unified Webex Control Hub policy."},
+  {id:"l-loom", name:"Loom / async video (Vimeo)", competitor:true, replaces:["vidcast","webex-app"],
+   reason:"Vidcast in Webex Suite delivers async video messaging inside Webex App with enterprise security, Control Hub governance, and Suite packaging — no separate shadow-IT tool."},
   {id:"l-poly", name:"Poly / HP Video Devices", competitor:true, replaces:["room-systems","desk-devices","conf-phones"],
    reason:"Cisco RoomOS endpoints (Room Bar, Board Pro G3) provide comparable video with WebexAI features and Cisco device manageability."},
   {id:"l-ringcentral", name:"RingCentral / 8x8 UCaaS", competitor:true, replaces:["webex-calling","webex-cc"],
@@ -10669,7 +10675,7 @@ const TIERS = {
   "vuln-mgmt":         {tier:"VM Essentials / Premier",               model:"Per-asset subscription",      note:"Premier adds Application Risk Module and SLA reporting."},
   "secure-equipment":  {tier:"Included with IoT Ops Dashboard",       model:"Subscription",                note:"Bundled with Cisco IoT Operations Dashboard; per-asset enforcement."},
   "identity-intel":    {tier:"Identity Intelligence Subscription",    model:"Per-user subscription",       note:"Add-on to Duo or standalone; correlates IdP, NAC, and HR data."},
-  "webex-app":         {tier:"Webex Suite (per user)",                model:"Per-user subscription",       note:"Suite combines Meetings + Calling + Messaging + Webinars + Polls."},
+  "webex-app":         {tier:"Webex Suite (per user)",                model:"Per-user subscription",       note:"Suite combines Meetings + Calling + Messaging + Webinars + Vidcast + Slido + Polls."},
   "webex-meetings":    {tier:"Standalone or Webex Suite",             model:"Per-user subscription",       note:"Suite is generally lower TCO than standalone."},
   "webex-calling":     {tier:"Professional / Standard / Workspace",   model:"Per-user/per-station subscription", note:"Professional adds Webex App + UC; Workspace is for shared phones/rooms."},
   "webex-cc":          {tier:"Standard / Premium / Flex 3",           model:"Per-agent subscription",      note:"Premium adds digital channels, AI agent, WFO."},
@@ -10756,8 +10762,8 @@ const REF_ARCH = {
     desc:"SD-WAN edge (Catalyst 8000 / ISR or Meraki MX) → Secure Access (SSE) for cloud + private access → Umbrella DNS-layer first hop → Duo identity → ThousandEyes for SaaS/ISP path visibility."
   },
   "Hybrid Work": {
-    products:["webex-app","webex-calling","webex-meetings","room-systems","desk-devices","cisco-headsets","duo","secure-access","thousandeyes"],
-    desc:"Webex App for messaging/meetings/calling + RoomOS devices for meeting rooms and home desks + Duo + Secure Access for safe access from anywhere + ThousandEyes for collab quality."
+    products:["webex-app","vidcast","slido","webex-calling","webex-meetings","room-systems","desk-devices","cisco-headsets","duo","secure-access","thousandeyes"],
+    desc:"Webex App for messaging/meetings/calling + Vidcast async video + Slido engagement + RoomOS devices for meeting rooms and home desks + Duo + Secure Access for safe access from anywhere + ThousandEyes for collab quality."
   },
   "AI Networking": {
     products:["catalyst-center","catalyst-access","catalyst-core","catalyst-wireless","nexus","silicon-one","thousandeyes"],
