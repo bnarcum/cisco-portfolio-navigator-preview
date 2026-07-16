@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.90.0";
+  window.__CPN_BUILD="2.90.1";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -2121,12 +2121,15 @@ const PRODUCTS = [
   {id:"desk-pro-g2",    name:"Cisco Desk Pro G2",           family:"desk-devices",   status:"current",
    desc:"Flagship 27\" 4K personal collaboration device with dual-lens camera (48MP 70° tele-lens + 105° wide-angle for huddle spaces), 8-microphone array, NVIDIA-powered Agentic Director auto-framing, Spatial Meetings support, RoomOS 26+, and USB-C 80W laptop charging. Released Feb 3, 2026.",
    url:"https://www.cisco.com/c/en/us/products/collateral/collaboration-endpoints/webex-desk-series/desk-pro-g2.html"},
-  {id:"desk-cam-4k",    name:"Cisco Desk Camera 4K",        family:"desk-devices",   status:"current",
-   desc:"4K USB-C/USB-A desk webcam with Sony sensor, HDR, 60fps, and AI background blur for high-quality personal video calls.",
-   url:"https://www.webex.com/us/en/devices/cameras/cisco-desk-camera-4k.html"},
+  {id:"desk-cam-4k",    name:"Cisco Desk Camera 4K",        family:"desk-devices",   status:"eos",
+   eosDate:"Jan 16, 2026", eolDate:"Jan 31, 2031",
+   successor:"desk-cam-1080", successorName:"Cisco Desk Camera 1080p",
+   migNote:"Desk Camera 1080p is the current USB webcam for new deployments — same Control Hub management with a lower-cost 1080p sensor.",
+   desc:"4K USB-C/USB-A desk webcam with Sony sensor, HDR, 60fps, and AI background blur. EOS Jan 16, 2026; Last Support Jan 31, 2031.",
+   url:"https://www.cisco.com/c/en/us/products/collateral/collaboration/datasheet-c78-744525.html"},
   {id:"desk-cam-1080",  name:"Cisco Desk Camera 1080p",     family:"desk-devices",   status:"current",
    desc:"1080p USB webcam with autofocus, privacy shutter, and dual mics — an affordable Cisco-managed camera for personal and BYOD workspaces.",
-   url:"https://www.webex.com/us/en/devices/cameras/cisco-desk-camera-1080p.html"},
+   url:"https://www.cisco.com/c/en/us/products/collateral/collaboration-endpoints/webex-desk-series/desk-camera-1080p-ds.html"},
 
   // ── IP PHONES (Current)
   {id:"ip-6821",        name:"Cisco IP Phone 6821",         family:"ip-phones",      status:"current",
