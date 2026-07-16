@@ -1,7 +1,9 @@
 name: Verify GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: [Deploy GitHub Pages]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -11,6 +13,7 @@ permissions:
 
 jobs:
   verify-live:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

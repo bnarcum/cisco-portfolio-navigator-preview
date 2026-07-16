@@ -95,6 +95,20 @@ function pagesMeta(repo) {
   }
 }
 
+function latestDeploymentStatus(repo, shaPrefix) {
+  try {
+    const raw = execSync(
+      `gh api graphql -f query='query($owner:String!,$name:String!){repository(owner:$owner,name:$name){deployments(first:5,environments:["github-pages"],orderBy:{field:CREATED_AT,direction:DESC}){nodes{commit{oid} latestStatus{state}}}}}' -f owner='${repo.split("/")[0]}' -f name='${repo.split("/")[1]}'`,
+      { encoding: "utf8" }
+    );
+    const nodes = JSON.parse(raw)?.data?.repository?.deployments?.nodes || [];
+    const hit = nodes.find(n => n.commit?.oid?.startsWith(shaPrefix));
+    return hit?.latestStatus?.state?.toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
 function latestBuild(repo) {
   try {
     const raw = execSync(`gh api repos/${repo}/pages/builds?per_page=1`, { encoding: "utf8" });
@@ -128,9 +142,16 @@ async function waitForTarget(name, target, expected, timeoutSec, intervalSec, us
     polls++;
     let buildStatus = "unknown";
     if (useGh) {
+      const meta = pagesMeta(target.repo);
       const build = latestBuild(target.repo);
       lastBuild = build;
-      buildStatus = build?.status || pagesMeta(target.repo)?.status || "unknown";
+      if (meta?.build_type === "workflow") {
+        const localSha = execSync("git rev-parse --short HEAD", { cwd: ROOT, encoding: "utf8" }).trim();
+        const dep = latestDeploymentStatus(target.repo, localSha);
+        buildStatus = dep || meta?.status || "unknown";
+      } else {
+        buildStatus = build?.status || meta?.status || "unknown";
+      }
     }
 
     try {
