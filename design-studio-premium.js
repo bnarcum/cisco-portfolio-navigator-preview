@@ -165,16 +165,17 @@
     }
     toggle.hidden = !show;
     if (!show) return;
+    if (studio.roomView === "grid") {
+      studio.roomView = "diagram";
+      renderPortfolioOverlay(studio);
+      studio.renderCanvas?.();
+      studio.scheduleFitView?.();
+    }
     const walkOpen = window.__DS_WALK?.isOpen?.();
     const view = walkOpen ? "walk" : (studio.roomView || "diagram");
-    const showGrid = studio.tab === "room" && studio.design.rooms.length > 1;
-    const gridBtn = showGrid
-      ? `<button type="button" class="ds-view-btn${view === "grid" ? " active" : ""}" data-view="grid">All ${studio.design.rooms.length} rooms</button>`
-      : "";
     toggle.innerHTML = `
       <button type="button" class="ds-view-btn${view === "diagram" ? " active" : ""}" data-view="diagram">Diagram</button>
-      <button type="button" class="ds-view-btn ds-view-btn-walk${view === "walk" ? " active" : ""}" data-view="walk" title="3D walkthrough along your diagram">Walk</button>
-      ${gridBtn}`;
+      <button type="button" class="ds-view-btn ds-view-btn-walk${view === "walk" ? " active" : ""}" data-view="walk" title="3D walkthrough along your diagram">Walk</button>`;
     toggle.querySelectorAll(".ds-view-btn").forEach(b => {
       b.onclick = () => {
         const v = b.dataset.view;
