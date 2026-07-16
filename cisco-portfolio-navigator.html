@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.86.6";
+  window.__CPN_BUILD="2.86.7";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -43,10 +43,10 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.86.6"/>
-  <link rel="stylesheet" href="assets/cpn-light.css?v=2.86.6"/>
-  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.86.6"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.86.6"/>
+  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.86.7"/>
+  <link rel="stylesheet" href="assets/cpn-light.css?v=2.86.7"/>
+  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.86.7"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.86.7"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -4620,7 +4620,7 @@ let nodeClickTimer = null;
 
 const MATRIX_SITE = "https://bnarcum.github.io/collaboration-device-matrix/";
 /** Bust iframe cache when Device Matrix deploys — bump with each matrix release. */
-const MATRIX_RELEASE = "20260716h";
+const MATRIX_RELEASE = "20260716i";
 const MATRIX_NODE_FILL = "#ffffff";
 const MATRIX_NODE_RING = "#cbd5e1";
 const MATRIX_IMG_BASE = MATRIX_SITE + "devices/";
@@ -4658,11 +4658,17 @@ let MATRIX_BRIDGE = {
   }
 };
 function matrixBridgeEntry(id){ return id ? (MATRIX_BRIDGE.products?.[id] || null) : null; }
+const MATRIX_PHOTO_DIR = "assets/matrix-photos/";
+function matrixImageCdnUrl(id){
+  const e = matrixBridgeEntry(id); if (!e?.hash) return null;
+  const base = MATRIX_BRIDGE.imageBase || MATRIX_IMG_BASE;
+  return `${base}img-${e.hash}.webp`;
+}
 function matrixImageUrl(id){
   const e = matrixBridgeEntry(id); if (!e) return null;
   if (e.image) return e.image;
-  const base = MATRIX_BRIDGE.imageBase || MATRIX_IMG_BASE;
-  return e.hash ? `${base}img-${e.hash}.webp` : null;
+  if (e.hash) return `${MATRIX_PHOTO_DIR}img-${e.hash}.png`;
+  return null;
 }
 const matrixPhotoRefineCache = new Map();
 const matrixPhotoRefinePending = new Map();
@@ -4694,11 +4700,29 @@ function boxBlurAlphaChannel(alpha, w, h, radius){
   return out;
 }
 
+function defringeMatrixPhotoData(d, alphaCut){
+  const bg = 255;
+  for (let i = 0; i < d.length; i += 4){
+    let a = d[i + 3];
+    if (a <= 0 || a >= 255) continue;
+    const lum = d[i] + d[i + 1] + d[i + 2];
+    if (a < alphaCut && lum < 210){
+      d[i] = d[i + 1] = d[i + 2] = 255;
+      d[i + 3] = 0;
+      continue;
+    }
+    const af = a / 255;
+    d[i]     = Math.min(255, Math.max(0, (d[i]     - bg * (1 - af)) / Math.max(af, 0.08)));
+    d[i + 1] = Math.min(255, Math.max(0, (d[i + 1] - bg * (1 - af)) / Math.max(af, 0.08)));
+    d[i + 2] = Math.min(255, Math.max(0, (d[i + 2] - bg * (1 - af)) / Math.max(af, 0.08)));
+  }
+}
+
 function featherMatrixPhotoCanvas(img, opts){
   const nw = img.naturalWidth, nh = img.naturalHeight;
   if (!nw || !nh) return null;
   const dpr = Math.min(opts?.dpr || window.devicePixelRatio || 1, 2);
-  const featherRadius = opts?.feather ?? 2.2;
+  const featherRadius = opts?.feather ?? 3.6;
   const src = document.createElement("canvas");
   src.width = nw;
   src.height = nh;
@@ -4709,8 +4733,9 @@ function featherMatrixPhotoCanvas(img, opts){
   let imgData;
   try{ imgData = sctx.getImageData(0, 0, nw, nh); }
   catch(_e){ return null; }
-  const d = imgData.data;
+  defringeMatrixPhotoData(imgData.data, opts?.alphaCut ?? 24);
   const alpha = new Float32Array(nw * nh);
+  const d = imgData.data;
   for (let i = 0, p = 0; i < d.length; i += 4, p++) alpha[p] = d[i + 3] / 255;
   const smooth = boxBlurAlphaChannel(alpha, nw, nh, featherRadius);
   for (let i = 0, p = 0; i < d.length; i += 4, p++) d[i + 3] = Math.round(smooth[p] * 255);
@@ -4728,9 +4753,7 @@ function featherMatrixPhotoCanvas(img, opts){
 }
 
 function matrixImageDisplayUrl(id){
-  const raw = matrixImageUrl(id);
-  if (!raw) return null;
-  return matrixPhotoRefineCache.get(raw) || raw;
+  return matrixImageUrl(id);
 }
 
 function prefetchMatrixPhotoRefined(url, cb){
@@ -5217,7 +5240,6 @@ function buildNodeGroup(sel){
       .attr("clip-path", `url(#${cid})`)
       .attr("preserveAspectRatio", "xMidYMid meet")
       .style("pointer-events", "none");
-    prefetchMatrixPhotoRefined(matrixImageUrl(d.id));
   });
   inner.append("use").attr("class","icn")
     .attr("href",   d => "#icon-" + iconKey(d))
@@ -5257,7 +5279,6 @@ function syncNodeProductImages(){
         .attr("clip-path", `url(#${cid})`)
         .attr("preserveAspectRatio", "xMidYMid meet")
         .style("pointer-events", "none");
-      prefetchMatrixPhotoRefined(url);
     } else if (!pimg.empty()){
       pimg.remove();
     }
@@ -7532,7 +7553,7 @@ function preloadSpatialTiles(nodes){
       spatialState.tileCache.set(key, { ready: false, gen });
       const img = new Image();
       img.crossOrigin = "anonymous";
-      img.onload = () => refineMatrixPhotoEdges(img, () => finishSpatialTileLoad(key, gen, img));
+      img.onload = () => finishSpatialTileLoad(key, gen, img);
       img.onerror = () => preloadSpatialIconTile(n, key, gen);
       img.src = photoUrl;
     } else {
@@ -10484,7 +10505,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = window.__CPN_BUILD || "2.86.6";
+const APP_VERSION   = window.__CPN_BUILD || "2.86.7";
 const DATA_UPDATED  = "2026-07-16";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -14487,7 +14508,7 @@ function insertProductHero(id, kind){
     hero.innerHTML = `
       <span class="p-hero-open-hint">Click for 3D Showroom</span>
       <img class="p-hero-matrix-img" src="${escapeHtml(matrixUrl)}" alt="${escapeHtml(n.name || id)}"
-        crossorigin="anonymous" loading="lazy" decoding="async">
+        loading="lazy" decoding="async">
       ${fallbackReserveHtml}
       <div class="p-hero-scrim"></div>
       <div class="p-hero-meta">
@@ -14496,8 +14517,15 @@ function insertProductHero(id, kind){
       </div>`;
     const img = hero.querySelector(".p-hero-matrix-img");
     if (img){
-      refineMatrixPhotoEdges(img);
       img.addEventListener("error", () => {
+        const cdn = matrixImageCdnUrl(id);
+        if (cdn && img.dataset.fallback !== "cdn"){
+          img.dataset.fallback = "cdn";
+          img.crossOrigin = "anonymous";
+          img.addEventListener("load", () => refineMatrixPhotoEdges(img), { once: true });
+          img.src = cdn;
+          return;
+        }
         img.remove();
         hero.classList.remove("p-hero--matrix", "p-hero--clickable");
         hero.classList.add("p-hero--icon-only");
@@ -16513,23 +16541,23 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/family-heroes.js?v=2.86.6"></script>
+<script src="assets/family-heroes.js?v=2.86.7"></script>
 <script>window.__DS_ASSET_V=window.__CPN_BUILD;</script>
-<script src="design-studio-photos.js?v=2.86.6"></script>
-<script src="design-studio-stencils.js?v=2.86.6"></script>
-<script src="design-studio-templates.js?v=2.86.6"></script>
-<script src="design-studio-rules.js?v=2.86.6"></script>
-<script src="design-studio-intent.js?v=2.86.6"></script>
-<script src="design-studio-explore.js?v=2.86.6"></script>
-<script src="design-studio-premium.js?v=2.86.6"></script>
-<script src="design-studio-expert.js?v=2.86.6"></script>
-<script src="design-studio-walk-layout.js?v=2.86.6"></script>
-<script src="design-studio-walk-voxel.js?v=2.86.6"></script>
-<script src="design-studio-field-panel.js?v=2.86.6"></script>
-<script src="design-studio-walk-audio.js?v=2.86.6"></script>
-<script src="design-studio-walk-models.js?v=2.86.6"></script>
-<script src="design-studio-walk-quest.js?v=2.86.6"></script>
-<script src="design-studio-walk.js?v=2.86.6"></script>
-<script src="design-studio.js?v=2.86.6"></script>
+<script src="design-studio-photos.js?v=2.86.7"></script>
+<script src="design-studio-stencils.js?v=2.86.7"></script>
+<script src="design-studio-templates.js?v=2.86.7"></script>
+<script src="design-studio-rules.js?v=2.86.7"></script>
+<script src="design-studio-intent.js?v=2.86.7"></script>
+<script src="design-studio-explore.js?v=2.86.7"></script>
+<script src="design-studio-premium.js?v=2.86.7"></script>
+<script src="design-studio-expert.js?v=2.86.7"></script>
+<script src="design-studio-walk-layout.js?v=2.86.7"></script>
+<script src="design-studio-walk-voxel.js?v=2.86.7"></script>
+<script src="design-studio-field-panel.js?v=2.86.7"></script>
+<script src="design-studio-walk-audio.js?v=2.86.7"></script>
+<script src="design-studio-walk-models.js?v=2.86.7"></script>
+<script src="design-studio-walk-quest.js?v=2.86.7"></script>
+<script src="design-studio-walk.js?v=2.86.7"></script>
+<script src="design-studio.js?v=2.86.7"></script>
 </body>
 </html>
