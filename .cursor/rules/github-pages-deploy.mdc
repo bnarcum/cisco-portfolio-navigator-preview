@@ -17,11 +17,13 @@ Run and **do not tell the user deploy is complete** until this passes:
 npm run deploy:verify
 ```
 
-Or full push + verify from `dev`:
+Or full push + automatic recovery + verify from `dev`:
 
 ```bash
 npm run deploy
 ```
+
+`npm run deploy` and `deploy:verify` **automatically run `pages-recovery`** when a wedged legacy Pages build is detected (stale `github-pages` deployments blocking `pages-build-deployment`).
 
 ## URLs
 
@@ -43,12 +45,21 @@ npm run deploy
 
 ## Wedged deployment recovery (production)
 
+**Root cause:** `pages-build-deployment` uses `actions/deploy-pages`, which registers `github-pages` environment deployments. Stale SUCCESS or piled-up FAILURE nodes block new deploys (*"cancel … first"*), wedging legacy builds in `building`/`errored`.
+
+**Automatic (preferred):**
+
+```bash
+npm run deploy:recover
+npm run deploy:verify
+```
+
+**Manual (if gh automation unavailable):**
+
 Symptoms:
 - `pages-build-deployment` fails: `Deployment request failed … due to in progress deployment`
 - Legacy build stuck `building` with `duration: 0`, or Pages `status: errored`
 - Preview updates but production stays on older `__CPN_BUILD`
-
-Recovery (used successfully for v2.91.0 and v2.91.3):
 
 ```bash
 # 1) List recent github-pages deployments

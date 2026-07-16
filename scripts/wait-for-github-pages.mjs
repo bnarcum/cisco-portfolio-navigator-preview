@@ -12,6 +12,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
+import { recoverPages } from "./pages-recovery.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -79,7 +80,7 @@ function sleep(ms) {
 
 function ghAvailable() {
   try {
-    execSync("gh auth status", { stdio: "ignore" });
+    execSync("gh api repos/bnarcum/cisco-portfolio-navigator/pages --jq .status", { stdio: "ignore" });
     return true;
   } catch {
     return false;
@@ -134,6 +135,7 @@ async function waitForTarget(name, target, expected, timeoutSec, intervalSec, us
   let lastLive = null;
   let lastBuild = null;
   let polls = 0;
+  let recoveryAttempted = false;
 
   console.log(`\n[${name}] waiting for v${expected}`);
   console.log(`  ${target.url}`);
@@ -141,8 +143,10 @@ async function waitForTarget(name, target, expected, timeoutSec, intervalSec, us
   while (Date.now() < deadline) {
     polls++;
     let buildStatus = "unknown";
+    let pagesStatus = null;
     if (useGh) {
       const meta = pagesMeta(target.repo);
+      pagesStatus = meta?.status || null;
       const build = latestBuild(target.repo);
       lastBuild = build;
       if (meta?.build_type === "workflow") {
@@ -159,15 +163,36 @@ async function waitForTarget(name, target, expected, timeoutSec, intervalSec, us
     } catch (err) {
       lastLive = null;
       console.log(`  poll ${polls}: build=${buildStatus} live=error (${err.message})`);
-      await sleep(intervalSec * 1000);
-      continue;
     }
 
-    console.log(`  poll ${polls}: build=${buildStatus} live=v${lastLive || "?"}`);
+    if (lastLive !== null) {
+      console.log(`  poll ${polls}: build=${buildStatus} live=v${lastLive || "?"}`);
+    }
 
     if (lastLive === expected) {
       console.log(`[${name}] OK — v${expected} is live`);
       return { ok: true, live: lastLive, build: lastBuild };
+    }
+
+    // Auto-recover wedged legacy Pages once per target (stale deployments block new builds)
+    const wedged =
+      useGh &&
+      !recoveryAttempted &&
+      polls >= 2 &&
+      (pagesStatus === "errored" ||
+        buildStatus === "building" ||
+        (lastLive && lastLive !== expected));
+    if (wedged) {
+      recoveryAttempted = true;
+      console.log(`  [${name}] wedged deploy detected — running pages-recovery…`);
+      try {
+        const result = await recoverPages(name, { quiet: true });
+        console.log(`  recovery: ${result.recovered ? result.actions?.join("; ") : result.reason}`);
+        await sleep(Math.max(intervalSec, 15) * 1000);
+        continue;
+      } catch (err) {
+        console.warn(`  recovery failed: ${err.message}`);
+      }
     }
 
     await sleep(intervalSec * 1000);

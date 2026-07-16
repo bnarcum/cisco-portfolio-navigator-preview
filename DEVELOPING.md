@@ -63,15 +63,19 @@ CI also runs `.github/workflows/verify-github-pages.yml` on every push to `main`
 
 ### If production is stuck (wedged deploy)
 
-Preview may update while production stays on an old version. See wedged recovery in `.cursor/rules/github-pages-deploy.mdc` or run:
+**Cause:** GitHub's built-in `pages-build-deployment` workflow creates `github-pages` environment deployments. A stale SUCCESS (or piled-up FAILURE) deployment blocks new deploys with *"in progress deployment"*, leaving legacy builds stuck in `building`/`errored`.
+
+**Automatic fix (built into deploy):** `npm run deploy` now runs `pages-recovery` after each push and retries verify once if needed. `deploy:verify` also auto-recovers when it detects a wedged build.
+
+**Manual recovery:**
 
 ```bash
-gh api graphql -f query='query { repository(owner:"bnarcum", name:"cisco-portfolio-navigator") { deployments(first:8, environments:["github-pages"], orderBy:{field:CREATED_AT, direction:DESC}) { nodes { id latestStatus { state } } } } }'
-gh api graphql -f query='mutation { deleteDeployment(input:{id:"<FAILURE_ID>"}) { clientMutationId } }'
-gh api -X PUT repos/bnarcum/cisco-portfolio-navigator/pages -f build_type=legacy -f 'source[branch]=main' -f 'source[path]=/'
-gh api -X POST repos/bnarcum/cisco-portfolio-navigator/pages/builds
+npm run deploy:recover        # production only
+npm run deploy:recover:all    # production + preview
 npm run deploy:verify
 ```
+
+See also `.cursor/rules/github-pages-deploy.mdc` for the underlying `gh` commands.
 
 Keep experimenting on `dev` — production stays untouched until you merge and push `main`.
 
