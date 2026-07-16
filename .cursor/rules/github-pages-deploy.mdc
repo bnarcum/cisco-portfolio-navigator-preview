@@ -1,11 +1,13 @@
 ---
-description: After pushing to GitHub Pages, always verify the live site serves the expected APP_VERSION.
+description: GitHub Pages deploy verification and wedged-deployment recovery for this repo.
 alwaysApply: true
 ---
 
 # GitHub Pages deploy verification
 
-Production and preview use **legacy GitHub Pages** builds that take **1–6 minutes** after `git push`. The live URL may still serve the old `APP_VERSION` while `status=building`.
+Production and preview use **legacy GitHub Pages** (`build_type: legacy`). Builds take **1–6 minutes** after `git push`. The live URL may still serve the old `APP_VERSION` while `status=building`.
+
+**Do not** add `.github/workflows/deploy-github-pages.yml` or switch to `build_type: workflow` — that reintroduces conflicts with GitHub's built-in `pages-build-deployment` workflow.
 
 ## After every push to `origin/main` and/or `preview`
 
@@ -28,4 +30,45 @@ npm run deploy
 
 ## If verification times out
 
-Report the timeout, last live version seen, and link to repo Pages settings. Suggest hard refresh (Cmd+Shift+R). Do not claim the fix is live until `deploy:verify` succeeds.
+1. Check live vs expected version:
+   ```bash
+   curl -sS "https://bnarcum.github.io/cisco-portfolio-navigator/cisco-portfolio-navigator.html?cb=$RANDOM" | rg -o '__CPN_BUILD="[^"]+"'
+   gh api repos/bnarcum/cisco-portfolio-navigator/pages --jq '{status, build_type}'
+   gh api "repos/bnarcum/cisco-portfolio-navigator/pages/builds?per_page=2" --jq '.[] | {status, commit: .commit[0:7], error: .error.message}'
+   ```
+
+2. If `pages-build-deployment` failed with **"in progress deployment"** or legacy build is stuck `building`/`errored`, run **wedged deployment recovery** below.
+
+3. Report timeout, last live version, and Pages settings link. Suggest hard refresh (Cmd+Shift+R). Do not claim deploy is complete until live HTML serves expected `__CPN_BUILD`.
+
+## Wedged deployment recovery (production)
+
+Symptoms:
+- `pages-build-deployment` fails: `Deployment request failed … due to in progress deployment`
+- Legacy build stuck `building` with `duration: 0`, or Pages `status: errored`
+- Preview updates but production stays on older `__CPN_BUILD`
+
+Recovery (used successfully for v2.91.0 and v2.91.3):
+
+```bash
+# 1) List recent github-pages deployments
+gh api graphql -f query='query { repository(owner:"bnarcum", name:"cisco-portfolio-navigator") { deployments(first:8, environments:["github-pages"], orderBy:{field:CREATED_AT, direction:DESC}) { nodes { id commitOid latestStatus { state } } } } }' \
+  --jq '.data.repository.deployments.nodes[] | {id, oid: .commitOid[0:7], state: .latestStatus.state}'
+
+# 2) Delete wedged FAILURE deployment nodes (use id from step 1)
+gh api graphql -f query='mutation { deleteDeployment(input:{id:"<DEPLOYMENT_ID>"}) { clientMutationId } }'
+
+# 3) Reaffirm legacy-only Pages
+gh api -X PUT repos/bnarcum/cisco-portfolio-navigator/pages \
+  -f build_type=legacy -f 'source[branch]=main' -f 'source[path]=/'
+
+# 4) Queue fresh legacy build
+gh api -X POST repos/bnarcum/cisco-portfolio-navigator/pages/builds
+
+# 5) Poll until production serves expected version
+npm run deploy:verify
+```
+
+**Do not** manually `POST pages/builds` repeatedly while Actions deploys are failing — clear wedged deployments first.
+
+If recovery fails after ~6 minutes: https://github.com/bnarcum/cisco-portfolio-navigator/settings/pages

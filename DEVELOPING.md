@@ -61,6 +61,18 @@ CI also runs `.github/workflows/verify-github-pages.yml` on every push to `main`
 
 **Why it feels “not live yet”:** GitHub Pages legacy builds are asynchronous. `git push` returns before the site updates. Always run `deploy:verify` before telling anyone a version is live.
 
+### If production is stuck (wedged deploy)
+
+Preview may update while production stays on an old version. See wedged recovery in `.cursor/rules/github-pages-deploy.mdc` or run:
+
+```bash
+gh api graphql -f query='query { repository(owner:"bnarcum", name:"cisco-portfolio-navigator") { deployments(first:8, environments:["github-pages"], orderBy:{field:CREATED_AT, direction:DESC}) { nodes { id latestStatus { state } } } } }'
+gh api graphql -f query='mutation { deleteDeployment(input:{id:"<FAILURE_ID>"}) { clientMutationId } }'
+gh api -X PUT repos/bnarcum/cisco-portfolio-navigator/pages -f build_type=legacy -f 'source[branch]=main' -f 'source[path]=/'
+gh api -X POST repos/bnarcum/cisco-portfolio-navigator/pages/builds
+npm run deploy:verify
+```
+
 Keep experimenting on `dev` — production stays untouched until you merge and push `main`.
 
 ## Local testing

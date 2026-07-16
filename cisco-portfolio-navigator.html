@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.91.3";
+  window.__CPN_BUILD="2.91.4";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -47,6 +47,7 @@
   <link rel="stylesheet" href="assets/cpn-light.css?v=2.87.5"/>
   <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.87.5"/>
   <link rel="stylesheet" href="design-studio.css?v=2.87.5"/>
+  <link rel="stylesheet" href="assets/cpn-logo-intro.css?v=2.91.4"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -177,7 +178,7 @@
       font-family:"CiscoSansTT",system-ui,sans-serif;text-decoration:none;color:inherit}
     .logo-mark{width:48px;height:48px;flex-shrink:0;display:block;
       filter:drop-shadow(0 0 12px rgba(2,200,255,.38)) drop-shadow(0 0 5px rgba(255,144,0,.15)) drop-shadow(0 2px 8px rgba(0,0,0,.35))}
-    .logo-text{display:flex;flex-direction:column;gap:3px;line-height:1.05;min-width:0}
+    .logo-text{display:flex;flex-direction:column;gap:3px;line-height:1.05;min-width:0;text-align:left}
     .logo-title{font-size:15px;font-weight:700;letter-spacing:.015em;color:#eef6fc;
       text-shadow:0 0 18px rgba(2,200,255,.22)}
     .logo-rule{display:block;height:1px;width:100%;max-width:168px;border:0;margin:0;
@@ -1159,14 +1160,14 @@
 <script>if(/cisco-portfolio-navigator-preview/i.test(location.pathname))document.getElementById("preview-banner").classList.add("visible");</script>
 <div id="app-chrome">
 <div id="topbar">
-  <div class="logo" aria-label="Cisco Portfolio Navigator">
+  <button type="button" class="logo" id="logo-trigger" aria-label="Play Cisco Portfolio Navigator intro">
     <img class="logo-mark" src="assets/cpn-logo.svg" alt="" width="48" height="48" decoding="async"/>
-    <div class="logo-text">
+    <span class="logo-text">
       <span class="logo-title">Cisco Portfolio</span>
       <span class="logo-rule" aria-hidden="true"></span>
       <span class="logo-sub">Navigator</span>
-    </div>
-  </div>
+    </span>
+  </button>
   <div class="dv"></div>
   <div class="sw">
     <svg class="si" viewBox="0 0 16 16" fill="none">
@@ -1177,6 +1178,28 @@
     <div id="sr"></div>
   </div>
 </div>
+
+<div id="logo-intro" class="logo-intro" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Cisco Portfolio Navigator intro">
+  <button type="button" class="logo-intro-skip" aria-label="Close intro">&times;</button>
+  <div class="logo-intro-vignette" aria-hidden="true"></div>
+  <div class="logo-intro-anim logo-intro-content">
+    <div class="logo-intro-compass-wrap">
+      <div class="logo-intro-glow" aria-hidden="true"></div>
+      <img class="logo-intro-mark" src="assets/cpn-logo.svg" alt="" width="220" height="220" decoding="async"/>
+    </div>
+    <div class="logo-intro-wordmark">
+      <span class="logo-intro-title">Cisco Portfolio</span>
+      <span class="logo-intro-rule" aria-hidden="true"></span>
+      <span class="logo-intro-sub">Navigator</span>
+    </div>
+  </div>
+  <video class="logo-intro-video" muted playsinline preload="none" hidden aria-hidden="true">
+    <source src="assets/cpn-logo-intro.webm" type="video/webm"/>
+    <source src="assets/cpn-logo-intro.mp4" type="video/mp4"/>
+  </video>
+  <img class="logo-intro-static" src="assets/cpn-logo-intro-poster.png" alt="Cisco Portfolio Navigator" width="800" hidden/>
+</div>
+
 <div id="actionbar">
   <div class="actionbar-primary">
   <div class="vm-seg" id="vm-seg" role="group" aria-label="Visualization level">
@@ -16613,5 +16636,6 @@ window.__cpnV2 = {
 <script src="design-studio-walk-quest.js?v=2.87.5"></script>
 <script src="design-studio-walk.js?v=2.87.5"></script>
 <script src="design-studio.js?v=2.87.5"></script>
+<script src="assets/cpn-logo-intro.js?v=2.91.4"></script>
 </body>
 </html>

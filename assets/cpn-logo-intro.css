@@ -1,0 +1,146 @@
+/* Click-to-play logo intro — Premium lockup animation */
+button.logo{
+  background:none;border:none;padding:0;margin:0;
+  cursor:pointer;text-align:left;
+  border-radius:8px;
+  transition:background .15s,box-shadow .15s}
+button.logo:hover{background:rgba(2,200,255,.06);
+  box-shadow:0 0 20px rgba(2,200,255,.12)}
+button.logo:focus-visible{outline:2px solid rgba(2,200,255,.65);outline-offset:3px}
+button.logo:active{transform:scale(.985)}
+
+body.logo-intro-open{overflow:hidden}
+
+.logo-intro{
+  position:fixed;inset:0;z-index:200000;
+  display:flex;align-items:center;justify-content:center;
+  background:#020810;
+  opacity:0;visibility:hidden;
+  transition:opacity .35s ease,visibility .35s ease}
+.logo-intro.is-active{opacity:1;visibility:visible}
+.logo-intro[hidden]{display:none!important}
+
+.logo-intro-vignette{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 55% at 38% 50%,rgba(2,200,255,.14) 0%,transparent 62%),
+    radial-gradient(ellipse 90% 80% at 50% 50%,transparent 35%,rgba(0,0,0,.72) 100%)}
+
+.logo-intro-skip{
+  position:absolute;top:16px;right:18px;z-index:3;
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid rgba(88,172,216,.35);
+  background:rgba(7,24,45,.75);color:#b8d4ea;
+  font-size:22px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center}
+.logo-intro-skip:hover{border-color:rgba(2,200,255,.55);color:#fff}
+
+.logo-intro-content{
+  position:relative;z-index:2;
+  display:flex;align-items:center;gap:clamp(20px,4vw,48px);
+  padding:24px 32px;max-width:min(920px,94vw)}
+@media (max-width:640px){
+  .logo-intro-content{flex-direction:column;text-align:center}
+}
+
+.logo-intro-compass-wrap{
+  position:relative;flex-shrink:0;
+  width:clamp(140px,28vw,220px);height:clamp(140px,28vw,220px)}
+.logo-intro-glow{
+  position:absolute;inset:-18%;border-radius:50%;
+  background:radial-gradient(circle,rgba(2,200,255,.45) 0%,rgba(2,200,255,.08) 42%,transparent 68%);
+  opacity:0;transform:scale(.6)}
+.logo-intro-mark{
+  position:relative;width:100%;height:100%;display:block;
+  filter:drop-shadow(0 0 28px rgba(2,200,255,.5)) drop-shadow(0 0 12px rgba(255,144,0,.25));
+  opacity:0;transform:scale(.25) rotate(-120deg)}
+
+.logo-intro-wordmark{
+  display:flex;flex-direction:column;gap:8px;min-width:0;
+  font-family:"CiscoSansTT",system-ui,sans-serif;line-height:1.05}
+.logo-intro-title{
+  font-size:clamp(22px,4vw,36px);font-weight:700;letter-spacing:.02em;
+  color:#eef6fc;text-shadow:0 0 24px rgba(2,200,255,.35);
+  opacity:0;transform:translateY(12px)}
+.logo-intro-rule{
+  display:block;height:2px;width:100%;max-width:320px;border:0;margin:0;
+  transform-origin:left center;transform:scaleX(0);
+  background:linear-gradient(90deg,rgba(2,200,255,.85) 0%,rgba(255,144,0,.7) 50%,rgba(2,200,255,.2) 100%);
+  box-shadow:0 0 12px rgba(2,200,255,.45),0 0 4px rgba(255,144,0,.25)}
+@media (max-width:640px){
+  .logo-intro-rule{transform-origin:center center;margin:0 auto}
+}
+.logo-intro-sub{
+  font-size:clamp(16px,2.8vw,24px);font-weight:300;
+  letter-spacing:.22em;color:#b8d4ea;text-align:center;width:100%;
+  text-shadow:0 0 16px rgba(2,200,255,.2);
+  opacity:0;transform:translateY(8px)}
+
+.logo-intro-video,
+.logo-intro-static{
+  position:relative;z-index:2;max-width:min(920px,94vw);
+  max-height:min(72vh,520px);width:auto;height:auto;
+  border-radius:12px;
+  box-shadow:0 0 60px rgba(2,200,255,.2),0 24px 80px rgba(0,0,0,.55)}
+
+/* Dramatic sequence (~3.2s) */
+.logo-intro.is-playing .logo-intro-glow{
+  animation:cpnIntroGlow 3.2s ease-out forwards}
+.logo-intro.is-playing .logo-intro-mark{
+  animation:cpnIntroCompass 3.2s cubic-bezier(.2,.9,.2,1) forwards}
+.logo-intro.is-playing .logo-intro-title{
+  animation:cpnIntroTitle 3.2s ease-out forwards}
+.logo-intro.is-playing .logo-intro-rule{
+  animation:cpnIntroRule 3.2s ease-out forwards}
+.logo-intro.is-playing .logo-intro-sub{
+  animation:cpnIntroSub 3.2s ease-out forwards}
+.logo-intro.is-playing.logo-intro-out{
+  animation:cpnIntroOverlayOut .45s ease-in forwards}
+
+@keyframes cpnIntroGlow{
+  0%{opacity:0;transform:scale(.5)}
+  18%{opacity:1;transform:scale(1.05)}
+  45%{opacity:.85;transform:scale(1.15)}
+  75%{opacity:.7;transform:scale(1.08)}
+  100%{opacity:.55;transform:scale(1)}
+}
+@keyframes cpnIntroCompass{
+  0%{opacity:0;transform:scale(.2) rotate(-140deg)}
+  22%{opacity:1;transform:scale(1.08) rotate(12deg)}
+  38%{transform:scale(1) rotate(-6deg)}
+  55%{transform:scale(1.02) rotate(0deg)}
+  82%{opacity:1;transform:scale(1) rotate(0deg)}
+  100%{opacity:.95;transform:scale(.96) rotate(0deg)}
+}
+@keyframes cpnIntroTitle{
+  0%,32%{opacity:0;transform:translateY(14px)}
+  48%{opacity:1;transform:translateY(0)}
+  100%{opacity:1;transform:translateY(0)}
+}
+@keyframes cpnIntroRule{
+  0%,38%{transform:scaleX(0);opacity:.4}
+  52%{transform:scaleX(1);opacity:1}
+  100%{transform:scaleX(1);opacity:1}
+}
+@keyframes cpnIntroSub{
+  0%,48%{opacity:0;transform:translateY(10px);letter-spacing:.34em}
+  62%{opacity:1;transform:translateY(0);letter-spacing:.14em}
+  100%{opacity:1;letter-spacing:.08em}
+}
+@keyframes cpnIntroOverlayOut{
+  to{opacity:0;visibility:hidden}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .logo-intro{transition:none}
+  .logo-intro.is-playing .logo-intro-glow,
+  .logo-intro.is-playing .logo-intro-mark,
+  .logo-intro.is-playing .logo-intro-title,
+  .logo-intro.is-playing .logo-intro-rule,
+  .logo-intro.is-playing .logo-intro-sub{animation:none}
+  .logo-intro.is-playing .logo-intro-mark,
+  .logo-intro.is-playing .logo-intro-title,
+  .logo-intro.is-playing .logo-intro-rule,
+  .logo-intro.is-playing .logo-intro-sub,
+  .logo-intro.is-playing .logo-intro-glow{opacity:1;transform:none}
+}
