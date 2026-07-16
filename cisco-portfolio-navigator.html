@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.86.3";
+  window.__CPN_BUILD="2.86.4";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -43,10 +43,10 @@
   import * as THREE from "three";
   window.__cpnWalkTHREE = THREE;
   </script>
-  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.86.3"/>
-  <link rel="stylesheet" href="assets/cpn-light.css?v=2.86.3"/>
-  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.86.3"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.86.3"/>
+  <link rel="stylesheet" href="assets/cpn-ui.css?v=2.86.4"/>
+  <link rel="stylesheet" href="assets/cpn-light.css?v=2.86.4"/>
+  <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.86.4"/>
+  <link rel="stylesheet" href="design-studio.css?v=2.86.4"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -152,14 +152,14 @@
       font-size:12px;font-weight:600;padding:5px 12px;letter-spacing:.02em}
     #preview-banner.visible{display:block}
     #app-chrome{position:fixed;top:0;left:0;right:0;z-index:100}
-    #topbar{position:relative;min-height:52px;height:auto;
+    #topbar{position:relative;z-index:2;min-height:52px;height:auto;
       background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
       border-bottom:1px solid var(--border);box-shadow:var(--chrome-shadow);
       display:flex;align-items:center;flex-wrap:wrap;
       gap:12px;padding:10px 16px}
     #topbar::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;
       background:linear-gradient(90deg, transparent, var(--glass-edge), transparent);pointer-events:none}
-    #actionbar{display:flex;flex-direction:column;align-items:stretch;gap:8px;
+    #actionbar{position:relative;z-index:1;display:flex;flex-direction:column;align-items:stretch;gap:8px;
       padding:7px 14px;background:var(--glass-bg2);backdrop-filter:blur(var(--glass-blur));
       -webkit-backdrop-filter:blur(var(--glass-blur));border-bottom:1px solid var(--border)}
     .actionbar-primary{display:flex;align-items:center;justify-content:space-between;
@@ -177,7 +177,7 @@
       color:var(--accent);white-space:nowrap;flex-shrink:0}
     .logo img,.logo svg{width:44px;height:44px;flex-shrink:0}
     .dv{width:1px;height:26px;background:var(--border);flex-shrink:0}
-    .sw{position:relative;flex:1 1 480px;min-width:280px;max-width:none}
+    .sw{position:relative;flex:1 1 480px;min-width:280px;max-width:none;z-index:3}
     @media (max-width: 720px){
       .sw{flex:1 1 100%;min-width:0;order:99}
     }
@@ -4620,7 +4620,7 @@ let nodeClickTimer = null;
 
 const MATRIX_SITE = "https://bnarcum.github.io/collaboration-device-matrix/";
 /** Bust iframe cache when Device Matrix deploys — bump with each matrix release. */
-const MATRIX_RELEASE = "20260716e";
+const MATRIX_RELEASE = "20260716f";
 const MATRIX_NODE_FILL = "#ffffff";
 const MATRIX_NODE_RING = "#cbd5e1";
 const MATRIX_IMG_BASE = MATRIX_SITE + "devices/";
@@ -10359,7 +10359,7 @@ document.addEventListener("keydown",ev=>{
    ══════════════════════════════════════════════════════════════════════════*/
 (function v2(){
 
-const APP_VERSION   = window.__CPN_BUILD || "2.86.3";
+const APP_VERSION   = window.__CPN_BUILD || "2.86.4";
 const DATA_UPDATED  = "2026-07-16";
 const STORAGE_KEYS  = {
   plans:    "cpn-plans-v2",
@@ -16386,23 +16386,23 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/family-heroes.js?v=2.86.3"></script>
+<script src="assets/family-heroes.js?v=2.86.4"></script>
 <script>window.__DS_ASSET_V=window.__CPN_BUILD;</script>
-<script src="design-studio-photos.js?v=2.86.3"></script>
-<script src="design-studio-stencils.js?v=2.86.3"></script>
-<script src="design-studio-templates.js?v=2.86.3"></script>
-<script src="design-studio-rules.js?v=2.86.3"></script>
-<script src="design-studio-intent.js?v=2.86.3"></script>
-<script src="design-studio-explore.js?v=2.86.3"></script>
-<script src="design-studio-premium.js?v=2.86.3"></script>
-<script src="design-studio-expert.js?v=2.86.3"></script>
-<script src="design-studio-walk-layout.js?v=2.86.3"></script>
-<script src="design-studio-walk-voxel.js?v=2.86.3"></script>
-<script src="design-studio-field-panel.js?v=2.86.3"></script>
-<script src="design-studio-walk-audio.js?v=2.86.3"></script>
-<script src="design-studio-walk-models.js?v=2.86.3"></script>
-<script src="design-studio-walk-quest.js?v=2.86.3"></script>
-<script src="design-studio-walk.js?v=2.86.3"></script>
-<script src="design-studio.js?v=2.86.3"></script>
+<script src="design-studio-photos.js?v=2.86.4"></script>
+<script src="design-studio-stencils.js?v=2.86.4"></script>
+<script src="design-studio-templates.js?v=2.86.4"></script>
+<script src="design-studio-rules.js?v=2.86.4"></script>
+<script src="design-studio-intent.js?v=2.86.4"></script>
+<script src="design-studio-explore.js?v=2.86.4"></script>
+<script src="design-studio-premium.js?v=2.86.4"></script>
+<script src="design-studio-expert.js?v=2.86.4"></script>
+<script src="design-studio-walk-layout.js?v=2.86.4"></script>
+<script src="design-studio-walk-voxel.js?v=2.86.4"></script>
+<script src="design-studio-field-panel.js?v=2.86.4"></script>
+<script src="design-studio-walk-audio.js?v=2.86.4"></script>
+<script src="design-studio-walk-models.js?v=2.86.4"></script>
+<script src="design-studio-walk-quest.js?v=2.86.4"></script>
+<script src="design-studio-walk.js?v=2.86.4"></script>
+<script src="design-studio.js?v=2.86.4"></script>
 </body>
 </html>
