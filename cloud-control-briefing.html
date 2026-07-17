@@ -3,103 +3,82 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="theme-color" content="#07182d"/>
-  <title>Cisco Cloud Control · Briefing Canvas (Demo)</title>
+  <meta name="theme-color" content="#0a0f1c"/>
+  <title>Cisco AI Canvas · Cloud Control (Demo)</title>
   <link rel="icon" type="image/svg+xml" href="assets/cpn-favicon.svg"/>
-  <link rel="stylesheet" href="assets/cpn-cloud-control-briefing.css?v=2.94.0"/>
+  <link rel="stylesheet" href="assets/cpn-cloud-control-briefing.css?v=2.95.0"/>
 </head>
 <body>
-  <header class="cc-topbar">
-    <div class="cc-brand">
-      <img src="assets/cpn-logo.svg" alt="" width="30" height="30" decoding="async"/>
-      <div class="cc-brand-text">
-        <strong>Cisco Cloud Control</strong>
-        <span>Briefing Canvas</span>
-      </div>
+  <!-- ── Cloud Control top nav ─────────────────────────────────────────── -->
+  <header class="cc-nav">
+    <div class="cc-nav-left">
+      <img class="cc-nav-logo" src="assets/cpn-logo.svg" alt="" width="26" height="26" decoding="async"/>
+      <span class="cc-nav-product">Cloud Control</span>
+      <nav class="cc-nav-tabs">
+        <span>Home</span>
+        <span>Alerts</span>
+        <span class="is-active">AI Canvas</span>
+        <span>Topology</span>
+        <span>Studio</span>
+      </nav>
     </div>
-    <div class="cc-account" id="cc-account">Account ▾</div>
-    <span class="cc-demo-flag">Demo — not live telemetry</span>
+    <div class="cc-nav-right">
+      <span class="cc-demo-flag">Demo — not live telemetry</span>
+      <div class="cc-presence" id="cc-presence" title="In this session"></div>
+      <button class="cc-share" type="button">Share</button>
+    </div>
   </header>
 
-  <main class="cc-grid">
-    <aside class="cc-rail">
-      <section class="cc-card cc-inventory">
-        <h2>Inventory</h2>
-        <div class="cc-stat-row">
-          <div class="cc-stat"><span class="cc-stat-num" id="cc-inv-items">0</span><span class="cc-stat-lbl">In stack</span></div>
-          <div class="cc-stat"><span class="cc-stat-num" id="cc-inv-families">0</span><span class="cc-stat-lbl">Families</span></div>
+  <div class="cc-shell">
+    <!-- ── Left: board library + estate ────────────────────────────────── -->
+    <aside class="cc-rail cc-rail--left">
+      <div class="cc-rail-sec">
+        <div class="cc-rail-title">Board Library</div>
+        <ul class="cc-boards" id="cc-boards"></ul>
+      </div>
+      <div class="cc-rail-sec">
+        <div class="cc-rail-title">Estate in scope</div>
+        <div class="cc-estate-stats">
+          <div><span id="cc-inv-items">0</span><small>products</small></div>
+          <div><span id="cc-inv-families">0</span><small>families</small></div>
         </div>
-        <ul class="cc-inv-list" id="cc-inv-list"></ul>
-      </section>
-
-      <section class="cc-card cc-alerts">
-        <h2>Alerts <span class="cc-count" id="cc-alert-count">0</span></h2>
-        <ul class="cc-alert-list" id="cc-alert-list"></ul>
-      </section>
+        <ul class="cc-estate-list" id="cc-estate-list"></ul>
+      </div>
     </aside>
 
-    <section class="cc-canvas">
-      <div class="cc-card cc-canvas-card">
-        <div class="cc-canvas-head">
-          <h2>AI Canvas · Deep reasoning</h2>
-          <select id="cc-scenario-picker" class="cc-picker" aria-label="Choose investigation"></select>
-        </div>
-
-        <div class="cc-reasoning" id="cc-reasoning">
-          <div class="cc-reason-block">
-            <div class="cc-reason-label">Investigation</div>
-            <div class="cc-reason-title" id="cc-scn-title">—</div>
-            <div class="cc-reason-domains" id="cc-scn-domains"></div>
-          </div>
-          <div class="cc-reason-block">
-            <div class="cc-reason-label">Hypotheses</div>
-            <ol class="cc-list" id="cc-scn-hypotheses"></ol>
-          </div>
-          <div class="cc-reason-block">
-            <div class="cc-reason-label">Evidence gathered by agents</div>
-            <ul class="cc-list cc-evidence" id="cc-scn-evidence"></ul>
-          </div>
-          <div class="cc-reason-cols">
-            <div class="cc-reason-block">
-              <div class="cc-reason-label">Impact</div>
-              <p class="cc-reason-text" id="cc-scn-impact">—</p>
-            </div>
-            <div class="cc-reason-block">
-              <div class="cc-reason-label">Recommended action</div>
-              <p class="cc-reason-text" id="cc-scn-action">—</p>
-            </div>
-          </div>
-          <div class="cc-canvas-actions">
-            <button type="button" class="cc-btn cc-btn--primary" id="cc-approve">Approve remediation</button>
-            <button type="button" class="cc-btn" id="cc-copy-prompt">Copy AI Canvas prompt</button>
+    <!-- ── Center: the generative canvas board ─────────────────────────── -->
+    <main class="cc-canvas" id="cc-canvas">
+      <div class="cc-board-head">
+        <div class="cc-board-titlewrap">
+          <span class="cc-board-sev" id="cc-board-sev"></span>
+          <div>
+            <div class="cc-board-title" id="cc-board-title">—</div>
+            <div class="cc-board-crumb">AI Canvas · <span id="cc-account">Account</span> · auto-generated board</div>
           </div>
         </div>
+        <div class="cc-board-status" id="cc-board-status">Investigating</div>
       </div>
 
-      <div class="cc-widgets">
-        <div class="cc-card cc-widget" id="cc-widget-pillars">
-          <h3>Pillar coverage</h3>
-          <div class="cc-pillars" id="cc-pillars"></div>
-        </div>
-        <div class="cc-card cc-widget" id="cc-widget-gaps">
-          <h3>Cloud Control package</h3>
-          <div class="cc-gap-body" id="cc-gap-body">—</div>
-        </div>
-        <div class="cc-card cc-widget cc-widget--cta">
-          <h3>Prove it live</h3>
-          <a class="cc-lab" id="cc-dcloud" href="https://dcloud2-rtp.cisco.com/content/instantdemo/agenticops-with-cisco-cloud-control?returnPathTitleKey=content-view" target="_blank" rel="noopener">AgenticOps dCloud lab ↗</a>
-          <a class="cc-lab" href="https://cloud.cisco.com" target="_blank" rel="noopener">Open Cloud Control ↗</a>
-        </div>
+      <div class="cc-board" id="cc-board"><!-- generated widget cards --></div>
+    </main>
+
+    <!-- ── Right: assistant conversation + composer ────────────────────── -->
+    <aside class="cc-rail cc-rail--right">
+      <div class="cc-assist-head">
+        <span class="cc-spark">✦</span> AI Canvas Assistant
       </div>
-    </section>
-  </main>
+      <div class="cc-thread" id="cc-thread"><!-- conversation --></div>
+      <form class="cc-composer" id="cc-composer" autocomplete="off">
+        <button type="button" class="cc-attach" title="Add visual evidence (multimodal)">＋</button>
+        <input id="cc-input" type="text" placeholder="Ask AI Canvas anything…" aria-label="Ask AI Canvas"/>
+        <button type="submit" class="cc-send" aria-label="Send">➤</button>
+      </form>
+    </aside>
+  </div>
 
-  <footer class="cc-footer">
-    <button type="button" class="cc-back" id="cc-back">← Back to Portfolio Navigator</button>
-    <span>Portfolio Navigator + Cloud Control · demo composition of portfolio &amp; operations</span>
-  </footer>
+  <button class="cc-back" id="cc-back" type="button">← Back to Portfolio Navigator</button>
 
-  <script src="assets/cpn-cloud-control-ops.js?v=2.94.0"></script>
-  <script src="assets/cpn-cloud-control-briefing.js?v=2.94.0"></script>
+  <script src="assets/cpn-cloud-control-ops.js?v=2.95.0"></script>
+  <script src="assets/cpn-cloud-control-briefing.js?v=2.95.0"></script>
 </body>
 </html>

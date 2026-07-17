@@ -68,34 +68,46 @@ try {
     if (!brief.account) errors.push("brief.account missing");
   }
 
-  // Load the briefing page directly (demo fallback path) and verify it renders.
-  const bp = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+  // Load the AI Canvas board directly (demo fallback path) and verify it renders.
+  const bp = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   bp.on("pageerror", e => errors.push(`briefing pageerror: ${e.message}`));
   await bp.goto(`file://${path.join(root, "cloud-control-briefing.html")}?focus=room-systems`, {
     waitUntil: "load",
     timeout: 30000
   });
-  await bp.waitForSelector("#cc-scn-title", { timeout: 10000 });
+  await bp.waitForSelector("#cc-board .cc-widget", { timeout: 10000 });
 
   const rendered = await bp.evaluate(() => ({
-    title: document.getElementById("cc-scn-title").textContent.trim(),
-    alerts: document.querySelectorAll(".cc-alert-item").length,
-    hypotheses: document.querySelectorAll("#cc-scn-hypotheses li").length,
-    evidence: document.querySelectorAll("#cc-scn-evidence li").length,
-    pillars: document.querySelectorAll(".cc-pillar").length,
-    scenarioOptions: document.querySelectorAll("#cc-scenario-picker option").length
+    title: document.getElementById("cc-board-title").textContent.trim(),
+    boards: document.querySelectorAll(".cc-board-item").length,
+    widgets: document.querySelectorAll("#cc-board .cc-widget").length,
+    chart: document.querySelectorAll("#cc-board .cc-chart").length,
+    topo: document.querySelectorAll("#cc-board .cc-topo").length,
+    hasApprove: !!document.getElementById("cc-approve"),
+    presence: document.querySelectorAll("#cc-presence .cc-av").length,
+    composer: !!document.getElementById("cc-input")
   }));
-  if (!rendered.title || rendered.title === "—") errors.push("briefing scenario title empty");
-  if (rendered.alerts < 1) errors.push("briefing rendered no alerts");
-  if (rendered.hypotheses < 1) errors.push("briefing rendered no hypotheses");
-  if (rendered.evidence < 1) errors.push("briefing rendered no evidence");
-  if (rendered.pillars !== 3) errors.push(`expected 3 pillars, got ${rendered.pillars}`);
-  if (rendered.scenarioOptions < 1) errors.push("briefing scenario picker empty");
+  if (!rendered.title || rendered.title === "—") errors.push("board title empty");
+  if (rendered.boards < 1) errors.push("board library empty");
+  if (rendered.widgets < 5) errors.push(`expected >=5 widgets, got ${rendered.widgets}`);
+  if (rendered.chart < 1) errors.push("no chart widget rendered");
+  if (rendered.topo < 1) errors.push("no topology widget rendered");
+  if (!rendered.hasApprove) errors.push("no approve action");
+  if (rendered.presence < 2) errors.push("presence avatars missing");
+  if (!rendered.composer) errors.push("assistant composer missing");
 
-  // Approve button flips to done state.
+  // Approve button flips to done + board resolves.
   await bp.click("#cc-approve");
-  const approved = await bp.evaluate(() => document.getElementById("cc-approve").classList.contains("is-done"));
-  if (!approved) errors.push("approve button did not enter done state");
+  const approved = await bp.evaluate(() => ({
+    done: document.getElementById("cc-approve").classList.contains("is-done"),
+    resolved: document.getElementById("cc-board-status").classList.contains("is-resolved")
+  }));
+  if (!approved.done) errors.push("approve button did not enter done state");
+  if (!approved.resolved) errors.push("board status did not flip to resolved");
+
+  // Streaming conversation eventually posts agent messages.
+  await bp.waitForFunction(() => document.querySelectorAll("#cc-thread .cc-msg").length >= 2, { timeout: 8000 })
+    .catch(() => errors.push("conversation did not stream agent messages"));
 
   if (errors.length) {
     console.error("FAIL test-cloud-control-ops:");

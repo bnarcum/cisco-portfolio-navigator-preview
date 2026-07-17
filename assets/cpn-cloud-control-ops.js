@@ -18,9 +18,13 @@
   const SCENARIOS = {
     "room-qoe": {
       title: "Boardroom video quality degradation",
+      severity: "critical",
       domains: ["collaboration", "network"],
+      question: "Why is video choppy in the Executive Boardroom right now?",
       prompt:
         "Correlate Webex room device health (RoomOS) with WAN path quality for the affected boardrooms, then recommend a remediation that keeps the meeting running.",
+      metric: { label: "Packet loss — branch uplink", unit: "%", peak: 9.4, baseline: 0.3 },
+      topology: { nodes: ["Boardroom codec", "Room AP", "Branch MX", "SD-WAN edge", "Webex cloud"], degraded: 2 },
       hypotheses: [
         "WAN path loss on the branch uplink is starving the video stream",
         "RoomOS firmware drift on the codec is causing packet reordering",
@@ -37,9 +41,13 @@
     },
     "calling-registration": {
       title: "Webex Calling registration flapping",
+      severity: "warning",
       domains: ["collaboration", "network"],
+      question: "Phones at the Denver site keep dropping registration — what's going on?",
       prompt:
         "Investigate intermittent Webex Calling device registration loss and identify whether it is network, identity, or service-side.",
+      metric: { label: "Registration drops — Denver site", unit: "/min", peak: 14, baseline: 0 },
+      topology: { nodes: ["IP phones", "Access switch", "Branch firewall", "DNS", "Calling edge"], degraded: 2 },
       hypotheses: [
         "Branch firewall is aging out SIP sessions too aggressively",
         "DNS resolution latency to the calling edge is spiking",
@@ -56,9 +64,13 @@
     },
     "wan-brownout": {
       title: "Branch WAN brownout",
+      severity: "warning",
       domains: ["network"],
+      question: "Users at the Austin branch say every app is slow — is it the network?",
       prompt:
         "Determine root cause of degraded application experience at a branch and whether SD-WAN can steer around it.",
+      metric: { label: "Latency — primary circuit", unit: "ms", peak: 480, baseline: 42 },
+      topology: { nodes: ["Branch users", "Catalyst switch", "SD-WAN edge", "MPLS circuit", "SaaS / cloud"], degraded: 3 },
       hypotheses: [
         "Primary MPLS/Internet circuit is experiencing loss/jitter",
         "A noisy application is saturating the uplink",
@@ -75,9 +87,13 @@
     },
     "dc-ai-fabric": {
       title: "AI fabric congestion impacting training job",
+      severity: "critical",
       domains: ["compute", "network"],
+      question: "Our GPU training job stalled — is the fabric the bottleneck?",
       prompt:
         "Correlate Nexus fabric telemetry with GPU job performance and recommend a fix that protects the AI workload.",
+      metric: { label: "ECN marks — leaf-07", unit: "k/s", peak: 62, baseline: 2 },
+      topology: { nodes: ["GPU nodes", "Leaf-07", "Spine", "Leaf-12", "Storage"], degraded: 1 },
       hypotheses: [
         "East-west congestion on a leaf switch is throttling RDMA traffic",
         "A failed optic is forcing traffic onto a degraded path",
@@ -94,9 +110,13 @@
     },
     "security-anomaly": {
       title: "Cross-domain security anomaly",
+      severity: "critical",
       domains: ["security", "network"],
+      question: "XDR flagged a host beaconing out — is this an active compromise?",
       prompt:
         "Investigate an anomaly spanning identity, network, and endpoint and propose a contained response.",
+      metric: { label: "Anomalous outbound flows", unit: "/min", peak: 37, baseline: 1 },
+      topology: { nodes: ["Endpoint", "Access switch", "ISE", "Secure Firewall", "Internet C2"], degraded: 3 },
       hypotheses: [
         "Compromised credential performing lateral movement",
         "Misconfigured access policy exposing a segment",
@@ -113,9 +133,13 @@
     },
     "observability-gap": {
       title: "Observability coverage gap",
+      severity: "warning",
       domains: ["observability"],
+      question: "Where are we blind? Show telemetry gaps across the estate.",
       prompt:
         "Identify where the estate lacks telemetry so cross-domain investigations are not blind, and recommend agents/tests to deploy.",
+      metric: { label: "Sites without TE agent", unit: "", peak: 6, baseline: 6 },
+      topology: { nodes: ["Site A", "Site B", "Site C ⚠", "App Y ⚠", "Core"], degraded: 2 },
       hypotheses: [
         "Key branch has no ThousandEyes agent",
         "A critical app has no APM/RUM instrumentation",
@@ -130,6 +154,15 @@
       action:
         "Deploy TE agents to uncovered sites, instrument app Y, and reconcile Control Hub inventory."
     }
+  };
+
+  // Domain → the agent persona that investigates it (name + accent).
+  const DOMAIN_AGENTS = {
+    network: { name: "Network Agent", short: "NET", color: "#02c8ff" },
+    collaboration: { name: "Collaboration Agent", short: "COL", color: "#2dce5c" },
+    security: { name: "Security Agent", short: "SEC", color: "#ff4d6d" },
+    compute: { name: "Compute Agent", short: "CMP", color: "#0a60ff" },
+    observability: { name: "Observability Agent", short: "OBS", color: "#ff9000" }
   };
 
   const CONTROL_HUB = { label: "Control Hub", url: "https://admin.webex.com" };
@@ -280,6 +313,7 @@
     SCENARIOS,
     FAMILY_OPS,
     DOMAIN_LABELS,
+    DOMAIN_AGENTS,
     getScenario,
     getOpsProfile,
     hasOps,
