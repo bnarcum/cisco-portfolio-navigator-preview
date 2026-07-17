@@ -14,6 +14,8 @@ const browser = await chromium.launch();
 const page = await browser.newPage();
 await page.goto(`file://${html}`, { waitUntil: "load", timeout: 60000 });
 await page.waitForFunction(() => window.__cpnV2?.APP_VERSION, { timeout: 60000 });
+await page.waitForFunction(() => window.__cpnLazy?.loadDesignStudio, { timeout: 10000 });
+await page.evaluate(() => window.__cpnLazy.loadDesignStudio());
 await page.evaluate(() => window.DesignStudio.open());
 await page.waitForSelector("#ds-intent-text", { timeout: 10000 });
 

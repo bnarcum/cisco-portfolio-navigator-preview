@@ -9,6 +9,8 @@ const errors = [];
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 await page.goto(`file://${html}`, { waitUntil: "load", timeout: 60000 });
+await page.waitForFunction(() => window.__cpnLazy?.loadDesignStudio, { timeout: 10000 });
+await page.evaluate(() => window.__cpnLazy.loadDesignStudio());
 await page.waitForFunction(() => window.DesignStudio?.instance && window.__DS_TEMPLATES?.ROOM_TEMPLATES, { timeout: 60000 });
 
 const result = await page.evaluate(() => {

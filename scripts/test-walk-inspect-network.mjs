@@ -12,7 +12,7 @@ try {
 
   await page.goto(URL, { waitUntil: "load", timeout: 60000 });
   await page.click("#design-studio-btn");
-  await page.waitForSelector("#design-studio.open", { timeout: 8000 });
+  await page.waitForSelector("#design-studio.open", { timeout: 30000 });
   await page.evaluate(() => document.querySelector("#ds-one-cisco-deck [data-pillar='workplaces']")?.click());
   await page.waitForTimeout(300);
   await page.click("#ds-generate");

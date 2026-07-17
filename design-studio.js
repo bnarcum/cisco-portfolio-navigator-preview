@@ -1378,7 +1378,7 @@
       wrap.classList.toggle("network-mode", tab === "network");
       if (tab === "network" && this.roomView === "grid") this.roomView = "diagram";
       const showCanvas = tab === "room" || tab === "network";
-      document.getElementById("ds-walk-corridor")?.toggleAttribute("hidden", true);
+      document.getElementById("ds-walk-corridor")?.toggleAttribute("hidden", !showCanvas);
       document.getElementById("ds-canvas-view-toggle")?.toggleAttribute("hidden", !showCanvas);
       this.updateRoomPicker();
       this.renderRoomGuide();
@@ -3027,11 +3027,12 @@ Account: ${this.design.account}`;
   function initDesignStudio() {
     studio.mount();
     const btn = document.getElementById("design-studio-btn");
-    if (btn && !btn.dataset.wired) { btn.dataset.wired = "1"; btn.addEventListener("click", () => studio.open()); }
+    if (btn && !btn.dataset.wired && !btn.dataset.lazyWired) {
+      btn.dataset.wired = "1";
+      btn.addEventListener("click", () => studio.open());
+    }
   }
 
   window.DesignStudio = { open: () => studio.open(), close: () => studio.close(), instance: studio };
   window.initDesignStudio = initDesignStudio;
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initDesignStudio);
-  else initDesignStudio();
 })();

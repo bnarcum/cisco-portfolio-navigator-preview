@@ -24,7 +24,7 @@ try {
   if (version !== "2.79.17") errors.push(`expected version 2.79.17, got ${version}`);
 
   await page.click("#design-studio-btn");
-  await page.waitForSelector("#design-studio.open", { timeout: 8000 });
+  await page.waitForSelector("#design-studio.open", { timeout: 30000 });
 
   // Generate a portfolio so we have nodes + links.
   await page.evaluate(() => document.querySelector("#ds-one-cisco-deck [data-pillar='workplaces']")?.click());

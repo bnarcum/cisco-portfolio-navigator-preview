@@ -517,6 +517,10 @@
   async function loadThree() {
     if (state.THREE) return state.THREE;
     if (window.__cpnWalkTHREE) { state.THREE = window.__cpnWalkTHREE; return state.THREE; }
+    if (window.__cpnLazy?.loadThree) {
+      state.THREE = await window.__cpnLazy.loadThree();
+      return state.THREE;
+    }
     for (let i = 0; i < 40; i++) {
       if (window.__cpnWalkTHREE) { state.THREE = window.__cpnWalkTHREE; return state.THREE; }
       await new Promise(r => setTimeout(r, 50));

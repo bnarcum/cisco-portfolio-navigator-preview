@@ -1,0 +1,53 @@
+/* Room / Desk Pro mode — ?mode=room or ?lite=1 */
+html.cpn-room-mode {
+  --glass-blur: 0px;
+  --glass-bg: var(--surface);
+  --glass-bg2: var(--surface2);
+}
+html.cpn-room-mode #topbar,
+html.cpn-room-mode #actionbar,
+html.cpn-room-mode #sr,
+html.cpn-room-mode #planner,
+html.cpn-room-mode #compare-panel,
+html.cpn-room-mode #shortcuts-modal .sc-card,
+html.cpn-room-mode #tools,
+html.cpn-room-mode #hint,
+html.cpn-room-mode .panel,
+html.cpn-room-mode #gw-panel {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.cpn-room-mode #bg-mesh { display: none !important; }
+html.cpn-room-mode .bg-grid { animation: none; opacity: 0.35; }
+html.cpn-room-mode .bg-glow { animation: none; }
+html.cpn-room-mode .logo-mark { animation: none; }
+html.cpn-room-mode #design-studio-btn,
+html.cpn-room-mode #vm-seg button[data-vm="spatial"],
+html.cpn-room-mode #vm-seg button[data-vm="all-products"] {
+  display: none !important;
+}
+html.cpn-room-mode #gs.view-x-dissolve.view-exit,
+html.cpn-room-mode #spatial-wrap.view-x-dissolve.view-exit {
+  filter: none !important;
+}
+html.cpn-room-mode #gs.view-x-expand.view-exit,
+html.cpn-room-mode #spatial-wrap.view-x-expand.view-exit {
+  filter: none !important;
+}
+html.cpn-room-mode::before {
+  content: "Room mode";
+  position: fixed;
+  top: calc(var(--topbar-h) + 4px);
+  right: 10px;
+  z-index: 95;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a8b8c8;
+  background: rgba(10, 34, 64, 0.92);
+  border: 1px solid rgba(2, 200, 255, 0.22);
+  border-radius: 999px;
+  padding: 3px 8px;
+  pointer-events: none;
+}

@@ -16,7 +16,7 @@ try {
 
   await page.goto(URL, { waitUntil: "load", timeout: 60000 });
   await page.click("#design-studio-btn");
-  await page.waitForSelector("#design-studio.open", { timeout: 8000 });
+  await page.waitForSelector("#design-studio.open", { timeout: 30000 });
 
   // Auditorium: stage + seats, no ceiling lattice.
   await page.evaluate(() => {

@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.92.1";
+  window.__CPN_BUILD="2.92.2";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -34,19 +34,25 @@
       }
     }catch(e){}
   })();
+  (function(){
+    var q = location.search || "";
+    window.__CPN_ROOM_MODE = /(?:^|[?&])(?:mode=room|lite=1)(?:&|$)/.test(q);
+    if (window.__CPN_ROOM_MODE) {
+      document.documentElement.classList.add("cpn-room-mode");
+      var rl = document.createElement("link");
+      rl.rel = "stylesheet";
+      rl.href = "assets/cpn-room.css?v=" + encodeURIComponent(window.__CPN_BUILD);
+      document.head.appendChild(rl);
+    }
+  })();
   </script>
   <script type="importmap">
   {"imports":{"three":"./vendor/three.module.min.js"}}
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-  <script type="module">
-  import * as THREE from "three";
-  window.__cpnWalkTHREE = THREE;
-  </script>
   <link rel="stylesheet" href="assets/cpn-ui.css?v=2.87.5"/>
   <link rel="stylesheet" href="assets/cpn-light.css?v=2.87.5"/>
   <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.87.5"/>
-  <link rel="stylesheet" href="design-studio.css?v=2.87.5"/>
   <link rel="stylesheet" href="assets/cpn-logo-intro.css?v=2.91.6"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -8502,6 +8508,9 @@ function exitSpatialView(){
 // opts:   { focusFamily, focusCategory, initial }
 function applyViewLevel(mode, opts){
   opts = opts || {};
+  if (window.__CPN_ROOM_MODE && (mode === "spatial" || mode === "all-products")) {
+    mode = "overview";
+  }
   const prev = viewMode;
 
   const applySwitch = () => {
@@ -8869,6 +8878,10 @@ window.__cpnSpatialVisibleLabels = () => {
 
 // ── Initial mount: read persisted preferences and render the right view.
 (function bootViewLevel(){
+  if (window.__CPN_ROOM_MODE) {
+    applyViewLevel("overview", { initial: true });
+    return;
+  }
   let savedMode = null, savedFocus = null;
   try{
     savedMode  = localStorage.getItem(VIEW_MODE_KEY);
@@ -16378,6 +16391,7 @@ function polishChrome(){
 }
 
 function initAmbientBackground(){
+  if (window.__CPN_ROOM_MODE) return;
   const canvas = document.getElementById("bg-mesh");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -16558,9 +16572,32 @@ function wireThemeToggle(){
   }
 }
 
+function wireDesignStudioLazyLoad(){
+  if (window.__CPN_ROOM_MODE) return;
+  const btn = document.getElementById("design-studio-btn");
+  if (!btn || btn.dataset.lazyWired) return;
+  btn.dataset.lazyWired = "1";
+  btn.addEventListener("click", async () => {
+    if (window.DesignStudio?.instance?.overlay?.classList?.contains("open")) return;
+    try {
+      btn.disabled = true;
+      btn.setAttribute("aria-busy", "true");
+      await window.__cpnLazy.loadDesignStudio();
+      window.DesignStudio.open();
+    } catch (err) {
+      console.error(err);
+      if (typeof showToast === "function") showToast("Could not load Design Studio");
+    } finally {
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
+    }
+  });
+}
+
 function boot(){
   initAmbientBackground();
   wireThemeToggle();
+  wireDesignStudioLazyLoad();
   Promise.all([loadDcloudLinks(), loadLearningLinks()]).then(() => {
     refreshDcloudPanelIfOpen();
     window.DCLOUD_PATHS = DCLOUD_PATHS;
@@ -16621,7 +16658,6 @@ function boot(){
   repairCanvasView();
   window.addEventListener("pageshow", ev => { if (ev.persisted) repairCanvasView(); });
   if (typeof updatePlannerUI === "function") updatePlannerUI();
-  if (typeof initDesignStudio === "function") initDesignStudio();
   if (typeof NODES !== "undefined") {
     window.__cpnDesignCatalog = {
       families: () => NODES,
@@ -16653,24 +16689,7 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/family-heroes.js?v=2.87.5"></script>
-<script>window.__DS_ASSET_V=window.__CPN_BUILD;</script>
-<script src="design-studio-photos.js?v=2.87.5"></script>
-<script src="design-studio-stencils.js?v=2.87.5"></script>
-<script src="design-studio-templates.js?v=2.87.5"></script>
-<script src="design-studio-rules.js?v=2.87.5"></script>
-<script src="design-studio-intent.js?v=2.87.5"></script>
-<script src="design-studio-explore.js?v=2.87.5"></script>
-<script src="design-studio-premium.js?v=2.87.5"></script>
-<script src="design-studio-expert.js?v=2.87.5"></script>
-<script src="design-studio-walk-layout.js?v=2.87.5"></script>
-<script src="design-studio-walk-voxel.js?v=2.87.5"></script>
-<script src="design-studio-field-panel.js?v=2.87.5"></script>
-<script src="design-studio-walk-audio.js?v=2.87.5"></script>
-<script src="design-studio-walk-models.js?v=2.87.5"></script>
-<script src="design-studio-walk-quest.js?v=2.87.5"></script>
-<script src="design-studio-walk.js?v=2.87.5"></script>
-<script src="design-studio.js?v=2.87.5"></script>
+<script src="assets/cpn-lazy-load.js?v=2.92.2"></script>
 <script src="assets/cpn-logo-intro.js?v=2.91.6"></script>
 </body>
 </html>

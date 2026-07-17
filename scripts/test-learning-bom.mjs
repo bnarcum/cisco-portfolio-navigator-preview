@@ -21,6 +21,8 @@ try {
     () => typeof window.learningRankEntries === "function" && window.LEARNING_ENTRIES?.length > 10,
     { timeout: 15000 }
   );
+  await page.waitForFunction(() => window.__cpnLazy?.loadDesignStudio, { timeout: 10000 });
+  await page.evaluate(() => window.__cpnLazy.loadDesignStudio());
 
   const mappingOk = await page.evaluate(() => {
     const STN = window.__DS_STENCILS;

@@ -21,7 +21,7 @@ try {
   if (version !== "2.79.17") errors.push(`version ${version} != 2.79.17`);
 
   await page.click("#design-studio-btn");
-  await page.waitForSelector("#design-studio.open", { timeout: 8000 });
+  await page.waitForSelector("#design-studio.open", { timeout: 30000 });
   await page.waitForTimeout(300);
 
   // Cisco Spaces stencils must exist and surface in the catalog palette.

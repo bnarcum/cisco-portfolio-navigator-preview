@@ -19,11 +19,11 @@ try {
 
   await page.goto("http://127.0.0.1:8765/cisco-portfolio-navigator.html", { waitUntil: "load", timeout: 60000 });
   await page.waitForFunction(() => window.__cpnV2?.APP_VERSION, { timeout: 60000 });
-  await page.waitForFunction(() => window.__cpnWalkTHREE || window.__DS_WALK, { timeout: 15000 });
 
-  // Open Design Studio
+  // Open Design Studio (lazy-loaded on first click)
   await page.click("#design-studio-btn");
-  await page.waitForSelector("#design-studio.open", { timeout: 8000 });
+  await page.waitForFunction(() => window.DesignStudio?.instance, { timeout: 30000 });
+  await page.waitForSelector("#design-studio.open", { timeout: 30000 });
 
   // Generate 18-room portfolio via workplaces pillar + generate
   await page.evaluate(() => {
@@ -74,9 +74,13 @@ try {
     errors.push(`diagram not on screen before click (transform=${beforeClick.transform}, pan=${JSON.stringify(beforeClick.pan)})`);
   }
 
-  // Walk toolbar
+  // Walk toolbar (Three.js loads on first open — allow time for scene build)
   await page.click("#ds-walk-corridor");
-  await page.waitForTimeout(1200);
+  await page.waitForFunction(() => window.__DS_WALK?.isOpen?.(), { timeout: 60000 });
+  await page.waitForFunction(
+    () => (window.__DS_WALK?.debugStats?.()?.pods || 0) >= 3,
+    { timeout: 45000 }
+  );
   const walk = await page.evaluate(() => {
     const stats = window.__DS_WALK?.debugStats?.() || {};
     return {
