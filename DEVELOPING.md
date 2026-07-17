@@ -109,3 +109,14 @@ Touch a pillar tile to open the navigator in kiosk mode (`?mode=kiosk`). Optiona
 - `idle=120` — seconds of inactivity before returning to `kiosk.html` (default 120)
 
 The **Home** button (bottom-left) and idle timeout both return to the attract screen.
+
+## Cloud Control briefing (AgenticOps demo)
+
+A mock **Cisco Cloud Control** command center that composes the current account plan with curated AgenticOps investigation scenarios. It is a demo composition — **not live telemetry**.
+
+- **Entry points:** the *Operations · Cloud Control* section on product/family panels (families with a Cloud Control adjacency), and the export menu → *Cloud Control briefing*.
+- **Page:** `cloud-control-briefing.html` (opens in a new tab). Reads a handoff payload from `sessionStorage["cpn-cc-brief"]`; falls back to a representative demo estate when opened directly.
+- **Data model:** `assets/cpn-cloud-control-ops.js` — `window.__cpnOps` maps families → operational profiles (Control Hub, observability signals) and cross-domain AI Canvas scenarios (hypotheses, agent evidence, impact, action). Shared by the panel and the briefing page.
+- **Query params:** `?focus=<familyId>` selects the matching investigation; `?from=cpn` enables in-app back navigation.
+
+Test: `npm run test:cloud-control`.

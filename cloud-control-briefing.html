@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="theme-color" content="#07182d"/>
+  <title>Cisco Cloud Control · Briefing Canvas (Demo)</title>
+  <link rel="icon" type="image/svg+xml" href="assets/cpn-favicon.svg"/>
+  <link rel="stylesheet" href="assets/cpn-cloud-control-briefing.css?v=2.94.0"/>
+</head>
+<body>
+  <header class="cc-topbar">
+    <div class="cc-brand">
+      <img src="assets/cpn-logo.svg" alt="" width="30" height="30" decoding="async"/>
+      <div class="cc-brand-text">
+        <strong>Cisco Cloud Control</strong>
+        <span>Briefing Canvas</span>
+      </div>
+    </div>
+    <div class="cc-account" id="cc-account">Account ▾</div>
+    <span class="cc-demo-flag">Demo — not live telemetry</span>
+  </header>
+
+  <main class="cc-grid">
+    <aside class="cc-rail">
+      <section class="cc-card cc-inventory">
+        <h2>Inventory</h2>
+        <div class="cc-stat-row">
+          <div class="cc-stat"><span class="cc-stat-num" id="cc-inv-items">0</span><span class="cc-stat-lbl">In stack</span></div>
+          <div class="cc-stat"><span class="cc-stat-num" id="cc-inv-families">0</span><span class="cc-stat-lbl">Families</span></div>
+        </div>
+        <ul class="cc-inv-list" id="cc-inv-list"></ul>
+      </section>
+
+      <section class="cc-card cc-alerts">
+        <h2>Alerts <span class="cc-count" id="cc-alert-count">0</span></h2>
+        <ul class="cc-alert-list" id="cc-alert-list"></ul>
+      </section>
+    </aside>
+
+    <section class="cc-canvas">
+      <div class="cc-card cc-canvas-card">
+        <div class="cc-canvas-head">
+          <h2>AI Canvas · Deep reasoning</h2>
+          <select id="cc-scenario-picker" class="cc-picker" aria-label="Choose investigation"></select>
+        </div>
+
+        <div class="cc-reasoning" id="cc-reasoning">
+          <div class="cc-reason-block">
+            <div class="cc-reason-label">Investigation</div>
+            <div class="cc-reason-title" id="cc-scn-title">—</div>
+            <div class="cc-reason-domains" id="cc-scn-domains"></div>
+          </div>
+          <div class="cc-reason-block">
+            <div class="cc-reason-label">Hypotheses</div>
+            <ol class="cc-list" id="cc-scn-hypotheses"></ol>
+          </div>
+          <div class="cc-reason-block">
+            <div class="cc-reason-label">Evidence gathered by agents</div>
+            <ul class="cc-list cc-evidence" id="cc-scn-evidence"></ul>
+          </div>
+          <div class="cc-reason-cols">
+            <div class="cc-reason-block">
+              <div class="cc-reason-label">Impact</div>
+              <p class="cc-reason-text" id="cc-scn-impact">—</p>
+            </div>
+            <div class="cc-reason-block">
+              <div class="cc-reason-label">Recommended action</div>
+              <p class="cc-reason-text" id="cc-scn-action">—</p>
+            </div>
+          </div>
+          <div class="cc-canvas-actions">
+            <button type="button" class="cc-btn cc-btn--primary" id="cc-approve">Approve remediation</button>
+            <button type="button" class="cc-btn" id="cc-copy-prompt">Copy AI Canvas prompt</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc-widgets">
+        <div class="cc-card cc-widget" id="cc-widget-pillars">
+          <h3>Pillar coverage</h3>
+          <div class="cc-pillars" id="cc-pillars"></div>
+        </div>
+        <div class="cc-card cc-widget" id="cc-widget-gaps">
+          <h3>Cloud Control package</h3>
+          <div class="cc-gap-body" id="cc-gap-body">—</div>
+        </div>
+        <div class="cc-card cc-widget cc-widget--cta">
+          <h3>Prove it live</h3>
+          <a class="cc-lab" id="cc-dcloud" href="https://dcloud2-rtp.cisco.com/content/instantdemo/agenticops-with-cisco-cloud-control?returnPathTitleKey=content-view" target="_blank" rel="noopener">AgenticOps dCloud lab ↗</a>
+          <a class="cc-lab" href="https://cloud.cisco.com" target="_blank" rel="noopener">Open Cloud Control ↗</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="cc-footer">
+    <button type="button" class="cc-back" id="cc-back">← Back to Portfolio Navigator</button>
+    <span>Portfolio Navigator + Cloud Control · demo composition of portfolio &amp; operations</span>
+  </footer>
+
+  <script src="assets/cpn-cloud-control-ops.js?v=2.94.0"></script>
+  <script src="assets/cpn-cloud-control-briefing.js?v=2.94.0"></script>
+</body>
+</html>

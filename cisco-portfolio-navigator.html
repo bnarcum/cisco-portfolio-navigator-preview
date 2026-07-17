@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.93.0";
+  window.__CPN_BUILD="2.94.0";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -563,6 +563,46 @@
     .fam-matrix-btn:hover,.matrix-mini-btn:hover{border-color:#c084fc;background:rgba(168,85,247,.28);color:#fff}
     .matrix-inline-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
     #tip.tip-interactive{pointer-events:auto}
+    .p-ops-card{padding:13px 14px 12px;border-radius:10px;
+      border:1px solid rgba(122,232,255,.42);
+      background:linear-gradient(145deg,rgba(10,96,255,.14) 0%,rgba(10,34,64,.4) 60%,rgba(2,200,255,.1) 100%);
+      box-shadow:0 0 0 1px rgba(2,200,255,.08),0 6px 22px rgba(0,60,120,.18)}
+    .p-ops-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+    .p-ops-brand{font-size:12px;font-weight:800;letter-spacing:.01em;color:#dff4ff}
+    .p-ops-badge{flex-shrink:0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+      padding:3px 8px;border-radius:999px;background:rgba(2,200,255,.2);color:#b8f0ff;border:1px solid rgba(2,200,255,.42)}
+    .p-ops-domains{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+    .p-ops-domain{font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;
+      background:rgba(255,255,255,.06);color:#cfe6f5;border:1px solid rgba(255,255,255,.1)}
+    .p-ops-plan{font-size:11px;color:#7ee8ff;font-weight:600;margin-bottom:8px}
+    .p-ops-obs{font-size:11.5px;color:#e3f2fb;line-height:1.45;margin-bottom:8px}
+    .p-ops-obs strong{color:#fff}
+    .p-ops-scenario{padding:9px 10px;border-radius:8px;background:rgba(4,12,24,.4);
+      border:1px solid rgba(122,232,255,.2);margin-bottom:10px}
+    .p-ops-scn-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:5px;line-height:1.3}
+    .p-ops-alert{display:flex;align-items:center;gap:6px;font-size:10px;color:#ffb84d;font-weight:600}
+    .p-ops-alert-dot{width:7px;height:7px;border-radius:50%;background:#ff9000;
+      box-shadow:0 0 6px rgba(255,144,0,.7);flex-shrink:0}
+    .p-ops-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .p-ops-btn{font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+      border-radius:7px;padding:9px 14px;border:1px solid rgba(2,200,255,.5);
+      background:rgba(2,200,255,.1);color:#7ee8ff;transition:background .12s,transform .12s}
+    .p-ops-btn:hover{background:rgba(2,200,255,.2)}
+    .p-ops-btn:active{transform:scale(.98)}
+    .p-ops-btn--primary{background:#02c8ff;color:#001a24;border-color:#02c8ff}
+    .p-ops-btn--primary:hover{background:#3bd6ff}
+    .p-ops-link{font-size:11.5px;font-weight:600;color:#9fdcff;text-decoration:none;
+      display:inline-flex;align-items:center;gap:4px}
+    .p-ops-link:hover{color:#cdeeff;text-decoration:underline}
+    .p-ops-link span{opacity:.7;font-size:10px}
+    [data-theme="light"] .p-ops-card{border-color:rgba(0,110,143,.3);
+      background:linear-gradient(145deg,rgba(0,110,200,.08),rgba(240,248,255,.9));
+      box-shadow:0 4px 16px rgba(0,60,120,.1)}
+    [data-theme="light"] .p-ops-brand{color:#07284a}
+    [data-theme="light"] .p-ops-scn-title{color:#07284a}
+    [data-theme="light"] .p-ops-obs,[data-theme="light"] .p-ops-domain{color:#284861}
+    [data-theme="light"] .p-ops-btn{color:#036;background:rgba(0,140,200,.1)}
+    [data-theme="light"] .p-ops-btn--primary{color:#001a24}
     .p-dcloud-card{
       padding:14px 14px 12px;border-radius:10px;
       border:1px solid rgba(0,212,255,.5);
@@ -12092,6 +12132,9 @@ function buildExportMenu(){
     <button class="em-item" data-fmt="pptx"><span class="em-icon">▦</span>
       <div><div>PowerPoint (.pptx)</div><div class="em-sub">Deck — stack, recs, bundles, AI deliverables</div></div></button>
     <div class="em-sep"></div>
+    <button class="em-item" data-fmt="ccbrief"><span class="em-icon">🛰</span>
+      <div><div>Cloud Control briefing</div><div class="em-sub">AgenticOps command center (demo)</div></div></button>
+    <div class="em-sep"></div>
     <button class="em-item" data-fmt="txt"><span class="em-icon">📄</span>
       <div><div>Plain text (clipboard)</div><div class="em-sub">Quick copy for chat / email</div></div></button>
   `;
@@ -12114,6 +12157,7 @@ function buildExportMenu(){
     else if (fmt === "json") exportJSON();
     else if (fmt === "pdf")  exportPDF();
     else if (fmt === "pptx") { exportPPTX().catch(err => { console.warn("PPTX export failed", err); showToast("PPTX export failed — try PDF"); }); }
+    else if (fmt === "ccbrief") openCloudControlBriefing(null);
     else if (fmt === "txt")  exportText();
   }));
 }
@@ -14499,7 +14543,118 @@ function refreshDcloudPanelIfOpen(){
   pb.querySelector(".p-dcloud")?.remove();
   pb.querySelectorAll(".p-learn").forEach(el => el.remove());
   insertDcloudLinks(pb.dataset.lastId, pb.dataset.lastKind || "node");
+  pb.querySelector(".p-ops")?.remove();
+  insertCloudControlOps(pb.dataset.lastId, pb.dataset.lastKind || "node");
 }
+
+/* Operations · Cloud Control — maps a family/product to its AgenticOps face
+   (Control Hub, observability signals, and an AI Canvas investigation). */
+function stackHasFamily(familyId){
+  if (stack.has(familyId)) return true;
+  for (const id of stack){
+    if (stackItems.get(id) === "product" && prodById[id]?.family === familyId) return true;
+  }
+  return false;
+}
+
+function buildCloudControlBrief(focusFamilyId){
+  const summary = (typeof planSummary === "function") ? planSummary() : { acct: "Unnamed Account", items: [], bundles: [], pillars: [] };
+  const stackFamilies = [...new Set([...stack].map(id =>
+    stackItems.get(id) === "product" ? prodById[id]?.family : id).filter(Boolean))];
+  const ccBundle = (summary.bundles || []).find(b => /cloud control/i.test(b.name)) || null;
+  return {
+    v: APP_VERSION,
+    generated: new Date().toISOString(),
+    account: summary.acct,
+    focusFamily: focusFamilyId || null,
+    focusName: focusFamilyId ? (nodeById[focusFamilyId]?.name || focusFamilyId) : null,
+    stackFamilies,
+    items: (summary.items || []).map(it => ({ id: it.id, name: it.name, category: it.category, pillar: it.pillar?.shortLabel || null })),
+    pillars: (summary.pillars || []).map(p => ({ id: p.id, shortLabel: p.shortLabel, covered: !!p.covered })),
+    bundles: (summary.bundles || []).slice(0, 4).map(b => ({ name: b.name, pct: b.pct, owned: b.owned, total: b.total })),
+    cloudControlPackage: ccBundle
+  };
+}
+
+function openCloudControlBriefing(focusFamilyId){
+  try {
+    sessionStorage.setItem("cpn-cc-brief", JSON.stringify(buildCloudControlBrief(focusFamilyId)));
+  } catch (e) { /* sessionStorage may be unavailable */ }
+  const params = new URLSearchParams();
+  if (focusFamilyId) params.set("focus", focusFamilyId);
+  params.set("from", "cpn");
+  const url = "cloud-control-briefing.html" + (params.toString() ? "?" + params.toString() : "");
+  window.open(url, "_blank", "noopener");
+}
+window.openCloudControlBriefing = openCloudControlBriefing;
+window.buildCloudControlBrief = buildCloudControlBrief;
+
+function insertCloudControlOps(id, kind){
+  const ops = window.__cpnOps;
+  const pb = $("#pbody");
+  if (!ops || !pb || pb.querySelector(".p-ops")) return;
+  const familyId = kind === "product" ? prodById[id]?.family : id;
+  const profile = ops.getOpsProfile(familyId);
+  if (!profile) return;
+
+  const scn = profile.scenarioData;
+  const domainTags = (profile.domains || [])
+    .map(d => `<span class="p-ops-domain">${escapeHtml(ops.DOMAIN_LABELS[d] || d)}</span>`).join("");
+  const inPlan = stackHasFamily(familyId);
+  const planLine = inPlan
+    ? `<div class="p-ops-plan">In this account plan · investigations use your stack context</div>`
+    : "";
+
+  const adminLink = profile.admin
+    ? `<a class="p-ops-link" href="${escapeHtml(profile.admin.url)}" target="_blank" rel="noopener">${escapeHtml(profile.admin.label)} <span>↗</span></a>`
+    : "";
+  const obs = profile.observability
+    ? `<div class="p-ops-obs"><strong>${escapeHtml(profile.observability.product)}</strong> — ${escapeHtml(profile.observability.hint)}</div>`
+    : "";
+  const dcloudLink = profile.dcloud
+    ? `<a class="p-ops-link" href="${escapeHtml(profile.dcloud)}" target="_blank" rel="noopener">AgenticOps lab (dCloud) <span>↗</span></a>`
+    : "";
+
+  const scenarioHtml = scn ? `
+    <div class="p-ops-scenario">
+      <div class="p-ops-scn-title">AI Canvas · ${escapeHtml(scn.title)}</div>
+      <div class="p-ops-alert"><span class="p-ops-alert-dot"></span>Demo scenario — not live telemetry</div>
+    </div>` : "";
+
+  const sec = document.createElement("div");
+  sec.className = "p-sec p-ops";
+  sec.dataset.familyId = familyId;
+  sec.innerHTML = `
+    <div class="p-ops-card">
+      <div class="p-ops-head">
+        <span class="p-ops-brand">Operations · Cloud Control</span>
+        <span class="p-ops-badge">AgenticOps</span>
+      </div>
+      <div class="p-ops-domains">${domainTags}</div>
+      ${planLine}
+      ${obs}
+      ${scenarioHtml}
+      <div class="p-ops-actions">
+        <button type="button" class="p-ops-btn p-ops-btn--primary" data-cc-open>Open Cloud Control briefing →</button>
+        ${adminLink}
+        ${dcloudLink}
+      </div>
+    </div>`;
+  sec.querySelector("[data-cc-open]")?.addEventListener("click", () => openCloudControlBriefing(familyId));
+
+  const dcloud = pb.querySelector(".p-dcloud");
+  if (dcloud){ dcloud.insertAdjacentElement("afterend", sec); }
+  else {
+    const matrix = pb.querySelector(".p-matrix-link");
+    if (matrix){ matrix.insertAdjacentElement("afterend", sec); }
+    else {
+      const anchor = pb.querySelector(".add-stack-btn");
+      if (anchor) pb.insertBefore(sec, anchor);
+      else pb.appendChild(sec);
+    }
+  }
+}
+window.insertCloudControlOps = insertCloudControlOps;
 
 function buildLearningPathBanner(){
   const host = $("#top-chips") || document.body;
@@ -14608,6 +14763,7 @@ function enhanceNodePanel(id){
     insertPhotoPlaceholder(id, "node");
     insertTierBadge(id);
     insertDcloudLinks(id, "node");
+    insertCloudControlOps(id, "node");
     insertPinAndCompareBtns(id, "node");
   }, 0);
 }
@@ -14618,6 +14774,7 @@ function enhanceProductPanel(id){
     insertProductHero(id, "product");
     insertMatrixLink(id, "product");
     insertDcloudLinks(id, "product");
+    insertCloudControlOps(id, "product");
     const p = prodById[id];
     if (p) insertTierBadge(p.family);
     insertFieldNotice(id);
@@ -16710,8 +16867,9 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/cpn-lazy-load.js?v=2.93.0"></script>
-<script src="assets/cpn-kiosk.js?v=2.93.0"></script>
+<script src="assets/cpn-cloud-control-ops.js?v=2.94.0"></script>
+<script src="assets/cpn-lazy-load.js?v=2.94.0"></script>
+<script src="assets/cpn-kiosk.js?v=2.94.0"></script>
 <script src="assets/cpn-logo-intro.js?v=2.91.6"></script>
 </body>
 </html>

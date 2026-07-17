@@ -29,13 +29,14 @@
     "test:design-studio": "node scripts/validate-design-studio.js",
     "test:design-studio-room": "node scripts/test-design-studio-room.mjs",
     "test:kiosk": "node scripts/test-kiosk-mode.mjs",
+    "test:cloud-control": "node scripts/test-cloud-control-ops.mjs",
     "test:links": "node scripts/check-links.mjs",
     "audit:matrix-bridge": "node scripts/audit-matrix-bridge.mjs",
     "deploy:recover": "node scripts/pages-recovery.mjs --repo production",
     "deploy:recover:all": "node scripts/pages-recovery.mjs --repo production && node scripts/pages-recovery.mjs --repo preview",
     "deploy:verify": "node scripts/wait-for-github-pages.mjs",
     "deploy": "node scripts/deploy.mjs --push",
-    "test": "npm run test:pillar-layout && npm run test:composition && npm run test:composition-spatial && npm run test:panel-hero && npm run test:spatial-labels && npm run test:spatial-filtered-photos && npm run test:planner-ui && npm run test:matrix-embed && npm run test:dcloud-learning && npm run test:shortcuts && npm run test:intent && npm run test:device-registry && npm run test:room-overlap && npm run test:walk-spacing && npm run test:walk-environments && npm run test:walk-modes && npm run test:all-products && npm run test:design-studio && npm run test:kiosk && npm run test:links"
+    "test": "npm run test:pillar-layout && npm run test:composition && npm run test:composition-spatial && npm run test:panel-hero && npm run test:spatial-labels && npm run test:spatial-filtered-photos && npm run test:planner-ui && npm run test:matrix-embed && npm run test:dcloud-learning && npm run test:shortcuts && npm run test:intent && npm run test:device-registry && npm run test:room-overlap && npm run test:walk-spacing && npm run test:walk-environments && npm run test:walk-modes && npm run test:all-products && npm run test:design-studio && npm run test:kiosk && npm run test:cloud-control && npm run test:links"
   },
   "devDependencies": {
     "playwright": "^1.49.0",
