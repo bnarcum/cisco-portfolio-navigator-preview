@@ -245,13 +245,18 @@
   gap: 14px;
   flex: 1 1 100%;
   width: 100%;
+  padding-right: 4px;
+}
+#v2-footer .ft-actions {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 #v2-footer .ft-legal {
   flex: 1 1 100%;
   width: 100%;
   font-size: 9.5px;
   line-height: 1.45;
-  color: var(--subtle);
+  color: #a8b8c8;
   border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   padding-top: 6px;
   margin-top: 2px;

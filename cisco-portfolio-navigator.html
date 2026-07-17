@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.92.0";
+  window.__CPN_BUILD="2.92.1";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -1065,7 +1065,7 @@
 
     /* ─── Guided Tour / Help ──────────────────────────────────────────── */
     #help-fab{
-      position:fixed;right:20px;bottom:20px;width:42px;height:42px;border-radius:50%;
+      position:fixed;right:20px;bottom:calc(var(--cpn-footer-h, 54px) + 12px);width:42px;height:42px;border-radius:50%;
       background:var(--cisco-blue);color:#fff;border:none;font-size:18px;font-weight:700;
       cursor:pointer;z-index:60;box-shadow:0 4px 14px rgba(4,159,217,.4);
       display:flex;align-items:center;justify-content:center;
@@ -11605,12 +11605,15 @@ STYLE.textContent = `
   :root{--cpn-footer-h:54px}
   #v2-footer{position:fixed;bottom:0;left:0;right:0;
     background:var(--surface);border-top:1px solid var(--border);
-    font-size:10.5px;color:var(--subtle);display:flex;z-index:45}
+    font-size:10.5px;color:#a8b8c8;display:flex;z-index:45}
   body.planner-open #v2-footer{right:490px}
   body.cmp-open #v2-footer{display:none}
   #v2-footer a{color:var(--accent);background:none;border:none;cursor:pointer;font:inherit;padding:0}
   #v2-footer a:hover{text-decoration:underline}
   #v2-footer .sep{color:var(--border)}
+  #v2-footer .ft-meta{color:#a8b8c8}
+  [data-theme="light"] #v2-footer{color:#64748b}
+  [data-theme="light"] #v2-footer .ft-meta{color:#64748b}
   #tools{bottom:calc(var(--cpn-footer-h) + 10px)}
   #hint{bottom:calc(var(--cpn-footer-h) + 10px)}
 
@@ -16274,10 +16277,8 @@ function buildFooter(){
         <span class="sep"> · </span>
         Portfolio data current as of <strong style="color:var(--text)">${DATA_UPDATED}</strong>
       </div>
-      <div>
-        <span style="color:var(--subtle)">Press <kbd style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 6px;font-size:10px">?</kbd> for tour</span>
-        <span class="sep"> · </span>
-        <a id="ft-shortcuts">Shortcuts</a>
+      <div class="ft-actions">
+        <a id="ft-shortcuts">Keyboard shortcuts</a>
       </div>
     </div>
     <div class="ft-legal" id="ft-legal">
