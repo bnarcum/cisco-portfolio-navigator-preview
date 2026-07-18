@@ -16,11 +16,12 @@
     pxPerYear: 72,
     cardW: 88,
     raf: 0,
-    scrollVel: 0,
     level: "overview",
     anchorYear: null,
     expandedYear: null,
     searchQuery: "",
+    searchActiveIndex: -1,
+    focusReturnId: null,
     opener: null,
   };
 
@@ -424,7 +425,7 @@
         : active?.classList?.contains("acq-overflow-marker")
           ? { type: "overflow", value: active.getAttribute("aria-label") }
           : null;
-    inner.querySelectorAll(".acq-card, .acq-year-marker, .acq-overflow-marker, .acq-year-expansion, .acq-cluster").forEach(e => e.remove());
+    inner.querySelectorAll(".acq-card, .acq-year-marker, .acq-overflow-marker, .acq-year-expansion").forEach(e => e.remove());
     const list = filteredList();
     const canvas = $("#acq-canvas");
     const mid = canvas ? canvas.clientHeight / 2 : 210;
@@ -456,6 +457,8 @@
     const dots = $("#acq-minimap-dots");
     const vp = $("#acq-minimap-viewport");
     if (!track || !dots) return;
+    track.setAttribute("aria-valuemin", String(ACQ.yearMin));
+    track.setAttribute("aria-valuemax", String(ACQ.yearMax));
 
     dots.innerHTML = "";
     const list = window.CPN_ACQUISITIONS?.acquisitions || [];
@@ -475,13 +478,26 @@
     const ratio = w / innerW;
     vp.style.width = `${Math.max(24, canvas.clientWidth * ratio)}px`;
     vp.style.left = `${canvas.scrollLeft * ratio}px`;
+    const center = canvas.scrollLeft + canvas.clientWidth / 2;
+    const currentYear = Math.round(
+      ACQ.yearMin + (center - 120) / (ACQ.pxPerYear * ACQ.zoom)
+    );
+    track.setAttribute(
+      "aria-valuenow",
+      String(Math.max(ACQ.yearMin, Math.min(ACQ.yearMax, currentYear)))
+    );
   }
 
   function focusAcquisition(id) {
+    const activeCard = document.activeElement?.closest?.(".acq-card");
+    ACQ.focusReturnId = activeCard?.dataset.id || id;
     ACQ.focusedId = id;
     const a = window.CPN_ACQUISITIONS?.acquisitions?.find(x => x.id === id);
     const panel = $("#acq-focus");
     if (!a || !panel) return;
+    panel.hidden = false;
+    panel.inert = false;
+    panel.setAttribute("aria-hidden", "false");
     panel.classList.add("show");
     setLogoImg($("#acq-focus-logo"), a);
     $("#acq-focus-title").textContent = a.company;
@@ -547,7 +563,7 @@
     $("#acq-particles")?.querySelectorAll(".acq-particle").forEach(p => {
       const t = performance.now();
       const ph = +p.dataset.phase || 0;
-      const dx = Math.sin(t / 3000 + ph) * 12 + ACQ.scrollVel * 0.3;
+      const dx = Math.sin(t / 3000 + ph) * 12;
       const dy = Math.cos(t / 4000 + ph) * 8;
       p.style.transform = `translate(${dx}px, ${dy}px)`;
     });
@@ -573,7 +589,6 @@
   }
 
   function onScroll() {
-    ACQ.scrollVel = 0;
     cancelAnimationFrame(ACQ.raf);
     ACQ.raf = requestAnimationFrame(() => {
       const inner = $("#acq-inner");
@@ -607,11 +622,34 @@
   function fitAcqZoom() {
     const canvas = $("#acq-canvas");
     if (!canvas) return;
+    clearAcquisitionFocus({ restoreFocus: false });
+    ACQ.anchorYear = null;
+    ACQ.expandedYear = null;
     ACQ.zoom = ACQ.minZoom;
     ACQ.level = "overview";
     updateZoomUi();
     renderAcquisitionTimeline();
+    canvas.scrollLeft = 0;
+    renderCards($("#acq-inner"));
     updateParallax();
+  }
+
+  function clearAcquisitionFocus({ restoreFocus = true } = {}) {
+    const returnId = ACQ.focusReturnId || ACQ.focusedId;
+    ACQ.focusedId = null;
+    const panel = $("#acq-focus");
+    if (panel) {
+      panel.classList.remove("show");
+      panel.hidden = true;
+      panel.inert = true;
+      panel.setAttribute("aria-hidden", "true");
+    }
+    renderAcquisitionTimeline();
+    if (!restoreFocus) return;
+    const card = returnId
+      ? $(`#acq-inner .acq-card[data-id="${CSS.escape(returnId)}"]`)
+      : null;
+    if (!focusVisible(card)) focusVisible($("#acq-canvas"));
   }
 
   function renderAcquisitionTimeline() {
@@ -649,6 +687,7 @@
     if (!popup || !input) return [];
     const results = searchAcquisitions(input.value);
     ACQ.searchQuery = input.value;
+    ACQ.searchActiveIndex = -1;
     popup.innerHTML = "";
     results.slice(0, 8).forEach((acq, index) => {
       const option = document.createElement("button");
@@ -656,6 +695,7 @@
       option.className = "acq-search-result";
       option.id = `acq-search-result-${index}`;
       option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", "false");
       option.dataset.id = acq.id;
       option.textContent = `${acq.company} · ${acq.announced.slice(0, 4)}`;
       option.addEventListener("click", () => {
@@ -665,6 +705,7 @@
     });
     popup.hidden = !results.length;
     input.setAttribute("aria-expanded", String(results.length > 0));
+    input.removeAttribute("aria-activedescendant");
     if (results[0]) revealSearchResult(results[0]);
     return results;
   }
@@ -682,13 +723,34 @@
       popup.hidden = true;
     }
     ACQ.searchQuery = "";
+    ACQ.searchActiveIndex = -1;
+  }
+
+  function setActiveSearchOption(index) {
+    const input = $("#acq-search");
+    const options = [...$("#acq-search-results")?.querySelectorAll("[role='option']") || []];
+    if (!input || !options.length) return null;
+    ACQ.searchActiveIndex = (index + options.length) % options.length;
+    options.forEach((option, optionIndex) => {
+      option.setAttribute("aria-selected", String(optionIndex === ACQ.searchActiveIndex));
+    });
+    const active = options[ACQ.searchActiveIndex];
+    input.setAttribute("aria-activedescendant", active.id);
+    active.scrollIntoView({ block: "nearest" });
+    return active;
   }
 
   function setFilter(filter, label, { render = true, restoreFocus = true } = {}) {
     ACQ.filter = filter;
     ACQ.focusedId = null;
     ACQ.expandedYear = null;
-    $("#acq-focus")?.classList.remove("show");
+    const focusPanel = $("#acq-focus");
+    if (focusPanel) {
+      focusPanel.classList.remove("show");
+      focusPanel.hidden = true;
+      focusPanel.inert = true;
+      focusPanel.setAttribute("aria-hidden", "true");
+    }
     const button = $("#acq-filter-btn");
     const menu = $("#acq-filter-menu");
     if (button) {
@@ -835,7 +897,7 @@
           <button type="button" class="rc-btn" id="acq-close">Close</button>
         </div>
       </div>
-      <div id="acq-focus" aria-live="polite">
+      <div id="acq-focus" aria-live="polite" aria-hidden="true" hidden inert>
         <div id="acq-focus-inner">
           <img id="acq-focus-logo" alt="" width="72" height="72"/>
           <div>
@@ -850,11 +912,15 @@
           </div>
         </div>
       </div>
-      <div id="acq-canvas"><div id="acq-inner">
+      <div id="acq-canvas" tabindex="-1" role="region" aria-label="Acquisition timeline"><div id="acq-inner">
         <div id="acq-spine-wrap" class="acq-layer" data-depth="0.04"><div id="acq-spine"></div></div>
       </div></div>
       <div id="acq-minimap">
-        <div id="acq-minimap-track"><div id="acq-minimap-dots"></div><div id="acq-minimap-viewport"></div></div>
+        <div id="acq-minimap-track" role="slider" tabindex="0"
+          aria-label="Timeline viewport year" aria-valuemin="${ACQ.yearMin}"
+          aria-valuemax="${ACQ.yearMax}" aria-valuenow="${ACQ.yearMin}">
+          <div id="acq-minimap-dots"></div><div id="acq-minimap-viewport"></div>
+        </div>
         <div id="acq-minimap-labels"><span>${ACQ.yearMin}</span><span>${ACQ.yearMax}</span></div>
       </div>`;
     document.body.appendChild(wrap);
@@ -863,11 +929,7 @@
     buildFilterMenu();
 
     $("#acq-close")?.addEventListener("click", closeAcquisitionTimeline);
-    $("#acq-focus-clear")?.addEventListener("click", () => {
-      ACQ.focusedId = null;
-      $("#acq-focus")?.classList.remove("show");
-      renderAcquisitionTimeline();
-    });
+    $("#acq-focus-clear")?.addEventListener("click", () => clearAcquisitionFocus());
     $("#acq-zoom-in")?.addEventListener("click", () => setAcqZoom(ACQ.zoom * 1.25));
     $("#acq-zoom-out")?.addEventListener("click", () => setAcqZoom(ACQ.zoom / 1.25));
     $("#acq-zoom-fit")?.addEventListener("click", fitAcqZoom);
@@ -875,11 +937,24 @@
     $("#acq-next")?.addEventListener("click", () => focusRelative(1));
     $("#acq-search")?.addEventListener("input", renderSearchResults);
     $("#acq-search")?.addEventListener("keydown", event => {
-      if (event.key === "Enter") {
-        const first = searchAcquisitions(event.currentTarget.value)[0];
-        if (!first) return;
+      const options = [...$("#acq-search-results")?.querySelectorAll("[role='option']") || []];
+      if (event.key === "ArrowDown" || event.key === "ArrowUp" ||
+          event.key === "Home" || event.key === "End") {
+        if (!options.length) return;
         event.preventDefault();
-        selectSearchResult(first);
+        const nextIndex = event.key === "ArrowDown"
+          ? ACQ.searchActiveIndex + 1
+          : event.key === "ArrowUp"
+            ? (ACQ.searchActiveIndex < 0 ? options.length - 1 : ACQ.searchActiveIndex - 1)
+            : event.key === "Home" ? 0 : options.length - 1;
+        setActiveSearchOption(nextIndex);
+      } else if (event.key === "Enter") {
+        const activeOption = options[ACQ.searchActiveIndex] || options[0];
+        const selected = (window.CPN_ACQUISITIONS?.acquisitions || [])
+          .find(acq => acq.id === activeOption?.dataset.id);
+        if (!selected) return;
+        event.preventDefault();
+        selectSearchResult(selected);
       } else if (event.key === "Escape" && ACQ.searchQuery) {
         event.preventDefault();
         event.stopPropagation();
@@ -964,6 +1039,25 @@
       const innerW = innerWidth();
       canvas.scrollLeft = pct * innerW - canvas.clientWidth / 2;
     });
+    $("#acq-minimap-track")?.addEventListener("keydown", event => {
+      const maxScroll = Math.max(0, canvas.scrollWidth - canvas.clientWidth);
+      const yearStep = ACQ.pxPerYear * ACQ.zoom;
+      let left = null;
+      if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+        left = canvas.scrollLeft - yearStep;
+      } else if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+        left = canvas.scrollLeft + yearStep;
+      } else if (event.key === "Home") {
+        left = 0;
+      } else if (event.key === "End") {
+        left = maxScroll;
+      }
+      if (left == null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      canvas.scrollLeft = Math.max(0, Math.min(maxScroll, left));
+      onScroll();
+    });
 
     const tBtn = document.createElement("button");
     tBtn.type = "button";
@@ -1005,8 +1099,15 @@
     document.body.classList.remove("acq-open");
     $("#tools-acquisitions")?.classList.remove("active");
     ACQ.focusedId = null;
+    ACQ.expandedYear = null;
     clearSearchResults();
-    $("#acq-focus")?.classList.remove("show");
+    const focusPanel = $("#acq-focus");
+    if (focusPanel) {
+      focusPanel.classList.remove("show");
+      focusPanel.hidden = true;
+      focusPanel.inert = true;
+      focusPanel.setAttribute("aria-hidden", "true");
+    }
     ACQ.opener = null;
     focusVisible(opener);
   }

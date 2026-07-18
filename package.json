@@ -6,7 +6,7 @@
     "build:icons": "node scripts/build-cisco-icons.mjs",
     "build:heroes": "node scripts/build-family-heroes.mjs",
     "build:assets": "npm run build:icons && npm run build:heroes",
-    "build:acquisitions": "node scripts/build-acquisitions.mjs && node scripts/fetch-acq-logos.mjs",
+    "build:acquisitions": "node scripts/build-acquisitions.mjs --allow-missing-identities && node scripts/fetch-acq-logos.mjs && node scripts/build-acquisitions.mjs",
     "build:matrix-photos": "python3 scripts/refine-matrix-photos.py",
     "test:pillar-layout": "node scripts/test-pillar-layout.mjs",
     "test:acquisitions-data": "node scripts/test-acquisitions-data.mjs",

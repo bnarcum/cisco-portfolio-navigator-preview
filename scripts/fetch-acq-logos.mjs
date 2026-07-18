@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fetch logos for all acquisitions: Wikipedia thumb → DuckDuckGo favicon → wordmark SVG.
+ * Fetch logo candidates from Wikipedia and generate trusted name-tile fallbacks.
  * Run: node scripts/fetch-acq-logos.mjs
  * Generate missing fallback tiles only: node scripts/fetch-acq-logos.mjs --generate-name-tiles
  */
@@ -74,27 +74,6 @@ async function wikiSearchLogo(company) {
   return null;
 }
 
-function domainGuess(company) {
-  const slug = company.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
-    .trim()
-    .split(/\s+/)[0];
-  if (!slug || slug.length < 3) return null;
-  return `${slug}.com`;
-}
-
-async function fetchDuckFavicon(domain) {
-  const url = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length < 200) return null;
-    return buf;
-  } catch (_) {}
-  return null;
-}
-
 async function downloadImage(url, dest) {
   const res = await fetch(url, { headers: { "User-Agent": "CiscoPortfolioNavigator/1.0" } });
   if (!res.ok) return false;
@@ -135,48 +114,17 @@ async function processOne(acq, existing) {
     try {
       const ok = await downloadImage(imgUrl, webpPath);
       if (ok) {
+        ensureNameTile(acq);
         return {
           id: acq.id,
-          source: "wikipedia",
+          source: "wikipedia-candidate",
           sourceUrl: imgUrl,
           path: `assets/acq-logos/${acq.id}.webp`,
-          verified: true,
+          verified: false,
           ok: true,
         };
       }
     } catch (_) {}
-  }
-
-  const domain = domainGuess(acq.company);
-  if (domain) {
-    const ico = await fetchDuckFavicon(domain);
-    if (ico) {
-      const pngPath = path.join(logoDir, `${acq.id}.png`);
-      fs.writeFileSync(pngPath, ico);
-      ensureNameTile(acq);
-      try {
-        execSync(`sips -s format webp "${pngPath}" --out "${webpPath}"`, { stdio: "pipe" });
-        fs.unlinkSync(pngPath);
-        return {
-          id: acq.id,
-          source: "favicon-png",
-          sourceUrl: `https://${domain}`,
-          path: `assets/acq-logos/${acq.id}.webp`,
-          verified: false,
-          ok: true,
-        };
-      } catch {
-        fs.copyFileSync(pngPath, webpPath.replace(".webp", ".png"));
-        return {
-          id: acq.id,
-          source: "favicon-png",
-          sourceUrl: `https://${domain}`,
-          path: `assets/acq-logos/${acq.id}.png`,
-          verified: false,
-          ok: true,
-        };
-      }
-    }
   }
 
   ensureNameTile(acq);

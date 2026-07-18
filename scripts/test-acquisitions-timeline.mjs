@@ -313,6 +313,52 @@ if (!explore.visibleIds.includes("meraki")) errors.push("2012 explore missing Me
 if (explore.overlapCount !== 0) errors.push(`explore overlaps: ${explore.overlapCount}`);
 if (explore.anchorYear !== 2012) errors.push(`anchor year: ${explore.anchorYear}`);
 
+await page.click('.acq-card[data-id="meraki"]');
+await page.waitForFunction(() => window.CPN_AcquisitionTimeline.testState().focusedId === "meraki");
+await page.click("#acq-zoom-fit");
+await page.waitForFunction(() => window.CPN_AcquisitionTimeline.testState().level === "overview");
+const fitFromFocus = await page.evaluate(() => {
+  const state = window.CPN_AcquisitionTimeline.testState();
+  const canvas = document.querySelector("#acq-canvas");
+  return {
+    state,
+    scrollLeft: canvas.scrollLeft,
+    panelShown: document.querySelector("#acq-focus").classList.contains("show"),
+    panelHidden: document.querySelector("#acq-focus").hidden,
+  };
+});
+if (fitFromFocus.state.focusedId != null || fitFromFocus.state.expandedYear != null) {
+  errors.push("FIT retained focus or expanded-year state");
+}
+if (fitFromFocus.panelShown || !fitFromFocus.panelHidden) {
+  errors.push("FIT did not hide the focus panel");
+}
+if (fitFromFocus.scrollLeft !== 0) errors.push(`FIT overview scroll: ${fitFromFocus.scrollLeft}`);
+await assertLayout(page, "FIT from focus overview");
+
+await page.click('.acq-year-marker[data-year="2012"]');
+await page.waitForFunction(() => window.CPN_AcquisitionTimeline.testState().level === "explore");
+await page.click('.acq-card[data-id="meraki"]');
+await page.waitForFunction(() => window.CPN_AcquisitionTimeline.testState().focusedId === "meraki");
+await page.click("#acq-focus-clear");
+const clearedFocus = await page.evaluate(() => {
+  const panel = document.querySelector("#acq-focus");
+  const controls = [...panel.querySelectorAll("button, a")];
+  return {
+    hidden: panel.hidden,
+    inert: panel.inert,
+    focusableControls: controls.filter(control =>
+      !control.hidden && control.tabIndex >= 0 && control.getClientRects().length).length,
+    activeId: document.activeElement?.dataset?.id || document.activeElement?.id,
+  };
+});
+if (!clearedFocus.hidden || !clearedFocus.inert || clearedFocus.focusableControls) {
+  errors.push(`clear focus panel accessibility: ${JSON.stringify(clearedFocus)}`);
+}
+if (clearedFocus.activeId !== "meraki" && clearedFocus.activeId !== "acq-canvas") {
+  errors.push(`clear focus restoration: ${clearedFocus.activeId}`);
+}
+
 await page.evaluate(() => window.CPN_AcquisitionTimeline.setZoom(2.4));
 await page.waitForFunction(() =>
   window.CPN_AcquisitionTimeline.testState().zoom === 2.4 &&
@@ -379,6 +425,61 @@ if (previouslyOverflowed[0]) {
 
 const searchResults = await page.locator("#acq-search-results").getAttribute("role");
 if (searchResults !== "listbox") errors.push(`search results role: ${searchResults}`);
+
+await page.fill("#acq-search", "security");
+await page.keyboard.press("ArrowDown");
+let comboState = await page.evaluate(() => ({
+  activeDescendant: document.querySelector("#acq-search").getAttribute("aria-activedescendant"),
+  options: [...document.querySelectorAll("#acq-search-results [role='option']")].map(option => option.id),
+}));
+if (comboState.activeDescendant !== comboState.options[0]) {
+  errors.push(`combobox ArrowDown: ${comboState.activeDescendant}/${comboState.options[0]}`);
+}
+await page.keyboard.press("End");
+comboState = await page.evaluate(() => ({
+  activeDescendant: document.querySelector("#acq-search").getAttribute("aria-activedescendant"),
+  options: [...document.querySelectorAll("#acq-search-results [role='option']")].map(option => option.id),
+}));
+if (comboState.activeDescendant !== comboState.options.at(-1)) {
+  errors.push(`combobox End: ${comboState.activeDescendant}/${comboState.options.at(-1)}`);
+}
+await page.keyboard.press("Home");
+await page.keyboard.press("ArrowUp");
+comboState = await page.evaluate(() => ({
+  activeDescendant: document.querySelector("#acq-search").getAttribute("aria-activedescendant"),
+  selectedId: document.querySelector(
+    `#${CSS.escape(document.querySelector("#acq-search").getAttribute("aria-activedescendant") || "")}`
+  )?.dataset.id,
+}));
+await page.keyboard.press("Enter");
+await page.waitForFunction(id =>
+  window.CPN_AcquisitionTimeline.testState().focusedId === id,
+comboState.selectedId);
+await page.locator("#acq-search").focus();
+await page.fill("#acq-search", "Jasper");
+await page.keyboard.press("Escape");
+if (!(await page.locator("#acq-search-results").isHidden()) ||
+    await page.locator("#acq-search").getAttribute("aria-activedescendant")) {
+  errors.push("combobox Escape did not clear popup state");
+}
+
+const minimap = page.locator("#acq-minimap-track");
+const minimapRole = await minimap.getAttribute("role");
+const minimapLabel = await minimap.getAttribute("aria-label");
+if (minimapRole !== "slider" || !minimapLabel) {
+  errors.push(`minimap accessibility: ${minimapRole}/${minimapLabel}`);
+}
+await minimap.focus();
+await page.keyboard.press("Home");
+const minimapHome = await page.locator("#acq-canvas").evaluate(canvas => canvas.scrollLeft);
+await page.keyboard.press("ArrowRight");
+const minimapRight = await page.locator("#acq-canvas").evaluate(canvas => canvas.scrollLeft);
+await page.keyboard.press("End");
+const minimapEnd = await page.locator("#acq-canvas").evaluate(canvas => canvas.scrollLeft);
+if (minimapHome !== 0 || minimapRight <= minimapHome ||
+    minimapEnd < minimapRight) {
+  errors.push(`minimap keyboard: ${minimapHome}/${minimapRight}/${minimapEnd}`);
+}
 
 const compactFilters = await page.evaluate(() => ({
   buttonExpanded: document.querySelector("#acq-filter-btn")?.getAttribute("aria-expanded"),

@@ -60,23 +60,52 @@ const ERA_BANDS = [
   { id: "ai", label: "AI & resilience", from: 2023, to: 2030, color: "#02C8FF" },
 ];
 
+const COMPANY_SUFFIX =
+  /(?:,?\s+)(?:Inc(?:orporated)?|LLC|Ltd|PLC|Corp(?:oration)?|Limited|A\/S|A\.S|Group|Technologies|Technology)\.?$/i;
+const COMPANY_ALIASES = new Map([
+  ["webexcommunications", "webex"],
+  ["jaspertechnologies", "jasper"],
+]);
+
+function decodeHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);?/g, (_, decimal) => String.fromCodePoint(parseInt(decimal, 10)))
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, "\"")
+    .replace(/&apos;|&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
 function normalizeCompany(name) {
-  return name
-    .replace(/&#39;/g, "'")
+  let normalized = decodeHtmlEntities(name)
     .replace(/\([^)]*\)/g, "")
-    .replace(/,?\s*(Inc\.?|LLC|Ltd\.?|PLC|Corp\.?|Corporation|Limited|A\/S|A\.S\.|Group|Technologies|Technology)\.?$/gi, "")
-    .replace(/['']/g, "")
+    .replace(/['’]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+  let previous;
+  do {
+    previous = normalized;
+    normalized = normalized.replace(COMPANY_SUFFIX, "").trim();
+  } while (normalized !== previous);
+  return normalized;
+}
+
+export function canonicalCompanyKey(name) {
+  const normalized = normalizeCompany(name).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return COMPANY_ALIASES.get(normalized) || normalized;
 }
 
 function slugify(name) {
-  const base = normalizeCompany(name);
-  return base
-    .toLowerCase()
+  const normalized = normalizeCompany(name).toLowerCase();
+  const compact = normalized.replace(/[^a-z0-9]+/g, "");
+  const canonical = canonicalCompanyKey(name);
+  const normalizedSlug = normalized
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 64) || "unknown";
+    .replace(/^-|-$/g, "");
+  return (canonical !== compact ? canonical : normalizedSlug).slice(0, 64) || "unknown";
 }
 
 function parseWikiDate(raw) {
@@ -114,34 +143,81 @@ function parseValue(raw) {
 }
 
 function stripHtml(html) {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return decodeHtmlEntities(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
 }
 
 function cellText(html) {
-  const sort = html.match(/data-sort-value="(\d{4}-\d{2}-\d{2})/);
+  const sort = html.match(/data-sort-value="[^"]*?(\d{4}-\d{2}-\d{2})/);
   if (sort) return sort[1];
   return stripHtml(html);
 }
 
-function parseWikiTable(html) {
+export function parseWikiTable(html) {
   const rows = [];
+  const pending = new Map();
   const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let tr;
+  let headers = [];
   while ((tr = trRe.exec(html))) {
-    const cells = [];
-    const tdRe = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+    const rawCells = [];
+    const tdRe = /<t([dh])([^>]*)>([\s\S]*?)<\/t[dh]>/gi;
     let td;
-    while ((td = tdRe.exec(tr[1]))) cells.push(cellText(td[1]));
-    if (cells.length >= 2 && cells[0] && !/^date$/i.test(cells[0])) {
-      const date = parseWikiDate(cells[0]);
-      const company = cells[1]?.replace(/\s+/g, " ").trim();
+    while ((td = tdRe.exec(tr[1]))) {
+      rawCells.push({
+        heading: td[1].toLowerCase() === "h",
+        rowspan: Math.max(1, Number(td[2].match(/\browspan=["']?(\d+)/i)?.[1] || 1)),
+        text: cellText(td[3]),
+      });
+    }
+    if (rawCells.length && rawCells.every(cell => cell.heading)) {
+      headers = rawCells.map(cell => cell.text.toLowerCase());
+      pending.clear();
+      continue;
+    }
+    if (!rawCells.length) continue;
+
+    const cells = [];
+    let column = 0;
+    const fillPending = () => {
+      while (pending.has(column)) {
+        const entry = pending.get(column);
+        cells[column] = entry.text;
+        entry.remaining -= 1;
+        if (entry.remaining <= 0) pending.delete(column);
+        column += 1;
+      }
+    };
+    fillPending();
+    for (const cell of rawCells) {
+      fillPending();
+      cells[column] = cell.text;
+      if (cell.rowspan > 1) {
+        pending.set(column, { text: cell.text, remaining: cell.rowspan - 1 });
+      }
+      column += 1;
+    }
+    fillPending();
+
+    const dateIndex = Math.max(0, headers.findIndex(header => /^date\b/.test(header)));
+    const companyIndex = headers.findIndex(header => /^company\b/.test(header));
+    const businessIndex = headers.findIndex(header => /^business\b/.test(header));
+    if (companyIndex >= 0 && cells.length >= 2) {
+      const date = parseWikiDate(cells[dateIndex]);
+      const company = cells[companyIndex]?.replace(/\s+/g, " ").trim();
       if (date && company) {
+        const semanticTail = cells.slice(Math.max(businessIndex, companyIndex) + 1)
+          .filter(value => value && !/^\[\s*\d+\s*\]$/.test(value));
+        const moneyIndex = semanticTail.findIndex(value =>
+          /^\s*(?:US)?\$\s*[\d,.]+|^\s*[\d,.]+\s+(?:million|billion)\b/i.test(value));
+        const country = moneyIndex > 0
+          ? semanticTail.slice(0, moneyIndex).join(" ").trim()
+          : moneyIndex < 0 ? semanticTail.find(value => !/^(?:—|-)$/.test(value)) || "" : "";
         rows.push({
           announced: date,
           company,
-          business: cells[2] || "",
-          country: cells[3] || "",
-          valueUsd: parseValue(cells[4]),
+          business: businessIndex >= 0 ? cells[businessIndex] || "" : "",
+          country,
+          valueUsd: moneyIndex >= 0 ? parseValue(semanticTail[moneyIndex]) : null,
         });
       }
     }
@@ -188,7 +264,7 @@ function visualIdentityFor(id, manifest) {
       };
 }
 
-function validateAcquisitions(payload, manifest) {
+function validateAcquisitions(payload, manifest, { allowMissingIdentities = false } = {}) {
   const errors = [];
   const ids = new Set();
   for (const acq of payload.acquisitions) {
@@ -197,7 +273,15 @@ function validateAcquisitions(payload, manifest) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(acq.announced)) {
       errors.push(`invalid date: ${acq.id}`);
     }
-    if (!manifest.items?.[acq.id]) errors.push(`missing manifest: ${acq.id}`);
+    if (/^\s*(?:US)?\$/i.test(acq.country || "")) {
+      errors.push(`monetary value parsed as country: ${acq.id}`);
+    }
+    if (acq.valueUsd != null && (!Number.isFinite(acq.valueUsd) || acq.valueUsd <= 0)) {
+      errors.push(`invalid acquisition value: ${acq.id}`);
+    }
+    if (!allowMissingIdentities && !manifest.items?.[acq.id]) {
+      errors.push(`missing manifest: ${acq.id}`);
+    }
   }
   return errors;
 }
@@ -207,7 +291,8 @@ export function mergeRecords(wiki, cisco) {
 
   for (const w of wiki) {
     const id = slugify(w.company);
-    byKey.set(id, {
+    const key = `${canonicalCompanyKey(w.company)}|${w.announced}`;
+    byKey.set(key, {
       id,
       company: w.company,
       announced: w.announced,
@@ -226,14 +311,20 @@ export function mergeRecords(wiki, cisco) {
 
   for (const c of cisco) {
     const id = slugify(c.company);
-    const existing = byKey.get(id);
+    const canonical = canonicalCompanyKey(c.company);
+    const exactKey = `${canonical}|${c.announced}`;
+    const candidates = [...byKey.entries()].filter(([key]) => key.startsWith(`${canonical}|`));
+    const existingKey = byKey.has(exactKey)
+      ? exactKey
+      : candidates.length === 1 ? candidates[0][0] : null;
+    const existing = existingKey ? byKey.get(existingKey) : null;
     if (existing) {
       existing.announced = c.announced;
       existing.summary = c.summary || "";
       existing.era = eraForYear(+c.announced.slice(0, 4));
       if (!existing.sources.includes("cisco")) existing.sources.push("cisco");
     } else {
-      byKey.set(id, {
+      byKey.set(exactKey, {
         id,
         company: c.company,
         announced: c.announced,
@@ -301,7 +392,9 @@ async function main() {
     acquisitions,
   };
 
-  const errors = validateAcquisitions(payload, manifest);
+  const errors = validateAcquisitions(payload, manifest, {
+    allowMissingIdentities: process.argv.includes("--allow-missing-identities"),
+  });
   if (errors.length) {
     throw new Error(`Acquisition validation failed:\n${errors.join("\n")}`);
   }
