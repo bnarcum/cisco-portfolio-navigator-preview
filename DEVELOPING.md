@@ -128,9 +128,9 @@ Adds the business-value axis on top of the portfolio (what) and connections (how
 
 - **Data model:** `assets/cpn-problems.js` — `window.__cpnProblems` holds ~21 curated problems, each with `symptom` (customer language), `outcome`, `proof` (metric/before/after/source), `personas` (netops/cio/ciso), and keys that reuse the existing taxonomy: `families[]` (NODES ids), `bundles[]` (BUNDLES names), `useCases[]`, `dcloudPath` (dcloud-links path id), `pillar` (One Cisco), and `maturityNext` (expansion chain). One source of truth — no duplicated stacks.
 - **Resolvers:** `problemsForFamily/Product/Stack/Bundle/UseCase`, `outcomeCoverage(familyIds)` (addressed vs. adjacent-open), `problemNarrative(familyIds, persona)`, `personaLine`, `SYMPTOMS`.
-- **Phase 1 (reframe):** panel *"Problems this solves"* block (symptom → outcome → proof, high in the panel), pain-first **Solution package** headlines, and *"Because …"* value lines on **Suggestions**.
+- **Phase 1 (reframe):** canvas **outcome card** (`#outcome-card`, node-attached on the graph) with symptom → outcome → proof, persona chips, primary problem + “+ N more” expand, and a consolidated **Journey** row (Explore → dCloud → AI Canvas → Skill up). Side panel is specs/products/links only. Pain-first **Solution package** headlines and *"Because …"* on **Suggestions** remain in the planner.
 - **Phase 2 (credibility):** **Outcomes** panel tab (delivered vs. adjacent gaps, "add closers"), a **persona toggle** (NetOps/CIO/CISO, persisted in `localStorage["cpn-persona"]`, reframes every line), and the narrative flows into the **AI assistant** (`buildPlanContext`) and **exports** (`planSummary().problems` → markdown + text "Problems We Solve").
 - **Phase 3 (wow):** Outcomes **graph lens** (`highlightProblemFamilies`), **symptom discovery** modal (`openSymptomPicker` — "What's hurting?"), **dCloud journey** link ("Prove it on dCloud"), **AI Canvas bridge** ("Investigate in AI Canvas" on ops-mapped outcomes), and **maturity chaining** ("Then: <next outcome>").
-- **Entry points:** every product/family panel, the Suggestions/Bundles/Outcomes tabs, and the "Start from a problem…" button in the Outcomes tab.
+- **Entry points:** canvas outcome card on family/product selection, Outcomes tab, symptom picker, exports/AI context. Detailed dCloud lab list stays in the panel *Learn & Try on dCloud* section.
 
-Test: `npm run test:problems`.
+Test: `npm run test:problems`. Module: `assets/cpn-outcome-card.js` (`window.__cpnOutcomeCard`).

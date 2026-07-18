@@ -44,35 +44,34 @@ try {
   if (model.addressed < 3) errors.push(`expected addressed outcomes, got ${model.addressed}`);
   if (!/Problems this stack already addresses/.test(model.narrative)) errors.push("narrative missing addressed section");
 
-  // 2) Panel "Problems this solves" block renders + persona toggle
-  const panel = await page.evaluate(() => {
-    window.showDetailPanel(window.nodeById["sdwan"]);
-    const pb = document.getElementById("pbody");
-    pb.dataset.lastId = "sdwan"; pb.dataset.lastKind = "node";
+  // 2) Canvas outcome card renders + persona toggle (not side panel)
+  const card = await page.evaluate(async () => {
+    await new Promise(r => setTimeout(r, 800)); // dCloud/learning links load
     window.setPersona("");
-    window.insertProblemsSolved("sdwan", "node");
-    const sec = pb.querySelector(".p-prob");
+    window.__cpnOutcomeCard.show("sdwan", window.nodeById["sdwan"]);
+    const el = document.getElementById("outcome-card");
     const out = {
-      hasSection: !!sec,
-      items: pb.querySelectorAll(".p-prob-item").length,
-      proof: !!pb.querySelector(".p-prob-proof"),
-      personaChips: pb.querySelectorAll(".p-prob-persona").length,
-      explore: !!pb.querySelector("[data-prob-explore]")
+      visible: el?.style.display !== "none",
+      hasJourney: !!el?.querySelector(".oc-journey"),
+      journeySteps: el?.querySelectorAll(".oc-j-step").length || 0,
+      hasProof: !!el?.querySelector(".oc-prob-proof"),
+      personaChips: el?.querySelectorAll(".oc-persona").length || 0,
+      noPanelBlock: !document.querySelector("#pbody .p-prob")
     };
-    // toggle CISO persona -> outcome line should change to the CISO framing
-    const before = pb.querySelector(".p-prob-outcome")?.textContent || "";
-    pb.querySelector('[data-persona="ciso"]')?.click();
-    const after = document.querySelector("#pbody .p-prob-outcome")?.textContent || "";
+    const before = el?.querySelector(".oc-prob-outcome")?.textContent || "";
+    el?.querySelector('[data-oc-persona="ciso"]')?.click();
+    const after = document.getElementById("outcome-card")?.querySelector(".oc-prob-outcome")?.textContent || "";
     out.personaChanged = before !== after;
     window.setPersona("");
     return out;
   });
-  if (!panel.hasSection) errors.push("panel: .p-prob section did not render");
-  if (!panel.items) errors.push("panel: no problem items");
-  if (!panel.proof) errors.push("panel: no proof line");
-  if (panel.personaChips !== 3) errors.push(`panel: expected 3 persona chips, got ${panel.personaChips}`);
-  if (!panel.explore) errors.push("panel: missing explore button");
-  if (!panel.personaChanged) errors.push("panel: persona toggle did not change the outcome line");
+  if (!card.visible) errors.push("canvas: outcome card did not show");
+  if (!card.hasJourney) errors.push("canvas: missing Journey block");
+  if (card.journeySteps < 2) errors.push(`canvas: expected >=2 journey steps, got ${card.journeySteps}`);
+  if (!card.hasProof) errors.push("canvas: no proof line");
+  if (card.personaChips !== 3) errors.push(`canvas: expected 3 persona chips, got ${card.personaChips}`);
+  if (!card.personaChanged) errors.push("canvas: persona toggle did not change outcome");
+  if (!card.noPanelBlock) errors.push("side panel should not contain .p-prob block");
 
   // 3) Analyze a stack -> Outcomes tab + reframed suggestions/bundles
   const analysis = await page.evaluate(() => {

@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.97.0";
+  window.__CPN_BUILD="2.98.0";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -402,6 +402,59 @@
     @media (prefers-reduced-motion:reduce){g.comp-orbit circle.comp-orbit-main{animation:none}}
 
     /* DETAIL PANEL */
+    [data-theme="light"] #link-why-card .lwc-tag{color:#334155;background:rgba(0,110,143,.08);border-color:rgba(0,110,143,.22)}
+
+    /* Canvas outcome card — node-attached "Problems this solves" */
+    #outcome-card{position:fixed;display:none;z-index:415;pointer-events:auto;
+      width:min(340px,calc(100vw - 420px));max-height:min(78vh,560px);overflow:auto;
+      border-radius:12px;border:1px solid rgba(45,206,92,.45);
+      background:linear-gradient(155deg,rgba(8,28,18,.94) 0%,rgba(6,14,28,.96) 55%,rgba(4,20,32,.94) 100%);
+      box-shadow:0 12px 40px rgba(0,0,0,.45),0 0 0 1px rgba(45,206,92,.12);
+      padding:12px 13px 11px;backdrop-filter:blur(10px)}
+    #outcome-card .oc-close{position:absolute;top:8px;right:8px;font-family:inherit;font-size:18px;line-height:1;
+      cursor:pointer;border:none;background:transparent;color:var(--muted);padding:2px 6px;border-radius:6px}
+    #outcome-card .oc-close:hover{color:var(--fg);background:rgba(255,255,255,.06)}
+    #outcome-card .oc-head{margin:0 28px 8px 0}
+    #outcome-card .oc-family{font-size:11px;font-weight:700;color:#2dce5c;text-transform:uppercase;letter-spacing:.04em}
+    #outcome-card .oc-title{font-size:13px;font-weight:800;color:var(--fg);margin-top:2px}
+    #outcome-card .oc-personas{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+    #outcome-card .oc-persona{font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;
+      padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);transition:all .15s}
+    #outcome-card .oc-persona:hover{border-color:#2dce5c;color:var(--fg)}
+    #outcome-card .oc-persona.on{background:#2dce5c;border-color:#2dce5c;color:#04210f}
+    #outcome-card .oc-prob-item{padding:9px 10px;border-radius:9px;margin-bottom:7px;
+      border:1px solid rgba(45,206,92,.24);background:rgba(45,206,92,.08)}
+    #outcome-card .oc-prob-symptom{font-size:11.5px;font-style:italic;color:var(--muted);line-height:1.4;margin-bottom:5px}
+    #outcome-card .oc-prob-outcome{font-size:12px;font-weight:700;color:var(--fg);line-height:1.4;display:flex;gap:5px}
+    #outcome-card .oc-prob-tick{color:#2dce5c;flex-shrink:0}
+    #outcome-card .oc-prob-proof{margin-top:5px;font-size:10px;color:var(--muted);line-height:1.4}
+    #outcome-card .oc-prob-k{font-weight:700;color:var(--fg)}
+    #outcome-card .oc-prob-before{color:#e07a7a}
+    #outcome-card .oc-prob-arrow{opacity:.7;padding:0 2px}
+    #outcome-card .oc-prob-after{color:#2dce5c;font-weight:600}
+    #outcome-card .oc-prob-next{display:block;width:100%;margin-top:6px;text-align:left;font-family:inherit;
+      font-size:10px;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:6px;
+      border:1px dashed rgba(45,206,92,.35);background:transparent;color:var(--muted)}
+    #outcome-card .oc-prob-next:hover{border-color:#2dce5c;color:var(--fg)}
+    #outcome-card .oc-more{width:100%;font-family:inherit;font-size:10.5px;font-weight:700;cursor:pointer;
+      padding:5px;border-radius:6px;border:1px dashed var(--line);background:transparent;color:var(--muted);margin-top:2px}
+    #outcome-card .oc-more:hover{border-color:#2dce5c;color:#2dce5c}
+    #outcome-card .oc-journey{margin-top:10px;padding-top:9px;border-top:1px solid rgba(45,206,92,.2)}
+    #outcome-card .oc-journey-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+    #outcome-card .oc-journey-track{display:flex;flex-wrap:wrap;align-items:center;gap:4px 2px}
+    #outcome-card .oc-j-arrow{color:var(--muted);font-size:10px;padding:0 1px}
+    #outcome-card .oc-j-step{font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;
+      padding:4px 8px;border-radius:6px;border:1px solid rgba(45,206,92,.45);
+      background:rgba(45,206,92,.1);color:#2dce5c;text-decoration:none;transition:all .15s;white-space:nowrap}
+    #outcome-card .oc-j-step:hover{background:rgba(45,206,92,.22)}
+    #outcome-card .oc-j-step--canvas{border-color:rgba(2,200,255,.45);background:rgba(2,200,255,.1);color:#02c8ff}
+    #outcome-card .oc-j-step--canvas:hover{background:rgba(2,200,255,.2)}
+    #outcome-card .oc-note{font-size:9px;color:var(--muted);opacity:.75;margin-top:8px}
+    [data-theme="light"] #outcome-card{background:linear-gradient(155deg,rgba(240,255,246,.97),rgba(248,252,255,.98));
+      border-color:rgba(30,150,70,.4);box-shadow:0 10px 30px rgba(0,60,40,.12)}
+    [data-theme="light"] #outcome-card .oc-prob-before{color:#c0392b}
+    [data-theme="light"] #outcome-card .oc-prob-after{color:#1e8449}
+
     #panel{position:fixed;top:var(--topbar-h);right:0;bottom:0;width:390px;
       background:var(--glass-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
       border-left:1px solid var(--glass-edge);
@@ -1454,6 +1507,7 @@
   <div class="lwc-why"></div>
   <div class="lwc-overlap"></div>
 </div>
+<div id="outcome-card" aria-hidden="true"></div>
 
 <div id="panel">
   <button id="pcl">&#xd7;</button>
@@ -5399,6 +5453,7 @@ const zoom = d3.zoom().scaleExtent([0.2,4])
     updateCompositionLabelVisibility(ev.transform.k);
     updatePillarLabelVisibility(ev.transform.k);
     if (viewMode === "all-products") onAllProductsZoom(ev.transform.k);
+    window.__cpnOutcomeCard?.reposition?.();
   })
   .on("end", ev => {
     root.style("will-change", null);
@@ -9125,6 +9180,9 @@ function selectNode(d, opts = {}) {
   applyConnectionHighlight(d, connectionHighlightDepth);
   if (usePillarLayout()) applyPillarNodeVisualState(d);
   showDetailPanel(d);
+  if (d._kind !== "pillar" && window.__cpnOutcomeCard?.show) {
+    window.__cpnOutcomeCard.show(d.id, d);
+  }
   if (viewMode === "spatial"){
     focusSpatialNode(d.id, 700);
     if (spatialState.graph){
@@ -9145,10 +9203,12 @@ function selectNode(d, opts = {}) {
   const {w,h}=getDims(), t=d3.zoomTransform(svgEl);
   const pw=plannerOpen?490:390;
   svg.transition().duration(500).call(zoom.transform,
-    d3.zoomIdentity.translate(-d.x*t.k+(w-pw)/2,-d.y*t.k+h/2).scale(t.k));
+    d3.zoomIdentity.translate(-d.x*t.k+(w-pw)/2,-d.y*t.k+h/2).scale(t.k))
+    .on("end", () => window.__cpnOutcomeCard?.reposition?.());
 }
 
 function resetHL() {
+  if (!selected) window.__cpnOutcomeCard?.hide?.();
   if (viewMode === "spatial"){
     if (spatialState.graph){
       refreshSpatialNodeVisuals();
@@ -14843,78 +14903,14 @@ function setPersona(id){
 window.currentPersona = currentPersona;
 window.setPersona = setPersona;
 
+/* Outcomes now render on the canvas card (#outcome-card). This stub clears any
+   legacy side-panel block and refreshes the canvas card for product-only opens. */
 function insertProblemsSolved(id, kind){
-  const P = window.__cpnProblems;
-  const pb = $("#pbody");
-  if (!P || !pb || pb.querySelector(".p-prob")) return;
+  $("#pbody")?.querySelector(".p-prob")?.remove();
   const familyId = kind === "product" ? prodById[id]?.family : id;
-  const problems = P.problemsForFamily(familyId);
-  if (!problems.length) return;
-
-  const persona = currentPersona();
-  const dcloudFor = (prob) => {
-    if (!prob.dcloudPath) return null;
-    try {
-      const path = (typeof DCLOUD_PATHS !== "undefined") ? DCLOUD_PATHS.find(p => p.id === prob.dcloudPath) : null;
-      if (!path) return null;
-      const entries = typeof dcloudPathEntries === "function" ? dcloudPathEntries(path) : [];
-      const url = entries.length && typeof dcloudPrimaryUrl === "function" ? dcloudPrimaryUrl(entries[0]) : null;
-      return url ? { title: path.title, url } : null;
-    } catch(e){ return null; }
-  };
-  const list = problems.slice(0, 3).map(prob => {
-    const line = persona ? P.personaLine(prob, persona) : prob.outcome;
-    const proof = prob.proof
-      ? `<div class="p-prob-proof"><span class="p-prob-proof-k">${escapeHtml(prob.proof.metric)}:</span> <span class="p-prob-before">${escapeHtml(prob.proof.before)}</span> <span class="p-prob-arrow">→</span> <span class="p-prob-after">${escapeHtml(prob.proof.after)}</span></div>`
-      : "";
-    const dc = dcloudFor(prob);
-    const dcLink = dc ? `<a class="p-prob-dcloud" href="${escapeHtml(dc.url)}" target="_blank" rel="noopener">Prove it on dCloud ↗</a>` : "";
-    const next = prob.maturityNext ? P.getProblem(prob.maturityNext) : null;
-    const chain = next ? `<button type="button" class="p-prob-next" data-prob-explore="${escapeHtml(next.id)}">Then: ${escapeHtml(next.outcome)} →</button>` : "";
-    return `<div class="p-prob-item" data-prob-id="${escapeHtml(prob.id)}">
-        <div class="p-prob-symptom">${escapeHtml(prob.symptom)}</div>
-        <div class="p-prob-outcome"><span class="p-prob-tick">✓</span>${escapeHtml(line)}</div>
-        ${proof}
-        <div class="p-prob-actions">
-          <button type="button" class="p-prob-explore" data-prob-explore="${escapeHtml(prob.id)}">See what solves this →</button>
-          ${dcLink}
-        </div>
-        ${chain}
-      </div>`;
-  }).join("");
-
-  const personaChips = P.PERSONAS.map(pp =>
-    `<button type="button" class="p-prob-persona${pp.id === persona ? " on" : ""}" data-persona="${pp.id}">${escapeHtml(pp.label)}</button>`
-  ).join("");
-
-  const sec = document.createElement("div");
-  sec.className = "p-sec p-prob";
-  sec.dataset.familyId = familyId;
-  sec.innerHTML = `
-    <div class="p-prob-head">
-      <div class="p-sec-t" style="margin:0">Problems this solves</div>
-      <div class="p-prob-personas" role="group" aria-label="Frame for persona">${personaChips}</div>
-    </div>
-    ${list}
-    <div class="p-prob-note" title="${escapeHtml(P.DISCLAIMER)}">Directional talking points · not guarantees</div>`;
-
-  sec.querySelectorAll("[data-persona]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const val = btn.dataset.persona;
-      setPersona(val === persona ? "" : val);
-      pb.querySelector(".p-prob")?.remove();
-      insertProblemsSolved(id, kind);
-    });
-  });
-  sec.querySelectorAll("[data-prob-explore]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      if (typeof exploreProblem === "function") exploreProblem(btn.dataset.probExplore);
-    });
-  });
-
-  const desc = pb.querySelector(".p-desc");
-  if (desc) desc.insertAdjacentElement("afterend", sec);
-  else pb.insertBefore(sec, pb.firstChild);
+  if (!familyId || !window.__cpnOutcomeCard?.show) return;
+  const node = nodeById[familyId];
+  if (node) window.__cpnOutcomeCard.show(familyId, selected?.id === familyId ? selected : node);
 }
 window.insertProblemsSolved = insertProblemsSolved;
 
@@ -17236,6 +17232,7 @@ function boot(){
     window.matrixImageUrl = matrixImageUrl;
     window.dcloudPathForUseCase = dcloudPathForUseCase;
     window.dcloudPathEntries = dcloudPathEntries;
+    window.learningLinksFor = learningLinksFor;
   });
   loadMatrixBridge();
   buildPlansMenu();
@@ -17312,10 +17309,11 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/cpn-problems.js?v=2.97.0"></script>
-<script src="assets/cpn-cloud-control-ops.js?v=2.97.0"></script>
-<script src="assets/cpn-lazy-load.js?v=2.97.0"></script>
-<script src="assets/cpn-kiosk.js?v=2.97.0"></script>
+<script src="assets/cpn-problems.js?v=2.98.0"></script>
+<script src="assets/cpn-outcome-card.js?v=2.98.0"></script>
+<script src="assets/cpn-cloud-control-ops.js?v=2.98.0"></script>
+<script src="assets/cpn-lazy-load.js?v=2.98.0"></script>
+<script src="assets/cpn-kiosk.js?v=2.98.0"></script>
 <script src="assets/cpn-logo-intro.js?v=2.91.6"></script>
 </body>
 </html>
