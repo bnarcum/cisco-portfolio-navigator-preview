@@ -1063,6 +1063,48 @@
     return familyId;
   }
 
+  /** Header search: match problems by symptom, outcome, personas, families, and use cases. */
+  function searchTokenize(s) {
+    return (s || "").toLowerCase().replace(/[''""]/g, "").replace(/[\s-]+/g, "");
+  }
+
+  function searchProblems(query, limit) {
+    const q = (query || "").trim().toLowerCase();
+    if (!q) return [];
+    const qNorm = searchTokenize(q);
+    const lim = typeof limit === "number" ? limit : 5;
+    const scored = [];
+    PROBLEMS.forEach(p => {
+      const famNames = (p.families || []).map(nameOr).join(" ");
+      const personaText = Object.values(p.personas || {}).flatMap(v =>
+        typeof v === "string"
+          ? [v]
+          : [v.symptom, v.line, v.proof && v.proof.before, v.proof && v.proof.after]
+      ).filter(Boolean).join(" ");
+      const hay = [
+        p.id,
+        p.symptom,
+        p.outcome,
+        p.pillar,
+        (p.useCases || []).join(" "),
+        famNames,
+        personaText
+      ].join(" ").toLowerCase();
+      const hayNorm = searchTokenize(hay);
+      if (!hay.includes(q) && !(qNorm.length >= 2 && hayNorm.includes(qNorm))) return;
+      let score = 0;
+      if (p.id.includes(q)) score += 4;
+      if ((p.symptom || "").toLowerCase().includes(q)) score += 3;
+      if ((p.outcome || "").toLowerCase().includes(q)) score += 2;
+      if (famNames.toLowerCase().includes(q)) score += 1;
+      if ((p.useCases || []).some(u => u.toLowerCase().includes(q))) score += 1;
+      scored.push({ problem: p, score });
+    });
+    scored.sort((a, b) =>
+      b.score - a.score || PROBLEMS.indexOf(a.problem) - PROBLEMS.indexOf(b.problem));
+    return scored.slice(0, lim).map(x => x.problem);
+  }
+
   window.__cpnProblems = {
     PROBLEMS,
     PERSONAS,
@@ -1082,6 +1124,7 @@
     personaLine,
     personaLabel,
     problemNarrative,
-    nameOr
+    nameOr,
+    searchProblems
   };
 })();

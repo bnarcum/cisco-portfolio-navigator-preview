@@ -156,6 +156,16 @@ try {
           lineDiffers: net.line !== ci.line,
           baseFallback: base.symptom === prob.symptom && base.line === prob.outcome
         };
+      })(),
+      search: (() => {
+        const wifi = P.searchProblems("wifi", 5).map(p => p.id);
+        const vpn = P.searchProblems("vpn", 5).map(p => p.id);
+        return {
+          wifiTop: wifi[0] || null,
+          wifiHas: wifi.includes("wifi-complaints"),
+          vpnHas: vpn.includes("vpn-overload"),
+          empty: P.searchProblems("", 5).length === 0
+        };
       })()
     };
   });
@@ -189,6 +199,31 @@ try {
   if (!model.editorial.catalogAvailabilityQualified) errors.push("catalog: Cloud Control family and bundle must disclose Controlled Availability");
   if (!model.editorial.appDynamicsBrand) errors.push("catalog: AppDynamics family must use current Splunk branding");
   if (!model.editorial.noGuaranteeLanguage) errors.push("catalog: remove absolute/guarantee language");
+  if (!model.search.wifiHas) errors.push("searchProblems: wifi should match wifi-complaints");
+  if (!model.search.vpnHas) errors.push("searchProblems: vpn should match vpn-overload");
+  if (!model.search.empty) errors.push("searchProblems: empty query should return no results");
+
+  // 1b) Header search dropdown surfaces problems
+  const headerSearch = await page.evaluate(async () => {
+    const inp = document.getElementById("search");
+    const sr = document.getElementById("sr");
+    inp.value = "wifi";
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise(r => setTimeout(r, 50));
+    const out = {
+      visible: sr.style.display !== "none",
+      groups: Array.from(sr.querySelectorAll(".sr-group")).map(g => g.textContent),
+      firstRow: sr.querySelector(".sri .sri-text div")?.textContent || "",
+      hasBadge: !!sr.querySelector(".sri-problem")
+    };
+    inp.value = "";
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    return out;
+  });
+  if (!headerSearch.visible) errors.push("header search: dropdown did not open for wifi");
+  if (!headerSearch.groups.includes("Problems to solve")) errors.push("header search: missing Problems to solve group");
+  if (!headerSearch.hasBadge) errors.push("header search: problem rows missing Problem badge");
+  if (!/wifi|wireless|connectivity/i.test(headerSearch.firstRow)) errors.push("header search: first problem row unexpected");
 
   // 2) Canvas outcome card renders + persona toggle (not side panel)
   const card = await page.evaluate(async () => {

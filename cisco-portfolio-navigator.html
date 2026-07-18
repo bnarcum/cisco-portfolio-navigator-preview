@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="3.3.4";
+  window.__CPN_BUILD="3.3.5";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -62,7 +62,7 @@
   <link rel="stylesheet" href="assets/cpn-light.css?v=2.87.5"/>
   <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.87.5"/>
   <link rel="stylesheet" href="assets/cpn-logo-intro.css?v=2.91.6"/>
-  <link rel="stylesheet" href="assets/cpn-acquisitions-timeline.css?v=3.3.4"/>
+  <link rel="stylesheet" href="assets/cpn-acquisitions-timeline.css?v=3.3.5"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -869,7 +869,10 @@
     .dcloud-browser-actions .dbc-family:hover{border-color:#00d4ff;color:#fff}
     .sri-dcloud{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0;
       background:rgba(0,212,255,.15);color:#5ceaff;border:1px solid rgba(0,212,255,.35)}
+    .sri-problem{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0;
+      background:rgba(45,206,92,.14);color:#7dffb0;border:1px solid rgba(45,206,92,.35)}
     .sri-dot--dcloud{background:#00d4ff;box-shadow:0 0 6px rgba(0,212,255,.55)}
+    .sri-dot--problem{background:#2dce5c;box-shadow:0 0 6px rgba(45,206,92,.45)}
     .p-hero--clickable{cursor:pointer}
     .p-hero--clickable .p-hero-matrix-img{cursor:pointer}
     .p-hero-open-hint{
@@ -1414,7 +1417,7 @@
       <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/>
       <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </svg>
-    <input id="search" type="text" placeholder="Search products, models, use cases…" autocomplete="off" spellcheck="false"/>
+    <input id="search" type="text" placeholder="Search products, problems, use cases…" autocomplete="off" spellcheck="false"/>
     <div id="sr"></div>
   </div>
 </div>
@@ -9793,10 +9796,42 @@ searchEl.addEventListener("input",()=>{
     (p.successor&&(prodById[p.successor]||nodeById[p.successor])?.name.toLowerCase().includes(q)))).slice(0,8);
 
   const dMatch = typeof window.dcloudSearchEntries === "function" ? window.dcloudSearchEntries(q, 8) : [];
+  const P = window.__cpnProblems;
+  const probMatch = P && typeof P.searchProblems === "function" ? P.searchProblems(q, 5) : [];
 
-  if(!nMatch.length&&!pMatch.length&&!dMatch.length){srEl.style.display="none";return;}
+  if(!nMatch.length&&!pMatch.length&&!dMatch.length&&!probMatch.length){srEl.style.display="none";return;}
 
   srEl.innerHTML="";
+
+  function problemSearchSublabel(prob) {
+    const sym = prob.symptom || "";
+    const clip = sym.length > 88 ? sym.slice(0, 85) + "…" : sym;
+    const fams = (prob.families || []).slice(0, 3).map(f => P.nameOr(f)).join(" · ");
+    return fams ? `${clip} · ${fams}` : clip;
+  }
+
+  if(probMatch.length){
+    const hdr=document.createElement("div"); hdr.className="sr-group"; hdr.textContent="Problems to solve";
+    srEl.appendChild(hdr);
+    probMatch.forEach(prob=>{
+      const pm = pillarMeta(prob.pillar);
+      srEl.appendChild(makeSearchItem(
+        prob.outcome,
+        problemSearchSublabel(prob),
+        "#2dce5c",
+        null,
+        () => {
+          if (typeof exploreProblem === "function") exploreProblem(prob.id);
+        },
+        {
+          pillar: pm ? pm.label.split(" ").slice(0, 2).join(" ") : null,
+          badge: "Problem",
+          badgeClass: "sri-problem",
+          dotClass: "sri-dot--problem"
+        }
+      ));
+    });
+  }
 
   function makeSearchItem(label, sublabel, color, eolStatus, onSelect, extras) {
     extras = extras || {};
@@ -9805,12 +9840,13 @@ searchEl.addEventListener("input",()=>{
     btn.className = "sri";
     btn.style.cssText = "width:100%;border:none;background:transparent;color:inherit;font:inherit;text-align:left";
     btn.innerHTML = `
-      <div class="sri-dot" style="background:${color};pointer-events:none"></div>
+      <div class="sri-dot${extras.dotClass ? " " + extras.dotClass : ""}" style="background:${color};pointer-events:none"></div>
       <div class="sri-text" style="pointer-events:none">
         <div style="font-size:12px;font-weight:500">${label}</div>
         <div style="font-size:10px;color:var(--muted)">${sublabel}</div>
       </div>
       ${extras.pillar ? `<span class="sri-pillar">${extras.pillar}</span>` : ""}
+      ${extras.badge ? `<span class="${extras.badgeClass || "sri-pillar"}">${extras.badge}</span>` : ""}
       ${eolStatus ? `<div class="${eolStatus==='eol'?'sri-eol':'sri-eos'}" style="pointer-events:none;flex-shrink:0">${eolStatus.toUpperCase()}</div>` : ""}
     `;
     btn.addEventListener("click", ev => {
@@ -15734,11 +15770,11 @@ function wireAdaptivePlaceholder(){
   const sw  = document.querySelector(".sw");
   if (!inp || !sw || typeof ResizeObserver === "undefined") return;
   const PLACEHOLDERS = [
-    {min: 360, text: "Search products, models, use cases…"},
-    {min: 240, text: "Search products & families…"},
+    {min: 360, text: "Search products, problems, use cases…"},
+    {min: 240, text: "Search products & problems…"},
     {min: 0,   text: "Search…"}
   ];
-  const FULL_HINT = "Search products, models, use cases — try a model name, family (ISE, Meraki), or use case (zero trust, AI networking)";
+  const FULL_HINT = "Search products, problems, and use cases — try a symptom (wifi, vpn, phishing), family (ISE, Meraki), or model name";
   inp.setAttribute("title", FULL_HINT);
   inp.setAttribute("aria-label", FULL_HINT);
   const apply = (w) => {
@@ -17391,13 +17427,13 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/cpn-problems.js?v=3.3.0"></script>
-<script src="assets/cpn-outcome-card.js?v=3.3.0"></script>
-<script src="assets/cpn-cloud-control-ops.js?v=3.3.0"></script>
-<script src="assets/cpn-lazy-load.js?v=3.3.0"></script>
-<script src="assets/cpn-kiosk.js?v=3.3.0"></script>
-<script src="assets/cpn-acquisitions-data.js?v=3.3.4"></script>
-<script src="assets/cpn-acquisitions-timeline.js?v=3.3.4"></script>
+<script src="assets/cpn-problems.js?v=3.3.5"></script>
+<script src="assets/cpn-outcome-card.js?v=3.3.5"></script>
+<script src="assets/cpn-cloud-control-ops.js?v=3.3.5"></script>
+<script src="assets/cpn-lazy-load.js?v=3.3.5"></script>
+<script src="assets/cpn-kiosk.js?v=3.3.5"></script>
+<script src="assets/cpn-acquisitions-data.js?v=3.3.5"></script>
+<script src="assets/cpn-acquisitions-timeline.js?v=3.3.5"></script>
 <script src="assets/cpn-logo-intro.js?v=2.91.6"></script>
 </body>
 </html>
