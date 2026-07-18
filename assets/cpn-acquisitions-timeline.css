@@ -109,6 +109,124 @@ body.acq-open #tools {
   max-width: 520px;
 }
 
+.acq-heading {
+  position: relative;
+  min-width: 190px;
+}
+
+#acq-current-period {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 2px 7px;
+  border: 1px solid rgba(2, 200, 255, 0.28);
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(2, 200, 255, 0.07);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.acq-head-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.acq-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.acq-search-wrap,
+.acq-filter-wrap {
+  position: relative;
+}
+
+#acq-search {
+  width: 176px;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--surface2);
+  font: inherit;
+  font-size: 11px;
+}
+
+#acq-search:focus-visible,
+#acq-filter-btn:focus-visible,
+.acq-nav-btn:focus-visible {
+  border-color: #02c8ff;
+  outline: 2px solid rgba(2, 200, 255, 0.3);
+  outline-offset: 2px;
+}
+
+#acq-search-results,
+#acq-filter-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 12;
+  min-width: 100%;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+}
+
+#acq-search-results {
+  left: 0;
+  width: 250px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.acq-search-result,
+#acq-filter-menu button {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.acq-search-result:hover,
+.acq-search-result:focus-visible,
+#acq-filter-menu button:hover,
+#acq-filter-menu button:focus-visible,
+#acq-filter-menu button[aria-checked="true"] {
+  color: var(--accent);
+  background: rgba(2, 200, 255, 0.09);
+  outline: none;
+}
+
+#acq-filter-menu {
+  right: 0;
+  min-width: 190px;
+}
+
+.acq-nav-btn {
+  min-width: 30px;
+  padding-inline: 8px;
+}
+
 #acq-focus {
   position: relative;
   z-index: 3;
@@ -122,7 +240,7 @@ body.acq-open #tools {
 }
 
 #acq-focus.show {
-  max-height: 140px;
+  max-height: 170px;
   padding: 14px 22px;
   border-bottom-color: var(--border);
 }
@@ -164,6 +282,22 @@ body.acq-open #tools {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+#acq-focus-source {
+  display: inline-block;
+  margin-top: 5px;
+  color: var(--accent);
+  font-size: 10px;
+  text-decoration: none;
+}
+
+#acq-focus-source:hover {
+  text-decoration: underline;
+}
+
+#acq-focus-source[hidden] {
+  display: none;
 }
 
 #acq-focus-actions {
@@ -239,9 +373,11 @@ body.acq-open #tools {
 }
 
 .acq-card:hover,
-.acq-card.focused {
+.acq-card.focused,
+.acq-card:focus-visible {
   --scale: 1.12;
   z-index: 5;
+  outline: none;
 }
 
 .acq-card.dim {
@@ -261,7 +397,8 @@ body.acq-open #tools {
 }
 
 .acq-card:hover .acq-card-shell,
-.acq-card.focused .acq-card-shell {
+.acq-card.focused .acq-card-shell,
+.acq-card:focus-visible .acq-card-shell {
   border-color: rgba(2, 200, 255, 0.55);
   box-shadow: 0 12px 32px rgba(2, 200, 255, 0.18);
 }
@@ -587,6 +724,16 @@ body.acq-open #tools {
 }
 
 @media (max-width: 768px) {
+  #acq-head {
+    align-items: flex-start;
+    padding-inline: 12px;
+  }
+  .acq-head-controls {
+    gap: 5px;
+  }
+  #acq-search {
+    width: 150px;
+  }
   #acq-focus-inner {
     grid-template-columns: 56px 1fr;
   }

@@ -93,6 +93,79 @@ if (previouslyOverflowed[0]) {
   previouslyOverflowed[0]);
 }
 
+await page.fill("#acq-search", "Meraki");
+await page.waitForFunction(() =>
+  window.CPN_AcquisitionTimeline.testState().visibleIds.includes("meraki")
+);
+await page.keyboard.press("Enter");
+let focused = await page.evaluate(() => window.CPN_AcquisitionTimeline.testState().focusedId);
+if (focused !== "meraki") errors.push(`search focus: ${focused}`);
+
+const searchResults = await page.locator("#acq-search-results").getAttribute("role");
+if (searchResults !== "listbox") errors.push(`search results role: ${searchResults}`);
+
+await page.click("#acq-next");
+focused = await page.evaluate(() => window.CPN_AcquisitionTimeline.testState().focusedId);
+if (!focused || focused === "meraki") errors.push("next acquisition did not advance");
+
+await page.keyboard.press("ArrowLeft");
+focused = await page.evaluate(() => window.CPN_AcquisitionTimeline.testState().focusedId);
+if (focused !== "meraki") errors.push(`keyboard previous focus: ${focused}`);
+
+const compactFilters = await page.evaluate(() => ({
+  buttonExpanded: document.querySelector("#acq-filter-btn")?.getAttribute("aria-expanded"),
+  menuRole: document.querySelector("#acq-filter-menu")?.getAttribute("role"),
+  exposedChips: document.querySelectorAll("#acq-head .acq-filter-chip").length,
+  period: document.querySelector("#acq-current-period")?.textContent.trim(),
+}));
+if (compactFilters.buttonExpanded !== "false") errors.push("filter button missing collapsed state");
+if (compactFilters.menuRole !== "menu") errors.push(`filter menu role: ${compactFilters.menuRole}`);
+if (compactFilters.exposedChips) errors.push("legacy filter chips remain exposed");
+if (!compactFilters.period) errors.push("sticky temporal context was empty");
+
+await page.click("#acq-filter-btn");
+if (await page.locator("#acq-filter-menu").isHidden()) errors.push("filter menu did not open");
+await page.click('#acq-filter-menu [data-acq-filter="featured"]');
+const activeFilter = await page.locator("#acq-filter-btn").textContent();
+if (!activeFilter.includes("Megadeals")) errors.push(`active filter label: ${activeFilter}`);
+
+await page.click("#acq-filter-btn");
+await page.keyboard.press("Escape");
+if (!(await page.locator("#acq-filter-menu").isHidden())) errors.push("Escape did not close filter menu");
+
+const accessibility = await page.evaluate(() => {
+  const marker = document.querySelector(".acq-year-marker, .acq-overflow-marker");
+  const card = document.querySelector(".acq-card");
+  return {
+    markerRole: marker?.getAttribute("role"),
+    markerTabIndex: marker?.tabIndex,
+    markerLabel: marker?.getAttribute("aria-label"),
+    cardRole: card?.getAttribute("role"),
+    cardTabIndex: card?.tabIndex,
+    cardLabel: card?.getAttribute("aria-label"),
+  };
+});
+if (accessibility.markerRole && accessibility.markerRole !== "button") {
+  errors.push(`marker role: ${accessibility.markerRole}`);
+}
+if (accessibility.markerTabIndex != null && accessibility.markerTabIndex !== 0) {
+  errors.push(`marker tabindex: ${accessibility.markerTabIndex}`);
+}
+if (accessibility.markerRole && !accessibility.markerLabel) errors.push("marker label missing");
+if (accessibility.cardRole && accessibility.cardRole !== "button") {
+  errors.push(`card role: ${accessibility.cardRole}`);
+}
+if (accessibility.cardTabIndex != null && accessibility.cardTabIndex !== 0) {
+  errors.push(`card tabindex: ${accessibility.cardTabIndex}`);
+}
+if (accessibility.cardRole && !accessibility.cardLabel) errors.push("card label missing");
+
+const badVerified = await page.evaluate(() =>
+  [...document.querySelectorAll('.acq-card[data-identity="verified-logo"]')]
+    .some(el => el.dataset.identitySource === "favicon-png")
+);
+if (badVerified) errors.push("unverified favicon rendered as verified logo");
+
 const reducedPage = await browser.newPage({
   viewport: { width: 1440, height: 900 },
   reducedMotion: "reduce",

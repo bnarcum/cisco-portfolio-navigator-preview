@@ -20,6 +20,7 @@
     level: "overview",
     anchorYear: null,
     expandedYear: null,
+    searchQuery: "",
   };
 
   const $ = (s, r = document) => r.querySelector(s);
@@ -38,18 +39,18 @@
     return `$${Math.round(v / 1e3)}K`;
   }
 
-  function logoUrl(acq) {
-    const base = `assets/acq-logos/${acq.id}`;
-    return { webp: `${base}.webp`, png: `${base}.png`, svg: `${base}.svg` };
+  function safeSourceUrl(value) {
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" ? url.href : "";
+    } catch {
+      return "";
+    }
   }
 
   function setLogoImg(img, acq) {
-    const u = logoUrl(acq);
-    img.src = acq.visualIdentity?.path || u.webp;
-    img.onerror = () => {
-      img.onerror = () => { img.src = u.svg; };
-      img.src = u.png;
-    };
+    img.onerror = null;
+    img.src = acq.visualIdentity.path;
   }
 
   function yearX(year, month = 6) {
@@ -75,6 +76,29 @@
     if (ACQ.filter === "featured") list = list.filter(a => a.featured);
     else if (ACQ.filter !== "all") list = list.filter(a => a.era === ACQ.filter);
     return list;
+  }
+
+  function searchAcquisitions(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return (window.CPN_ACQUISITIONS?.acquisitions || []).filter(acq =>
+      [acq.company, acq.business, acq.summary, acq.announced.slice(0, 4)]
+        .some(value => String(value || "").toLowerCase().includes(q))
+    );
+  }
+
+  function chronologicalList() {
+    return filteredList().slice().sort((a, b) =>
+      a.announced.localeCompare(b.announced) || a.id.localeCompare(b.id));
+  }
+
+  function focusRelative(delta) {
+    const list = chronologicalList();
+    if (!list.length) return;
+    const current = list.findIndex(acq => acq.id === ACQ.focusedId);
+    const index = current < 0 ? (delta > 0 ? -1 : 0) : current;
+    const next = list[(index + delta + list.length) % list.length];
+    if (next) focusAcquisition(next.id);
   }
 
   function getSemanticLevel(zoom = ACQ.zoom) {
@@ -170,6 +194,8 @@
       marker.type = "button";
       marker.className = "acq-year-marker";
       marker.dataset.year = String(placement.year);
+      marker.setAttribute("role", "button");
+      marker.tabIndex = 0;
       marker.style.setProperty("--tx", `${placement.x}px`);
       marker.style.setProperty("--ty", `${placement.y}px`);
       marker.setAttribute("aria-label", `Explore ${placement.year}: ${placement.representedCount} acquisitions`);
@@ -218,7 +244,17 @@
     card.style.setProperty("--ty", `${y}px`);
     card.style.setProperty("--acq-card-w", "88px");
     card.dataset.id = a.id;
+    card.dataset.identity = a.visualIdentity?.kind || "";
+    card.dataset.identitySource = a.visualIdentity?.source || "";
     card.dataset.depth = String(0.15 + (index % 5) * 0.08);
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.setAttribute("aria-label", [
+      a.company,
+      `announced ${a.announced}`,
+      a.business,
+      a.valueUsd ? formatValue(a.valueUsd) : "",
+    ].filter(Boolean).join(", "));
 
     card.innerHTML = `
       <div class="acq-card-shell">
@@ -231,6 +267,11 @@
       </div>`;
     setLogoImg(card.querySelector(".acq-card-logo"), a);
     card.addEventListener("click", () => focusAcquisition(a.id));
+    card.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      focusAcquisition(a.id);
+    });
     return card;
   }
 
@@ -279,6 +320,8 @@
       const marker = document.createElement("button");
       marker.type = "button";
       marker.className = "acq-overflow-marker";
+      marker.setAttribute("role", "button");
+      marker.tabIndex = 0;
       marker.style.setProperty("--tx", `${x}px`);
       marker.textContent = `+${items.length}`;
       marker.setAttribute("aria-label", `Show ${items.length} more acquisitions from ${year}`);
@@ -333,6 +376,14 @@
   }
 
   function renderCards(inner) {
+    const active = document.activeElement;
+    const focusTarget = active?.classList?.contains("acq-card")
+      ? { type: "card", value: active.dataset.id }
+      : active?.classList?.contains("acq-year-marker")
+        ? { type: "year", value: active.dataset.year }
+        : active?.classList?.contains("acq-overflow-marker")
+          ? { type: "overflow", value: active.getAttribute("aria-label") }
+          : null;
     inner.querySelectorAll(".acq-card, .acq-year-marker, .acq-overflow-marker, .acq-year-expansion, .acq-cluster").forEach(e => e.remove());
     const list = filteredList();
     const canvas = $("#acq-canvas");
@@ -341,6 +392,23 @@
     inner.dataset.represented = String(list.length);
     if (ACQ.level === "overview") renderOverview(inner, list, mid);
     else renderExplore(inner, list, mid);
+    if (focusTarget) {
+      let target = null;
+      if (focusTarget.type === "card") {
+        target = inner.querySelector(`.acq-card[data-id="${CSS.escape(focusTarget.value)}"]`);
+      } else if (focusTarget.type === "year") {
+        target = inner.querySelector(`.acq-year-marker[data-year="${CSS.escape(focusTarget.value)}"]`) ||
+          [...inner.querySelectorAll(".acq-card")].find(card => {
+            const acq = window.CPN_ACQUISITIONS.acquisitions.find(item => item.id === card.dataset.id);
+            return acq?.announced.startsWith(focusTarget.value);
+          }) ||
+          inner.querySelector(`.acq-overflow-marker[aria-label*="${CSS.escape(focusTarget.value)}"]`);
+      } else {
+        target = [...inner.querySelectorAll(".acq-overflow-marker")]
+          .find(marker => marker.getAttribute("aria-label") === focusTarget.value);
+      }
+      target?.focus({ preventScroll: true });
+    }
   }
 
   function renderMinimap() {
@@ -375,7 +443,6 @@
     const panel = $("#acq-focus");
     if (!a || !panel) return;
     panel.classList.add("show");
-    const u = logoUrl(a);
     setLogoImg($("#acq-focus-logo"), a);
     $("#acq-focus-title").textContent = a.company;
     $("#acq-focus-meta").textContent = [
@@ -385,6 +452,18 @@
       a.country || null,
     ].filter(Boolean).join(" · ");
     $("#acq-focus-summary").textContent = a.summary || a.business || "Cisco acquisition.";
+    const source = $("#acq-focus-source");
+    if (source) {
+      const sourceUrl = safeSourceUrl(a.visualIdentity?.sourceUrl);
+      source.hidden = !sourceUrl;
+      if (sourceUrl) {
+        source.href = sourceUrl;
+        source.textContent = `Visual identity source: ${a.visualIdentity.source}`;
+      } else {
+        source.removeAttribute("href");
+        source.textContent = "";
+      }
+    }
     const jumpBtn = $("#acq-focus-jump");
     if (jumpBtn) {
       jumpBtn.hidden = !(a.families && a.families.length);
@@ -416,6 +495,7 @@
         node.style.transform = "";
       });
       renderMinimap();
+      updateCurrentPeriod();
       return;
     }
     inner.querySelectorAll(".acq-layer[data-depth]").forEach(layer => {
@@ -432,6 +512,23 @@
     });
 
     renderMinimap();
+    updateCurrentPeriod();
+  }
+
+  function updateCurrentPeriod() {
+    const canvas = $("#acq-canvas");
+    const label = $("#acq-current-period");
+    if (!canvas || !label) return;
+    const center = canvas.scrollLeft + canvas.clientWidth / 2;
+    const rawYear = ACQ.yearMin + (center - 120) / (ACQ.pxPerYear * ACQ.zoom);
+    const year = Math.max(ACQ.yearMin, Math.min(ACQ.yearMax, Math.round(rawYear)));
+    if (getSemanticLevel() === "overview") {
+      const era = (window.CPN_ACQUISITIONS?.eraBands || [])
+        .find(band => year >= band.from && year <= band.to);
+      label.textContent = era?.label || String(year);
+    } else {
+      label.textContent = String(year);
+    }
   }
 
   function onScroll() {
@@ -492,6 +589,103 @@
     updateParallax();
   }
 
+  function revealSearchResult(acq) {
+    const canvas = $("#acq-canvas");
+    if (!canvas || !acq) return;
+    ACQ.zoom = Math.max(1.05, ACQ.zoom);
+    ACQ.anchorYear = Number(acq.announced.slice(0, 4));
+    ACQ.expandedYear = null;
+    updateZoomUi();
+    renderAcquisitionTimeline();
+    canvas.scrollLeft = Math.max(0, dateX(acq.announced) - canvas.clientWidth / 2);
+    renderCards($("#acq-inner"));
+    updateParallax();
+  }
+
+  function renderSearchResults() {
+    const popup = $("#acq-search-results");
+    const input = $("#acq-search");
+    if (!popup || !input) return [];
+    const results = searchAcquisitions(input.value);
+    ACQ.searchQuery = input.value;
+    popup.innerHTML = "";
+    results.slice(0, 8).forEach((acq, index) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "acq-search-result";
+      option.id = `acq-search-result-${index}`;
+      option.setAttribute("role", "option");
+      option.dataset.id = acq.id;
+      option.textContent = `${acq.company} · ${acq.announced.slice(0, 4)}`;
+      option.addEventListener("click", () => {
+        focusAcquisition(acq.id);
+        popup.hidden = true;
+        input.setAttribute("aria-expanded", "false");
+      });
+      popup.appendChild(option);
+    });
+    popup.hidden = !results.length;
+    input.setAttribute("aria-expanded", String(results.length > 0));
+    if (results[0]) revealSearchResult(results[0]);
+    return results;
+  }
+
+  function clearSearchResults() {
+    const input = $("#acq-search");
+    const popup = $("#acq-search-results");
+    if (input) {
+      input.value = "";
+      input.setAttribute("aria-expanded", "false");
+      input.removeAttribute("aria-activedescendant");
+    }
+    if (popup) {
+      popup.innerHTML = "";
+      popup.hidden = true;
+    }
+    ACQ.searchQuery = "";
+  }
+
+  function setFilter(filter, label) {
+    ACQ.filter = filter;
+    ACQ.focusedId = null;
+    ACQ.expandedYear = null;
+    $("#acq-focus")?.classList.remove("show");
+    const button = $("#acq-filter-btn");
+    const menu = $("#acq-filter-menu");
+    if (button) {
+      button.textContent = `Filters: ${label}`;
+      button.setAttribute("aria-expanded", "false");
+    }
+    if (menu) menu.hidden = true;
+    menu?.querySelectorAll("[data-acq-filter]").forEach(item => {
+      item.setAttribute("aria-checked", String(item.dataset.acqFilter === filter));
+    });
+    renderAcquisitionTimeline();
+  }
+
+  function buildFilterMenu() {
+    const menu = $("#acq-filter-menu");
+    if (!menu) return;
+    const filters = [
+      { id: "all", label: "All" },
+      { id: "featured", label: "Megadeals" },
+      ...(window.CPN_ACQUISITIONS?.eraBands || []).map(band => ({
+        id: band.id,
+        label: band.label,
+      })),
+    ];
+    filters.forEach(filter => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.setAttribute("role", "menuitemradio");
+      item.setAttribute("aria-checked", String(filter.id === ACQ.filter));
+      item.dataset.acqFilter = filter.id;
+      item.textContent = filter.label;
+      item.addEventListener("click", () => setFilter(filter.id, filter.label));
+      menu.appendChild(item);
+    });
+  }
+
   function testState() {
     const canvasRect = document.querySelector("#acq-canvas")?.getBoundingClientRect();
     const intersectsCanvas = rect => canvasRect &&
@@ -547,19 +741,32 @@
         <div id="acq-layer-eras" class="acq-layer" data-depth="0.08"></div>
       </div>
       <div id="acq-head">
-        <div>
+        <div class="acq-heading">
           <div class="acq-title">Acquisition History</div>
           <div class="acq-sub">${window.CPN_ACQUISITIONS.acquisitions.length} companies · scroll to explore · click a logo for details · sources: Wikipedia & Cisco</div>
+          <div id="acq-current-period" aria-live="polite"></div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <div class="acq-head-controls">
+          <div class="acq-search-wrap">
+            <label class="acq-sr-only" for="acq-search">Search acquisitions</label>
+            <input id="acq-search" type="search" placeholder="Search acquisitions"
+              role="combobox" aria-autocomplete="list" aria-controls="acq-search-results"
+              aria-expanded="false" autocomplete="off"/>
+            <div id="acq-search-results" role="listbox" hidden></div>
+          </div>
+          <button type="button" class="rc-btn acq-nav-btn" id="acq-prev" aria-label="Previous acquisition">←</button>
+          <button type="button" class="rc-btn acq-nav-btn" id="acq-next" aria-label="Next acquisition">→</button>
           <div class="acq-zoom" role="group" aria-label="Zoom">
             <button type="button" id="acq-zoom-out" title="Zoom out">−</button>
             <div class="acq-zoom-lvl" id="acq-zoom-lvl">100%</div>
             <button type="button" id="acq-zoom-in" title="Zoom in">+</button>
             <button type="button" id="acq-zoom-fit" title="Fit timeline" style="border-left:1px solid var(--border);font-size:10px">FIT</button>
           </div>
-          <button type="button" class="acq-filter-chip active" data-acq-filter="all">All</button>
-          <button type="button" class="acq-filter-chip" data-acq-filter="featured">Megadeals</button>
+          <div class="acq-filter-wrap">
+            <button type="button" class="rc-btn" id="acq-filter-btn"
+              aria-haspopup="true" aria-expanded="false">Filters: All</button>
+            <div id="acq-filter-menu" role="menu" hidden></div>
+          </div>
           <button type="button" class="rc-btn" id="acq-close">Close</button>
         </div>
       </div>
@@ -570,6 +777,7 @@
             <h3 id="acq-focus-title"></h3>
             <div id="acq-focus-meta"></div>
             <div id="acq-focus-summary"></div>
+            <a id="acq-focus-source" target="_blank" rel="noopener noreferrer" hidden></a>
           </div>
           <div id="acq-focus-actions">
             <button type="button" class="rc-btn" id="acq-focus-jump" hidden>View in portfolio →</button>
@@ -587,6 +795,7 @@
     document.body.appendChild(wrap);
 
     buildParticles($("#acq-particles"));
+    buildFilterMenu();
 
     $("#acq-close")?.addEventListener("click", closeAcquisitionTimeline);
     $("#acq-focus-clear")?.addEventListener("click", () => {
@@ -597,29 +806,58 @@
     $("#acq-zoom-in")?.addEventListener("click", () => setAcqZoom(ACQ.zoom * 1.25));
     $("#acq-zoom-out")?.addEventListener("click", () => setAcqZoom(ACQ.zoom / 1.25));
     $("#acq-zoom-fit")?.addEventListener("click", fitAcqZoom);
-
-    wrap.querySelectorAll("[data-acq-filter]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        ACQ.filter = btn.dataset.acqFilter;
-        wrap.querySelectorAll("[data-acq-filter]").forEach(b => b.classList.toggle("active", b === btn));
-        renderAcquisitionTimeline();
-      });
+    $("#acq-prev")?.addEventListener("click", () => focusRelative(-1));
+    $("#acq-next")?.addEventListener("click", () => focusRelative(1));
+    $("#acq-search")?.addEventListener("input", renderSearchResults);
+    $("#acq-search")?.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        const first = searchAcquisitions(event.currentTarget.value)[0];
+        if (!first) return;
+        event.preventDefault();
+        focusAcquisition(first.id);
+        clearSearchResults();
+        $("#acq-inner")?.querySelector(`.acq-card[data-id="${CSS.escape(first.id)}"]`)
+          ?.focus({ preventScroll: true });
+      } else if (event.key === "Escape" && ACQ.searchQuery) {
+        event.preventDefault();
+        event.stopPropagation();
+        clearSearchResults();
+      }
     });
-
-    (window.CPN_ACQUISITIONS.eraBands || []).forEach(b => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "acq-filter-chip";
-      btn.dataset.acqFilter = b.id;
-      btn.textContent = b.label.split(" ")[0];
-      btn.title = b.label;
-      btn.addEventListener("click", () => {
-        ACQ.filter = b.id;
-        wrap.querySelectorAll("[data-acq-filter]").forEach(x => x.classList.remove("active"));
-        btn.classList.add("active");
-        renderAcquisitionTimeline();
-      });
-      $("#acq-head > div:last-child")?.insertBefore(btn, $("#acq-close"));
+    $("#acq-filter-btn")?.addEventListener("click", event => {
+      const button = event.currentTarget;
+      const menu = $("#acq-filter-menu");
+      const open = button.getAttribute("aria-expanded") !== "true";
+      button.setAttribute("aria-expanded", String(open));
+      if (menu) menu.hidden = !open;
+      if (open) menu?.querySelector('[aria-checked="true"]')?.focus();
+    });
+    document.addEventListener("click", event => {
+      if (event.target.closest(".acq-filter-wrap")) return;
+      const menu = $("#acq-filter-menu");
+      if (menu) menu.hidden = true;
+      $("#acq-filter-btn")?.setAttribute("aria-expanded", "false");
+    });
+    document.addEventListener("keydown", event => {
+      if (!$("#acq-wrap")?.classList.contains("show")) return;
+      if (event.key === "Escape") {
+        if (ACQ.searchQuery) {
+          clearSearchResults();
+        } else if (!$("#acq-filter-menu")?.hidden) {
+          $("#acq-filter-menu").hidden = true;
+          $("#acq-filter-btn")?.setAttribute("aria-expanded", "false");
+          $("#acq-filter-btn")?.focus();
+        } else {
+          closeAcquisitionTimeline();
+        }
+        event.preventDefault();
+        return;
+      }
+      if (event.target.matches("input, textarea, [contenteditable='true']")) return;
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        focusRelative(event.key === "ArrowLeft" ? -1 : 1);
+      }
     });
 
     const canvas = $("#acq-canvas");
@@ -667,6 +905,7 @@
     window.__cpnV2?.phases?.closeTimelineView?.();
     renderAcquisitionTimeline();
     fitAcqZoom();
+    $("#acq-search")?.focus({ preventScroll: true });
   }
 
   function closeAcquisitionTimeline() {
@@ -674,6 +913,7 @@
     document.body.classList.remove("acq-open");
     $("#tools-acquisitions")?.classList.remove("active");
     ACQ.focusedId = null;
+    clearSearchResults();
     $("#acq-focus")?.classList.remove("show");
   }
 
@@ -692,6 +932,8 @@
     getSemanticLevel,
     layoutOverviewByYear,
     layoutExploreCards,
+    searchAcquisitions,
+    focusRelative,
     testState,
   };
 })();
