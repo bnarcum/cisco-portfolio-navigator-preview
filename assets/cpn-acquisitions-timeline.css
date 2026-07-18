@@ -453,10 +453,40 @@ body.acq-open #tools {
   text-align: center;
   color: var(--text);
   display: -webkit-box;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: var(--acq-name-lines, 1);
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 11px;
+}
+
+#acq-canvas[data-name-tier="2"] .acq-card-name {
+  -webkit-line-clamp: 2;
+  min-height: 22px;
+}
+
+#acq-canvas[data-name-tier="3"] .acq-card-name {
+  -webkit-line-clamp: 3;
+  min-height: 33px;
+  font-size: 10px;
+}
+
+#acq-canvas[data-name-tier="full"] .acq-card-name {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  white-space: normal;
+  word-break: break-word;
+  min-height: 0;
+  font-size: 10px;
+}
+
+#acq-canvas[data-name-tier="3"] .acq-card-logo-wrap,
+#acq-canvas[data-name-tier="full"] .acq-card-logo-wrap {
+  height: 32px;
+}
+
+#acq-canvas[data-name-tier="full"] .acq-year-expansion-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .acq-card-year {

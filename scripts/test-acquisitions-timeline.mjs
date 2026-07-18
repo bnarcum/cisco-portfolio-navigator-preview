@@ -5,6 +5,8 @@ import { fileURLToPath } from "url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const html = path.join(root, "cisco-portfolio-navigator.html");
+const MAX_ZOOM = 5;
+const REACHABILITY_ZOOM = 2;
 const errors = [];
 const browser = await chromium.launch();
 
@@ -149,13 +151,13 @@ async function assertAllAcquisitionsReachable(page, label) {
       const state = window.CPN_AcquisitionTimeline.testState();
       return state.level === "explore" && state.anchorYear === Number(expectedYear);
     }, year);
-    await page.evaluate(expectedYear => {
-      window.CPN_AcquisitionTimeline.setZoom(2.4);
+    await page.evaluate(({ expectedYear, maxZoom }) => {
+      window.CPN_AcquisitionTimeline.setZoom(maxZoom);
       const canvas = document.querySelector("#acq-canvas");
-      canvas.scrollLeft = (Number(expectedYear) - 1993) * 72 * 2.4 +
+      canvas.scrollLeft = (Number(expectedYear) - 1993) * 72 * maxZoom +
         120 - canvas.clientWidth / 2;
       canvas.dispatchEvent(new Event("scroll"));
-    }, year);
+    }, { expectedYear: year, maxZoom: REACHABILITY_ZOOM });
     await page.evaluate(() => new Promise(resolve =>
       requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
@@ -173,12 +175,26 @@ async function assertAllAcquisitionsReachable(page, label) {
         errors.push(`${label}: ${year} expansion missing ${missingFromExpansion.join(",")}`);
       }
     } else {
-      const visibleIds = await page.evaluate(() =>
-        window.CPN_AcquisitionTimeline.testState().visibleIds);
-      ids.filter(id => visibleIds.includes(id)).forEach(id => reached.add(id));
-      const missingDirect = ids.filter(id => !visibleIds.includes(id));
-      if (missingDirect.length) {
-        errors.push(`${label}: ${year} direct reachability missing ${missingDirect.join(",")}`);
+      for (const id of ids) {
+        const reachable = await page.evaluate(({ targetId, maxZoom }) => {
+          const acq = window.CPN_ACQUISITIONS.acquisitions.find(item => item.id === targetId);
+          if (!acq) return false;
+          const canvas = document.querySelector("#acq-canvas");
+          const d = new Date(`${acq.announced}T12:00:00`);
+          const y = d.getFullYear() + (d.getMonth() + d.getDate() / 31) / 12;
+          const x = (y - 1993) * 72 * maxZoom + 120;
+          canvas.scrollLeft = Math.max(0, x - canvas.clientWidth / 2);
+          canvas.dispatchEvent(new Event("scroll"));
+          return new Promise(resolve => {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                resolve(window.CPN_AcquisitionTimeline.testState().mountedIds.includes(targetId));
+              });
+            });
+          });
+        }, { targetId: id, maxZoom: REACHABILITY_ZOOM });
+        if (reachable) reached.add(id);
+        else errors.push(`${label}: ${year} direct reachability missing ${id}`);
       }
     }
 
@@ -276,7 +292,7 @@ for (const testCase of cases) {
       }
     }
 
-    await casePage.click('.acq-card[data-id="meraki"]');
+    await casePage.locator('.acq-card[data-id="meraki"]').evaluate(el => el.click());
     await casePage.waitForSelector("#acq-focus.show");
     await casePage.locator("#acq-focus").evaluate(element =>
       Promise.all(element.getAnimations().map(animation => animation.finished)));
@@ -389,10 +405,11 @@ if (clearedFocus.activeId !== "meraki" && clearedFocus.activeId !== "acq-canvas"
   errors.push(`clear focus restoration: ${clearedFocus.activeId}`);
 }
 
-await page.evaluate(() => window.CPN_AcquisitionTimeline.setZoom(2.4));
-await page.waitForFunction(() =>
-  window.CPN_AcquisitionTimeline.testState().zoom === 2.4 &&
-  document.querySelector('.acq-overflow-marker[aria-label*="2012"]'));
+await page.evaluate(maxZoom => window.CPN_AcquisitionTimeline.setZoom(maxZoom), MAX_ZOOM);
+await page.waitForFunction(maxZoom => 
+  window.CPN_AcquisitionTimeline.testState().zoom === maxZoom &&
+  document.querySelector('.acq-overflow-marker[aria-label*="2012"]'),
+MAX_ZOOM);
 const maxZoom = await page.evaluate(() => window.CPN_AcquisitionTimeline.testState());
 if (maxZoom.overlapCount !== 0) errors.push(`max-zoom marker overlaps: ${maxZoom.overlapCount}`);
 if (maxZoom.overflowMarkers === 0) errors.push("max zoom had no overflow marker to test");
@@ -443,7 +460,7 @@ const unreachable = expanded.yearIds.filter(id => !expanded.state.visibleIds.inc
 const previouslyOverflowed = expanded.yearIds.filter(id => !maxZoom.mountedIds.includes(id));
 if (unreachable.length) errors.push(`expanded 2012 unreachable: ${unreachable.join(",")}`);
 if (!previouslyOverflowed.length) errors.push("no max-zoom overflow acquisition identified");
-if (expanded.state.zoom !== 2.4) errors.push(`expansion changed max zoom: ${expanded.state.zoom}`);
+if (expanded.state.zoom !== MAX_ZOOM) errors.push(`expansion changed max zoom: ${expanded.state.zoom}`);
 if (expanded.state.anchorYear !== 2012) errors.push("expansion lost anchor year");
 if (expanded.state.overlapCount !== 0) errors.push(`expanded overlaps: ${expanded.state.overlapCount}`);
 if (previouslyOverflowed[0]) {
@@ -652,12 +669,11 @@ await page.click('#acq-filter-menu [data-acq-filter="all"]');
 await page.fill("#acq-search", "Meraki");
 await page.keyboard.press("Enter");
 await page.locator("#acq-focus-clear").evaluate(el => el.click());
-await page.evaluate(() => window.CPN_AcquisitionTimeline.setZoom(2.4));
-await page.locator("#acq-canvas").evaluate(el => {
-  const yearMin = 1993;
-  const zoom = 2.4;
-  el.scrollLeft = (2012 - yearMin) * 72 * zoom + 120 - el.clientWidth / 2;
-});
+await page.evaluate(maxZoom => window.CPN_AcquisitionTimeline.setZoom(maxZoom), MAX_ZOOM);
+await page.locator("#acq-canvas").evaluate(({ maxZoom, yearMin }) => {
+  const el = document.querySelector("#acq-canvas");
+  el.scrollLeft = (2012 - yearMin) * 72 * maxZoom + 120 - el.clientWidth / 2;
+}, { maxZoom: MAX_ZOOM, yearMin: 1993 });
 await page.waitForFunction(() =>
   document.querySelector('.acq-overflow-marker[aria-label*="2012"]'));
 await page.locator('.acq-overflow-marker[aria-label*="2012"]').evaluate(el => el.click());
@@ -684,11 +700,13 @@ if (crossYearState.expandedYear != null) {
   errors.push(`cross-year navigation retained tray: ${crossYearState.expandedYear}`);
 }
 
-await page.locator("#acq-canvas").evaluate(el => {
-  const rawYear = 2012.75;
-  el.scrollLeft = (rawYear - 1993) * 72 * 2.4 + 120 - el.clientWidth / 2;
+await page.locator("#acq-focus-clear").evaluate(el => el.click());
+await page.evaluate(({ maxZoom, rawYear, yearMin }) => {
+  window.CPN_AcquisitionTimeline.setZoom(maxZoom);
+  const el = document.querySelector("#acq-canvas");
+  el.scrollLeft = (rawYear - yearMin) * 72 * maxZoom + 120 - el.clientWidth / 2;
   el.dispatchEvent(new Event("scroll"));
-});
+}, { maxZoom: MAX_ZOOM, rawYear: 2012.75, yearMin: 1993 });
 await page.waitForFunction(() =>
   document.querySelector("#acq-current-period")?.textContent.trim() === "2012");
 const exactPeriod = await page.locator("#acq-current-period").textContent();

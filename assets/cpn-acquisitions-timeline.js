@@ -8,7 +8,7 @@
   const ACQ = {
     zoom: 1,
     minZoom: 0.35,
-    maxZoom: 2.4,
+    maxZoom: 5,
     filter: "all",
     focusedId: null,
     yearMin: 1993,
@@ -130,6 +130,24 @@
   function getSemanticLevel(zoom = ACQ.zoom) {
     if (ACQ.focusedId) return "focus";
     return zoom < 0.78 ? "overview" : "explore";
+  }
+
+  function exploreCardWidth(zoom = ACQ.zoom) {
+    const exploreStart = 0.78;
+    if (zoom <= exploreStart) return ACQ.cardW;
+    return Math.min(240, Math.round(ACQ.cardW * (1 + (zoom - exploreStart) * 0.45)));
+  }
+
+  function nameDisplayTier(zoom = ACQ.zoom) {
+    if (zoom >= 4) return "full";
+    if (zoom >= 2.8) return "3";
+    if (zoom >= 1.6) return "2";
+    return "1";
+  }
+
+  function updateCanvasNameTier() {
+    const canvas = $("#acq-canvas");
+    if (canvas) canvas.dataset.nameTier = nameDisplayTier();
   }
 
   function prefersReducedMotion() {
@@ -268,7 +286,7 @@
     if (ACQ.focusedId === a.id) card.classList.add("focused");
     card.style.setProperty("--tx", `${x}px`);
     card.style.setProperty("--ty", `${y}px`);
-    card.style.setProperty("--acq-card-w", "88px");
+    card.style.setProperty("--acq-card-w", `${exploreCardWidth()}px`);
     card.dataset.id = a.id;
     card.dataset.identity = a.visualIdentity?.kind || "";
     card.dataset.identitySource = a.visualIdentity?.source || "";
@@ -307,7 +325,9 @@
       renderExpandedYear(inner, list, canvas);
       return;
     }
-    const placements = layoutExploreCards(list, { mid });
+    const cardW = exploreCardWidth();
+    const laneH = Math.round(128 * Math.min(1.45, cardW / ACQ.cardW));
+    const placements = layoutExploreCards(list, { mid, cardW, laneH });
     if (ACQ.focusedId) {
       const selected = placements.find(placement =>
         placement.overflow && placement.acq.id === ACQ.focusedId);
@@ -351,7 +371,7 @@
         overflows.set(placement.year, bucket);
         return;
       }
-      if (placement.x + ACQ.cardW < minX || placement.x > maxX) return;
+      if (placement.x + cardW < minX || placement.x > maxX) return;
       inner.appendChild(createAcquisitionCard(placement, index));
     });
 
@@ -589,6 +609,7 @@
   }
 
   function onScroll() {
+    updateCurrentPeriod();
     cancelAnimationFrame(ACQ.raf);
     ACQ.raf = requestAnimationFrame(() => {
       const inner = $("#acq-inner");
@@ -632,6 +653,7 @@
     const newContentX = timelineFrac * ACQ.pxPerYear * next + 120;
     const maxScroll = Math.max(0, canvas.scrollWidth - canvas.clientWidth);
     canvas.scrollLeft = Math.max(0, Math.min(maxScroll, newContentX - viewportX));
+    updateCanvasNameTier();
     updateParallax();
   }
 
@@ -710,8 +732,10 @@
     updateZoomUi();
     renderAcquisitionTimeline();
     canvas.scrollTo({ left: 0, behavior: "auto" });
+    canvas.scrollLeft = 0;
     renderCards($("#acq-inner"));
     updateParallax();
+    updateCanvasNameTier();
   }
 
   function clearAcquisitionFocus({ restoreFocus = true } = {}) {
@@ -746,6 +770,7 @@
     renderYearTicks(inner);
     renderCards(inner);
     updateParallax();
+    updateCanvasNameTier();
   }
 
   function revealSearchResult(acq) {
@@ -927,6 +952,7 @@
       overflowMarkers: document.querySelectorAll(".acq-overflow-marker").length,
       overlapCount,
       zoom: ACQ.zoom,
+      maxZoom: ACQ.maxZoom,
       anchorYear: ACQ.anchorYear,
       expandedYear: ACQ.expandedYear,
       focusedId: ACQ.focusedId,
