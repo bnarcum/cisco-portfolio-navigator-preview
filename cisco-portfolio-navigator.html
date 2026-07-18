@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="3.1.0";
+  window.__CPN_BUILD="3.1.1";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -6065,6 +6065,10 @@ function applyPillarNodeVisualState(selectedNode){
       .attr("stroke-width", hot ? 2.75 : (boosted ? 2.5 : 2.25))
       .attr("stroke-opacity", hot ? 1 : (boosted ? 1 : 0.94));
     g.select(".node-scaler").attr("transform", (isSel || isHov) ? "scale(1.06)" : null);
+    g.select("use.icn")
+      .attr("href", "#icon-" + iconKey(nd))
+      .attr("opacity", 1)
+      .style("display", nd._hasImage ? "none" : null);
   });
   updateCanvasFocusState();
 }
@@ -6236,6 +6240,10 @@ function applyCompositionInteractionStyles(selectedNode){
     const labelStyle = compositionLabelStyle(nd);
     const GL = graphLabels();
     g.select("text.nl").style("fill", isSel || isHov ? GL.active : labelStyle.fill);
+    g.select("use.icn")
+      .attr("href", "#icon-" + iconKey(nd))
+      .attr("opacity", dim ? 0.22 : 1)
+      .style("display", nd._hasImage ? "none" : null);
   });
   if (lviz){
     const spokeHot = !!(compositionHoverId || (selectedNode && selectedNode._kind === "product"));
@@ -15568,11 +15576,12 @@ function applyRefArch(ucName){
   const arch = REF_ARCH[ucName]; if (!arch) return;
   activeRefArch = ucName;
   const setIds = new Set(arch.products);
+  const skipIcnDim = viewMode === "composition" || (typeof usePillarLayout === "function" && usePillarLayout());
   ndEl.each(function(nd){
     const inA = setIds.has(nd.id);
     d3.select(this).select(".gr").attr("fill-opacity", inA ? 0.35 : 0);
     d3.select(this).select(".mc").attr("fill-opacity", inA ? 1 : 0.08).attr("stroke", inA ? "#fff" : "transparent").attr("stroke-width", inA ? 2 : 0);
-    d3.select(this).select(".icn").attr("opacity", inA ? 1 : 0.1);
+    if (!skipIcnDim) d3.select(this).select(".icn").attr("opacity", inA ? 1 : 0.1);
     d3.select(this).select(".nl").style("fill", inA ? graphLabels().active : graphLabels().default);
   });
   lviz.each(function(l){
@@ -15598,16 +15607,29 @@ function clearRefArch(){
 /* Phase 3 — Outcomes graph lens: highlight the families that address a problem,
    even when it doesn't map to a named reference architecture. Reuses the
    refarch badge chrome for a consistent look. */
+function restoreGraphNodeIcons(){
+  try {
+    if (typeof viewMode === "undefined" || typeof ndEl === "undefined" || !ndEl) return;
+    if (viewMode === "composition" && typeof applyCompositionNodeStyles === "function") applyCompositionNodeStyles();
+    else if (typeof usePillarLayout === "function" && usePillarLayout() && typeof applyPillarNodeVisualState === "function") applyPillarNodeVisualState(typeof selected !== "undefined" ? selected : null);
+    else if (viewMode === "all-products" && typeof applyAllProductsNodeStyles === "function") applyAllProductsNodeStyles(typeof selected !== "undefined" ? selected : null);
+    else if (typeof selected !== "undefined" && selected && typeof applyConnectionHighlight === "function") applyConnectionHighlight(selected);
+    else ndEl.select("use.icn").attr("opacity", 1).style("display", d => d._hasImage ? "none" : null);
+  } catch (e) { /* noop */ }
+}
+window.restoreGraphNodeIcons = restoreGraphNodeIcons;
+
 function highlightProblemFamilies(prob){
   if (!prob || typeof ndEl === "undefined" || !ndEl) return;
   const setIds = new Set(prob.families || []);
+  const skipIcnDim = viewMode === "composition" || (typeof usePillarLayout === "function" && usePillarLayout());
   activeRefArch = null;
   ndEl.each(function(nd){
     const inA = setIds.has(nd.id);
     d3.select(this).select(".gr").attr("fill-opacity", inA ? 0.35 : 0);
     d3.select(this).select(".mc").attr("fill-opacity", inA ? 1 : 0.08)
       .attr("stroke", inA ? "#2dce5c" : "transparent").attr("stroke-width", inA ? 2 : 0);
-    d3.select(this).select(".icn").attr("opacity", inA ? 1 : 0.1);
+    if (!skipIcnDim) d3.select(this).select(".icn").attr("opacity", inA ? 1 : 0.1);
     d3.select(this).select(".nl").style("fill", inA ? graphLabels().active : graphLabels().default);
   });
   if (typeof lviz !== "undefined" && lviz){
@@ -17345,11 +17367,11 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/cpn-problems.js?v=3.1.0"></script>
-<script src="assets/cpn-outcome-card.js?v=3.1.0"></script>
-<script src="assets/cpn-cloud-control-ops.js?v=3.1.0"></script>
-<script src="assets/cpn-lazy-load.js?v=3.1.0"></script>
-<script src="assets/cpn-kiosk.js?v=3.1.0"></script>
+<script src="assets/cpn-problems.js?v=3.1.1"></script>
+<script src="assets/cpn-outcome-card.js?v=3.1.1"></script>
+<script src="assets/cpn-cloud-control-ops.js?v=3.1.1"></script>
+<script src="assets/cpn-lazy-load.js?v=3.1.1"></script>
+<script src="assets/cpn-kiosk.js?v=3.1.1"></script>
 <script src="assets/cpn-logo-intro.js?v=2.91.6"></script>
 </body>
 </html>

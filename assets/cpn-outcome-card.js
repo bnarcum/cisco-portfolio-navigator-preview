@@ -1,7 +1,6 @@
 /**
  * Node-attached outcome card — "Problems this solves" on the graph canvas.
- * One primary problem (+ expand), persona framing, and a consolidated Journey row:
- * Explore graph → Prove on dCloud → Investigate in AI Canvas → Skill up.
+ * One primary problem (+ expand) and persona framing.
  *
  * In Composition / Families views, opening the card reserves right chrome and
  * animates the graph left; closing animates back.
@@ -75,94 +74,6 @@
     return 0;
   }
 
-  function dcloudJourneyForFamily(familyId, problems) {
-    const pathId = (problems || []).map(p => p.dcloudPath).find(Boolean);
-    if (!pathId) return null;
-    try {
-      const paths = typeof DCLOUD_PATHS !== "undefined" ? DCLOUD_PATHS : [];
-      const path = paths.find(p => p.id === pathId);
-      if (!path) return null;
-      const entries = typeof dcloudPathEntries === "function" ? dcloudPathEntries(path) : [];
-      const url = entries.length && typeof dcloudPrimaryUrl === "function" ? dcloudPrimaryUrl(entries[0]) : null;
-      return url ? { title: path.title, url } : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function opsFamilyFor(familyId, problems) {
-    const ops = window.__cpnOps;
-    if (!ops) return null;
-    if (ops.hasOps(familyId)) return familyId;
-    for (const p of problems || []) {
-      const hit = (p.families || []).find(f => ops.hasOps(f));
-      if (hit) return hit;
-    }
-    return null;
-  }
-
-  function learnJourneyFor(familyId) {
-    try {
-      if (typeof learningLinksFor !== "function") return null;
-      const pack = learningLinksFor({ familyId, kind: "node" });
-      const e = pack?.skills?.[0];
-      if (!e?.url) return null;
-      return { label: e.linkLabel || e.name || "Skill up", url: e.url };
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function journeySteps(familyId, primaryProb, problems) {
-    const steps = [];
-    if (primaryProb) {
-      steps.push({ key: "explore", label: "Explore graph", kind: "btn", probId: primaryProb.id });
-    }
-    const dc = dcloudJourneyForFamily(familyId, problems);
-    if (dc) {
-      steps.push({ key: "dcloud", label: "Prove on dCloud", kind: "link", url: dc.url, hint: dc.title });
-    }
-    const opsFam = opsFamilyFor(familyId, problems);
-    if (opsFam) {
-      steps.push({ key: "canvas", label: "AI Canvas", kind: "btn", familyId: opsFam });
-    }
-    const learn = learnJourneyFor(familyId);
-    if (learn) {
-      steps.push({ key: "learn", label: "Skill up", kind: "link", url: learn.url, hint: learn.label });
-    }
-    return steps;
-  }
-
-  function journeyShortLabel(s) {
-    if (s.key === "explore") return "Explore";
-    if (s.key === "dcloud") return "dCloud";
-    if (s.key === "canvas") return "AI Canvas";
-    if (s.key === "learn") return "Skill up";
-    return s.label;
-  }
-
-  function renderJourneyHtml(steps) {
-    if (!steps.length) return "";
-    const nodes = steps.map((s, i) => {
-      const line = i > 0 ? `<span class="oc-j-line" aria-hidden="true"></span>` : "";
-      const label = escapeHtml(journeyShortLabel(s));
-      if (s.kind === "link") {
-        return `${line}<a class="oc-j-node" href="${escapeAttr(s.url)}" target="_blank" rel="noopener" title="${escapeAttr(s.hint || s.label)}">${label}</a>`;
-      }
-      if (s.key === "explore") {
-        return `${line}<button type="button" class="oc-j-node" data-ocj-explore="${escapeAttr(s.probId)}">${label}</button>`;
-      }
-      if (s.key === "canvas") {
-        return `${line}<button type="button" class="oc-j-node oc-j-node--canvas" data-ocj-canvas="${escapeAttr(s.familyId)}">${label}</button>`;
-      }
-      return "";
-    }).join("");
-    return `<div class="oc-journey">
-      <div class="oc-journey-label">Journey</div>
-      <div class="oc-journey-flow">${nodes}</div>
-    </div>`;
-  }
-
   function escapeHtml(s) {
     if (typeof window.escapeHtml === "function") return window.escapeHtml(s);
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -210,6 +121,7 @@
         const val = btn.dataset.ocPersona;
         const cur = typeof currentPersona === "function" ? currentPersona() : "";
         if (typeof setPersona === "function") setPersona(val === cur ? "" : val);
+        if (typeof restoreGraphNodeIcons === "function") restoreGraphNodeIcons();
         showOutcomeCard(familyId, anchorNode, { skipGraphPush: true });
       });
     });
@@ -220,11 +132,7 @@
     card.querySelectorAll("[data-ocj-explore]").forEach(btn => {
       btn.addEventListener("click", () => {
         if (typeof exploreProblem === "function") exploreProblem(btn.dataset.ocjExplore);
-      });
-    });
-    card.querySelectorAll("[data-ocj-canvas]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        if (typeof openCloudControlBriefing === "function") openCloudControlBriefing(btn.dataset.ocjCanvas);
+        if (typeof restoreGraphNodeIcons === "function") restoreGraphNodeIcons();
       });
     });
   }
@@ -276,7 +184,6 @@
         ${showRest ? rest.map((p, i) => problemBlockHtml(p, persona, P, { withDivider: true })).join("") : ""}
         ${moreBtn}
       </div>
-      ${renderJourneyHtml(journeySteps(familyId, primary, problems))}
       <div class="oc-note" title="${escapeAttr(P.DISCLAIMER)}">Directional talking points · not guarantees</div>`;
 
     wireCard(card, familyId, primary);

@@ -63,16 +63,19 @@ try {
   // 2) Canvas outcome card renders + persona toggle (not side panel)
   const card = await page.evaluate(async () => {
     await new Promise(r => setTimeout(r, 800)); // dCloud/learning links load
+    document.querySelector('[data-vm="families"]')?.click();
+    await new Promise(r => setTimeout(r, 350));
     window.setPersona("");
     window.__cpnOutcomeCard.show("sdwan", window.nodeById["sdwan"]);
     const el = document.getElementById("outcome-card");
+    // Simulate stale dimmed icons from an explore highlight.
+    document.querySelectorAll("use.icn").forEach(n => n.setAttribute("opacity", "0.1"));
     const out = {
       visible: el?.style.display !== "none",
-      hasJourney: !!el?.querySelector(".oc-journey"),
-      journeySteps: el?.querySelectorAll(".oc-j-node").length || 0,
       hasProof: !!el?.querySelector(".oc-compare"),
       personaChips: el?.querySelectorAll(".oc-persona").length || 0,
-      noPanelBlock: !document.querySelector("#pbody .p-prob")
+      noPanelBlock: !document.querySelector("#pbody .p-prob"),
+      noJourney: !el?.querySelector(".oc-journey")
     };
     const grab = () => {
       const c = document.getElementById("outcome-card");
@@ -89,17 +92,21 @@ try {
     out.personaChanged = net.headline !== ciso.headline;
     out.quoteChanged = net.quote !== ciso.quote;
     out.proofChanged = net.after !== ciso.after;
+    // Persona toggle must restore graph icons (not leave them dimmed/blank).
+    const icnOpacities = Array.from(document.querySelectorAll("#gs use.icn"))
+      .map(n => parseFloat(n.getAttribute("opacity") || "1"));
+    out.iconsRestored = icnOpacities.length > 0 && icnOpacities.every(o => o >= 0.9);
     window.setPersona("");
     return out;
   });
   if (!card.visible) errors.push("canvas: outcome card did not show");
-  if (!card.hasJourney) errors.push("canvas: missing Journey block");
-  if (card.journeySteps < 2) errors.push(`canvas: expected >=2 journey steps, got ${card.journeySteps}`);
+  if (!card.noJourney) errors.push("canvas: journey section should be removed");
   if (!card.hasProof) errors.push("canvas: no proof line");
   if (card.personaChips !== 3) errors.push(`canvas: expected 3 persona chips, got ${card.personaChips}`);
   if (!card.personaChanged) errors.push("canvas: persona toggle did not change outcome");
   if (!card.quoteChanged) errors.push("canvas: persona toggle did not change symptom quote");
   if (!card.proofChanged) errors.push("canvas: persona toggle did not change before/after proof");
+  if (!card.iconsRestored) errors.push("canvas: persona toggle left graph icons dimmed");
   if (!card.noPanelBlock) errors.push("side panel should not contain .p-prob block");
 
   // 3) Analyze a stack -> Outcomes tab + reframed suggestions/bundles
