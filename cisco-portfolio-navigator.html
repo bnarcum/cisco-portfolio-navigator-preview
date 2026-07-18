@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="3.2.0";
+  window.__CPN_BUILD="3.2.1";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -1789,7 +1789,7 @@ const AI_DC_SET = new Set([
   "nexus", "aci", "nexus-dashboard", "nexus-one", "silicon-one", "ucs", "hyperflex", "intersight"
 ]);
 const WORKPLACES_SET = new Set([
-  "webex-app", "webex-meetings", "webex-calling", "webex-cc", "webex-connect",
+  "webex-app", "webex-meetings", "webex-calling", "unified-cm", "webex-cc", "webex-connect",
   "room-systems", "desk-devices", "ip-phones", "conf-phones", "cisco-headsets",
   "cloud-control",
   "catalyst-access", "catalyst-core", "catalyst-wireless",
@@ -2041,11 +2041,17 @@ const NODES = [
    url:"https://www.webex.com/video-conferencing.html",
    docsUrl:"https://www.webex.com/video-conferencing.html"},
   {id:"webex-calling",     name:"Webex Calling",               category:"collaboration",
-   desc:"Cloud calling replacing on-premises PBX/CUCM with enterprise-grade calling, voicemail, and PSTN — fully integrated with Webex and Contact Center.",
+   desc:"Enterprise cloud calling with multi-tenant and Dedicated Instance options, flexible PSTN, survivability, and coexistence with on-premises call control.",
    useCases:["Hybrid Work","Digital Transformation","Contact Center"],
    industries:["Healthcare","Financial Services","Education","Retail","Government"],
    url:"https://www.webex.com/cloud-calling.html",
    docsUrl:"https://www.webex.com/cloud-calling.html"},
+  {id:"unified-cm",        name:"Cisco Unified Communications Manager", category:"collaboration",
+   desc:"Current on-premises enterprise call and session control with rich calling features, secure signaling and media options, resiliency, and centralized administration.",
+   useCases:["Hybrid Work","Digital Transformation"],
+   industries:["Healthcare","Financial Services","Education","Government","Manufacturing"],
+   url:"https://www.cisco.com/c/en/us/products/unified-communications/unified-communications-manager-callmanager/index.html",
+   docsUrl:"https://www.cisco.com/c/en/us/support/unified-communications/unified-communications-manager-callmanager/series.html"},
   {id:"webex-cc",          name:"Webex Contact Center",        category:"collaboration",
    desc:"Cloud-native CCaaS with AI-powered routing, virtual agents, workforce management, real-time analytics, and omnichannel engagement.",
    useCases:["Contact Center","Digital Transformation","AI Networking"],
@@ -2065,7 +2071,7 @@ const NODES = [
    url:"https://www.cisco.com/c/en/us/products/collaboration-endpoints/index.html",
    docsUrl:"https://www.cisco.com/c/en/us/support/collaboration-endpoints/index.html"},
   {id:"ip-phones",         name:"Cisco IP Phones",             category:"collaboration",
-   desc:"IP Phone 6800, 8800, and 9800 series plus Video Phone 8875 — wired and wireless desk phones for Webex Calling, CUCM, or third-party call control.",
+   desc:"Current desk and wireless phones for Unified CM, Webex Calling, Dedicated Instance, and other supported call control, including 9800 Series AI audio and hardware-enabled security.",
    useCases:["Hybrid Work","Digital Transformation","Contact Center"],
    industries:["Healthcare","Financial Services","Education","Retail","Government"],
    url:"https://www.cisco.com/c/en/us/products/collaboration-endpoints/ip-phones/index.html",
@@ -2256,6 +2262,10 @@ const LINKS = [
   {source:"webex-meetings",   target:"room-systems",      type:"direct",   label:"Room integration"},
   {source:"webex-calling",    target:"webex-cc",          type:"direct",   label:"PSTN / routing"},
   {source:"webex-calling",    target:"ip-phones",         type:"direct",   label:"Registers phones"},
+  {source:"webex-calling",    target:"unified-cm",        type:"direct",   label:"Coexistence / migration"},
+  {source:"unified-cm",       target:"ip-phones",         type:"direct",   label:"Registers phones"},
+  {source:"unified-cm",       target:"webex-app",         type:"direct",   label:"Calling integration"},
+  {source:"unified-cm",       target:"sdwan",             type:"adjacent", label:"Voice transport"},
   {source:"webex-calling",    target:"conf-phones",       type:"direct",   label:"Conference rooms"},
   {source:"webex-cc",         target:"webex-connect",     type:"direct",   label:"Omnichannel"},
   {source:"desk-devices",     target:"cisco-headsets",    type:"adjacent", label:"Audio accessory"},
@@ -3411,6 +3421,14 @@ const PRODUCTS = [
   {id:"wxc-gov",        name:"Webex Calling for Government",  family:"webex-calling", status:"current",
    desc:"FedRAMP / DoD IL5 deployments — US government data residency, accreditation boundary, and dedicated infrastructure.",
    url:"https://www.webex.com/government.html"},
+  {id:"wxc-dedicated-instance", name:"Webex Calling Dedicated Instance", family:"webex-calling", status:"current",
+   desc:"Private-cloud Unified CM application stack within Webex Calling for organizations retaining established features, integrations, devices, and survivability requirements.",
+   url:"https://www.cisco.com/c/en/us/products/collateral/unified-communications/cisco-collaboration-flex-plan/collaboration-flex-plan3-data-sheet.html"},
+
+  // ── UNIFIED COMMUNICATIONS MANAGER (Current)
+  {id:"ucm-15",          name:"Cisco Unified Communications Manager 15", family:"unified-cm", status:"current",
+   desc:"Current on-premises enterprise call control with active maintenance releases, modern virtualization options, centralized administration, resiliency, and configurable signaling and media security.",
+   url:"https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cucm/rel_notes/15/SU4/cucm_b_release-notes-for-cucm-imp-15su4.html"},
 
   // ── WEBEX CONTACT CENTER (Current)
   {id:"wxcc-standard",  name:"Webex Contact Center Standard", family:"webex-cc", status:"current",
@@ -4187,8 +4205,8 @@ const LEGACY_NODES = [
    reason:"Catalyst Center replaces Prime with AI-driven intent-based management, automated provisioning, and real-time assurance."},
   {id:"l-ucsm",        name:"UCS Manager (UCSM)",         replaces:["intersight"],
    reason:"Intersight delivers cloud-delivered operations with AI insights, cross-domain management, and workload optimization beyond UCSM."},
-  {id:"l-cucm",        name:"Cisco CUCM (on-premises)",   replaces:["webex-calling"],
-   reason:"Webex Calling is the cloud successor to CUCM — eliminating PBX hardware refreshes and simplifying telephony administration."},
+  {id:"l-cucm",        name:"Unsupported CUCM release",   replaces:["unified-cm","webex-calling"],
+   reason:"Upgrade to a supported Unified CM release or evaluate an on-premises, cloud, or hybrid deployment model against operational, regulatory, resiliency, and integration requirements."},
   {id:"l-uccx",        name:"UCCX / UCCE (on-premises CC)", replaces:["webex-cc"],
    reason:"Webex Contact Center is the cloud migration path from UCCX/UCCE, adding AI routing, omnichannel, and workforce management."},
   {id:"l-asa-legacy",  name:"Cisco ASA (classic, no FTD)",  replaces:["sf-branch"],
@@ -5462,6 +5480,7 @@ function iconKey(n) {
   if (id === "ip-phones")                                        return "deskphone";
   if (id === "conf-phones")                                      return "conf-speaker";
   if (id === "webex-calling")                                    return "cloud-calling";
+  if (id === "unified-cm")                                       return "cloud-calling";
   if (id === "webex-cc")                                         return "agent";
   if (id === "cisco-headsets")                                   return "headset";
   // Computing
@@ -11135,11 +11154,12 @@ const TIERS = {
   "identity-intel":    {tier:"Identity Intelligence Subscription",    model:"Per-user subscription",       note:"Add-on to Duo or standalone; correlates IdP, NAC, and HR data."},
   "webex-app":         {tier:"Webex Suite (per user)",                model:"Per-user subscription",       note:"Suite combines Meetings + Calling + Messaging + Webinars + Vidcast + Slido + Polls."},
   "webex-meetings":    {tier:"Standalone or Webex Suite",             model:"Per-user subscription",       note:"Suite is generally lower TCO than standalone."},
-  "webex-calling":     {tier:"Professional / Standard / Workspace",   model:"Per-user/per-station subscription", note:"Professional adds Webex App + UC; Workspace is for shared phones/rooms."},
+  "webex-calling":     {tier:"Professional / Standard / Workspace / Dedicated Instance", model:"Per-user/per-station subscription", note:"Choose multi-tenant or Dedicated Instance based on feature, integration, and operational requirements."},
+  "unified-cm":        {tier:"Collaboration Flex Plan calling entitlement", model:"Subscription; customer-managed deployment", note:"Current on-premises Unified CM remains supported; maintain supported releases and applicable security configuration."},
   "webex-cc":          {tier:"Standard / Premium / Flex 3",           model:"Per-agent subscription",      note:"Premium adds digital channels, AI agent, WFO."},
   "room-systems":      {tier:"Webex Device Subscription (per device)", model:"Subscription",               note:"Includes RoomOS updates, AI features, and Webex Control Hub mgmt."},
   "desk-devices":      {tier:"Webex Device Subscription (per device)", model:"Subscription",               note:"Required for cloud registration + Webex AI features."},
-  "ip-phones":         {tier:"On-prem CUCM or Webex Calling registration", model:"Hardware + reg license",  note:"Webex Calling Workspace for shared phones."},
+  "ip-phones":         {tier:"Unified CM, Dedicated Instance, or Webex Calling registration", model:"Hardware + registration entitlement", note:"Platform support varies by phone model and software release."},
   "conf-phones":       {tier:"Webex Calling Workspace or on-prem",    model:"Hardware + reg license",      note:""},
   "cisco-headsets":    {tier:"Webex Headset Subscription (optional)", model:"Hardware",                    note:"Subscription unlocks advanced device analytics in Control Hub."},
   "webex-connect":     {tier:"Connect subscription + per-msg",         model:"Subscription + usage",       note:"Per-message billing for SMS/WhatsApp/Voice."},
@@ -13239,7 +13259,7 @@ const WIZARD_DOMAINS = [
 const WIZARD_LEGACY_TILES = [
   {id:"l-anyconnect", label:"VPN-only remote access", sub:"AnyConnect → Secure Access"},
   {id:"l-prime", label:"Prime Infrastructure", sub:"→ Catalyst Center"},
-  {id:"l-cucm", label:"On-prem phone (CUCM)", sub:"→ Webex Calling"},
+  {id:"l-cucm", label:"Unsupported CUCM release", sub:"→ Upgrade or evaluate deployment model"},
   {id:"l-uccx", label:"On-prem contact center", sub:"→ Webex CC"},
   {id:"l-asa-legacy", label:"Classic ASA firewalls", sub:"→ Secure Firewall"},
   {id:"l-vcs", label:"VCS / TelePresence", sub:"→ Room Systems"},
@@ -14384,7 +14404,7 @@ const LEARNING_SOURCES = {
   blackbelt: { label: "Black Belt", cta: "View track ↗" }
 };
 const COLLAB_LEARNING_FAMILIES = new Set([
-  "webex-app", "webex-meetings", "webex-calling", "webex-cc", "room-systems",
+  "webex-app", "webex-meetings", "webex-calling", "unified-cm", "webex-cc", "room-systems",
   "desk-devices", "ip-phones", "conf-phones", "cisco-headsets", "webex-connect", "cloud-control"
 ]);
 const SKILLS_SOURCES = ["webex-academy", "webex-help", "cisco-u"];
@@ -17385,11 +17405,11 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/cpn-problems.js?v=3.2.0"></script>
-<script src="assets/cpn-outcome-card.js?v=3.2.0"></script>
-<script src="assets/cpn-cloud-control-ops.js?v=3.2.0"></script>
-<script src="assets/cpn-lazy-load.js?v=3.2.0"></script>
-<script src="assets/cpn-kiosk.js?v=3.2.0"></script>
+<script src="assets/cpn-problems.js?v=3.2.1"></script>
+<script src="assets/cpn-outcome-card.js?v=3.2.1"></script>
+<script src="assets/cpn-cloud-control-ops.js?v=3.2.1"></script>
+<script src="assets/cpn-lazy-load.js?v=3.2.1"></script>
+<script src="assets/cpn-kiosk.js?v=3.2.1"></script>
 <script src="assets/cpn-logo-intro.js?v=2.91.6"></script>
 </body>
 </html>

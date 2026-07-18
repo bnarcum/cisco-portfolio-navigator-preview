@@ -86,6 +86,32 @@ try {
               !cx?.families?.includes("webex-app") &&
               !room?.families?.includes("cloud-control");
           })(),
+          callingModernizationBalanced: (() => {
+            const calling = byId("pbx-eol");
+            const text = [
+              calling?.symptom,
+              calling?.outcome,
+              calling?.proof?.before,
+              calling?.proof?.after,
+              ...Object.values(calling?.personas || {}).flatMap(v => [
+                v?.symptom, v?.line, v?.proof?.before, v?.proof?.after
+              ])
+            ].filter(Boolean).join(" ");
+            const legacyUcm = typeof LEGACY_NODES !== "undefined"
+              ? LEGACY_NODES.find(x => x.id === "l-cucm")
+              : null;
+            return calling?.families?.includes("unified-cm") &&
+              calling?.families?.includes("webex-calling") &&
+              calling?.families?.includes("ip-phones") &&
+              !calling?.signals?.missing?.includes("webex-calling") &&
+              !/\bshrinking\b|\bno agility\b|\breplacing on-premises\b|\blegacy telephony\b/i.test(text) &&
+              !!window.nodeById?.["unified-cm"] &&
+              !/\breplacing on-premises\b/i.test(window.nodeById?.["webex-calling"]?.desc || "") &&
+              /unsupported|out-of-support/i.test(legacyUcm?.name || "") &&
+              /upgrade|deployment model/i.test(legacyUcm?.reason || "") &&
+              PRODUCTS.some(p => p.id === "ucm-15" && p.family === "unified-cm" && p.status === "current") &&
+              PRODUCTS.some(p => p.id === "wxc-dedicated-instance" && p.family === "webex-calling" && p.status === "current");
+          })(),
           securityScoped: (() => {
             const vpn = byId("vpn-overload");
             const email = byId("phishing-email");
@@ -157,6 +183,7 @@ try {
   if (!model.editorial.roomSource) errors.push("catalog: room-quality proof should cite Control Hub + ThousandEyes");
   if (!model.editorial.cloudControlQualified) errors.push("catalog: Cloud Control claims must disclose Controlled Availability");
   if (!model.editorial.collaborationScoped) errors.push("catalog: Collaboration mappings or maturity chains are out of scope");
+  if (!model.editorial.callingModernizationBalanced) errors.push("catalog: Calling modernization must treat supported on-prem, cloud, and hybrid models as valid");
   if (!model.editorial.securityScoped) errors.push("catalog: Security mappings blur distinct control domains");
   if (!model.editorial.operationsScoped) errors.push("catalog: Operations mappings blur Cisco IQ, Cloud Control, and vulnerability management");
   if (!model.editorial.catalogAvailabilityQualified) errors.push("catalog: Cloud Control family and bundle must disclose Controlled Availability");

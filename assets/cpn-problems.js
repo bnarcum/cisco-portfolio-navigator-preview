@@ -429,36 +429,36 @@
     {
       id: "pbx-eol",
       pillar: "workplaces",
-      symptom: "The aging PBX is end-of-life and on-prem telephony is costly to maintain.",
-      outcome: "Cloud calling that unifies voice with meetings and messaging.",
+      symptom: "The calling environment must stay current, secure, resilient, and supportable without forcing a deployment model that conflicts with operational or regulatory requirements.",
+      outcome: "A modern calling architecture aligned to business needs across supported on-premises, cloud, and hybrid deployment models.",
       proof: {
-        metric: "Telephony TCO & agility",
-        before: "Hardware PBX, PSTN contracts, per-site maintenance",
-        after: "Cloud calling with global reach in one app and admin plane",
-        source: "Cisco Webex Calling positioning"
+        metric: "Calling architecture fit & lifecycle",
+        before: "Aging releases or endpoints, fragmented lifecycle practices, or an operating model that no longer fits requirements",
+        after: "A supported calling platform and current phones with documented security, resiliency, and lifecycle controls",
+        source: "Cisco Unified CM 15 + Webex Calling + Cisco Desk Phone 9800 official guidance"
       },
       personas: {
         netops: {
-          line: "Assure WAN and internet paths, QoS, firewall reachability, and resilient Local Gateway connectivity for cloud voice.",
-          symptom: "Cloud-calling migration depends on transport readiness, but network and voice ownership boundaries are unclear.",
-          proof: { metric: "Cloud-voice network readiness", before: "Latency, jitter, loss, QoS, and service reachability are unassessed", after: "Voice paths and Local Gateway resiliency are validated before migration" }
+          line: "Modernize voice within the selected architecture by validating QoS, reachability, redundancy, survivability, and operational ownership.",
+          symptom: "Voice reliability depends on network readiness and resilient call control whether services run on premises, in the cloud, or across both.",
+          proof: { metric: "Calling-service readiness", before: "Latency, jitter, loss, reachability, failover, and ownership are inconsistently validated", after: "Transport, call-control resiliency, and escalation boundaries are documented for the chosen design" }
         },
         cio: {
-          line: "Modern calling experience with predictable subscription cost.",
-          symptom: "On-prem telephony is a shrinking, costly asset with no agility.",
-          proof: { metric: "Telephony TCO & agility", before: "Hardware PBX, PSTN contracts, per-site maintenance", after: "Cloud calling with global reach in one app and admin plane" }
+          line: "Choose the right on-premises, cloud, or hybrid operating model while delivering a consistent, modern calling experience.",
+          symptom: "Calling must evolve without compromising data sovereignty, regulatory obligations, resiliency, critical integrations, or existing investment.",
+          proof: { metric: "Architecture alignment", before: "Modernization is framed as a cloud-only decision", after: "The deployment model is selected against business, regulatory, technical, and lifecycle requirements" }
         },
         ciso: {
-          line: "Centralized, encrypted calling with unified admin controls.",
-          symptom: "Legacy telephony sprawls admin and lacks modern encryption.",
-          proof: { metric: "Calling security & control", before: "Fragmented, hard-to-secure PBX admin", after: "Centralized, encrypted cloud calling" }
+          line: "Harden and govern calling across supported on-premises, cloud, and hybrid architectures.",
+          symptom: "Calling security depends on supported software, current endpoints, identity controls, certificates, administrative access, and correctly configured signaling and media protection.",
+          proof: { metric: "Calling security posture", before: "Release currency, endpoint security, certificates, access, and encryption settings are inconsistent", after: "Supported releases, current endpoints, role-scoped administration, and documented TLS and SRTP policy where supported" }
         }
       },
-      useCases: ["Hybrid Work"],
-      bundles: ["Hybrid Work Suite"],
-      families: ["webex-calling", "webex-app", "ip-phones"],
+      useCases: ["Hybrid Work", "Digital Transformation"],
+      bundles: [],
+      families: ["unified-cm", "webex-calling", "ip-phones", "webex-app"],
       refArch: "Hybrid Work",
-      signals: { has: ["ip-phones"], missing: ["webex-calling"] },
+      signals: { has: ["ip-phones"], missing: [] },
       dcloudPath: "hybrid-work",
       maturityNext: "hybrid-meeting-equity"
     },
