@@ -202,7 +202,7 @@ function validateAcquisitions(payload, manifest) {
   return errors;
 }
 
-function mergeRecords(wiki, cisco) {
+export function mergeRecords(wiki, cisco) {
   const byKey = new Map();
 
   for (const w of wiki) {
@@ -228,7 +228,9 @@ function mergeRecords(wiki, cisco) {
     const id = slugify(c.company);
     const existing = byKey.get(id);
     if (existing) {
-      if (c.summary) existing.summary = c.summary;
+      existing.announced = c.announced;
+      existing.summary = c.summary || "";
+      existing.era = eraForYear(+c.announced.slice(0, 4));
       if (!existing.sources.includes("cisco")) existing.sources.push("cisco");
     } else {
       byKey.set(id, {
@@ -264,7 +266,9 @@ function mergeRecords(wiki, cisco) {
 
 async function main() {
   console.log("Fetching Wikipedia acquisitions list…");
-  const wikiRes = await fetch(WIKI_URL);
+  const wikiRes = await fetch(WIKI_URL, {
+    headers: { "User-Agent": "CiscoPortfolioNavigator/1.0 (build script)" },
+  });
   const wikiJson = await wikiRes.json();
   const wikiHtml = wikiJson.parse?.text?.["*"] || wikiJson.parse?.text || "";
   const wikiRows = parseWikiTable(wikiHtml);
@@ -312,7 +316,9 @@ window.CPN_ACQUISITIONS = ${JSON.stringify(payload, null, 2)};
   console.log(`Wrote ${outJs} (${acquisitions.length} acquisitions)`);
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}
