@@ -314,6 +314,27 @@ body.acq-open #tools {
   overflow-x: scroll;
   overflow-y: hidden;
   perspective: 1200px;
+  cursor: grab;
+  touch-action: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(2, 200, 255, 0.35) transparent;
+}
+
+#acq-canvas.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+#acq-canvas.is-panning * {
+  cursor: grabbing;
+}
+
+#acq-canvas .acq-card,
+#acq-canvas .acq-year-marker,
+#acq-canvas .acq-overflow-marker,
+#acq-canvas .acq-year-expansion button,
+#acq-canvas .acq-year-expansion a {
+  cursor: pointer;
 }
 
 #acq-inner {

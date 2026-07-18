@@ -336,6 +336,36 @@ if (fitFromFocus.panelShown || !fitFromFocus.panelHidden) {
 if (fitFromFocus.scrollLeft !== 0) errors.push(`FIT overview scroll: ${fitFromFocus.scrollLeft}`);
 await assertLayout(page, "FIT from focus overview");
 
+const canvasBox = await page.locator("#acq-canvas").boundingBox();
+if (!canvasBox) errors.push("canvas bounding box missing");
+else {
+  const wheelBefore = await page.evaluate(() => window.CPN_AcquisitionTimeline.testState().zoom);
+  await page.mouse.move(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+  await page.mouse.wheel(0, -120);
+  await page.waitForTimeout(50);
+  const wheelAfter = await page.evaluate(() => window.CPN_AcquisitionTimeline.testState().zoom);
+  if (!(wheelAfter > wheelBefore)) {
+    errors.push(`wheel zoom: ${wheelBefore} -> ${wheelAfter}`);
+  }
+
+  const panBefore = await page.evaluate(() => document.querySelector("#acq-canvas").scrollLeft);
+  const panX = canvasBox.x + canvasBox.width * 0.5;
+  const panY = canvasBox.y + canvasBox.height * 0.85;
+  await page.mouse.move(panX, panY);
+  await page.mouse.down();
+  await page.mouse.move(panX - 180, panY, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(50);
+  const panAfter = await page.evaluate(() => ({
+    scrollLeft: document.querySelector("#acq-canvas").scrollLeft,
+    panning: document.querySelector("#acq-canvas").classList.contains("is-panning"),
+  }));
+  if (panAfter.scrollLeft <= panBefore) {
+    errors.push(`drag pan scroll: ${panBefore} -> ${panAfter.scrollLeft}`);
+  }
+  if (panAfter.panning) errors.push("drag pan left is-panning class set");
+}
+
 await page.click('.acq-year-marker[data-year="2012"]');
 await page.waitForFunction(() => window.CPN_AcquisitionTimeline.testState().level === "explore");
 await page.click('.acq-card[data-id="meraki"]');

@@ -606,17 +606,97 @@
     if (inn) inn.disabled = ACQ.zoom >= ACQ.maxZoom - 0.01;
   }
 
-  function setAcqZoom(z) {
+  function setAcqZoom(z, anchorClientX = null) {
     const canvas = $("#acq-canvas");
     const prev = ACQ.zoom;
-    ACQ.zoom = Math.max(ACQ.minZoom, Math.min(ACQ.maxZoom, z));
+    const next = Math.max(ACQ.minZoom, Math.min(ACQ.maxZoom, z));
+    if (!canvas) {
+      ACQ.zoom = next;
+      updateZoomUi();
+      renderAcquisitionTimeline();
+      updateParallax();
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const viewportX = anchorClientX == null
+      ? canvas.clientWidth / 2
+      : anchorClientX - rect.left;
+    const contentX = canvas.scrollLeft + viewportX;
+    const timelineFrac = (contentX - 120) / (ACQ.pxPerYear * prev);
+
+    ACQ.zoom = next;
     updateZoomUi();
     renderAcquisitionTimeline();
-    if (canvas) {
-      const ratio = ACQ.zoom / prev;
-      canvas.scrollLeft *= ratio;
-    }
+
+    const newContentX = timelineFrac * ACQ.pxPerYear * next + 120;
+    const maxScroll = Math.max(0, canvas.scrollWidth - canvas.clientWidth);
+    canvas.scrollLeft = Math.max(0, Math.min(maxScroll, newContentX - viewportX));
     updateParallax();
+  }
+
+  function bindCanvasNavigation(canvas) {
+    if (!canvas || canvas.dataset.acqNavBound === "1") return;
+    canvas.dataset.acqNavBound = "1";
+
+    const PAN_THRESHOLD = 5;
+    let pan = null;
+
+    function maxScrollLeft() {
+      return Math.max(0, canvas.scrollWidth - canvas.clientWidth);
+    }
+
+    function isPanTarget(el) {
+      return el?.closest("#acq-canvas") &&
+        !el.closest(
+          ".acq-card, .acq-year-marker, .acq-overflow-marker, .acq-year-expansion, button, a, input"
+        );
+    }
+
+    canvas.addEventListener("wheel", ev => {
+      if (!$("#acq-wrap")?.classList.contains("show")) return;
+      if (Math.abs(ev.deltaY) >= Math.abs(ev.deltaX)) {
+        ev.preventDefault();
+        setAcqZoom(ACQ.zoom * (ev.deltaY > 0 ? 0.92 : 1.08), ev.clientX);
+        return;
+      }
+      if (ev.deltaX !== 0) {
+        ev.preventDefault();
+        canvas.scrollLeft = Math.max(0, Math.min(maxScrollLeft(), canvas.scrollLeft + ev.deltaX));
+        onScroll();
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("pointerdown", ev => {
+      if (ev.button !== 0 || !isPanTarget(ev.target)) return;
+      pan = {
+        pointerId: ev.pointerId,
+        startX: ev.clientX,
+        startScroll: canvas.scrollLeft,
+        moved: false,
+      };
+      canvas.setPointerCapture(ev.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", ev => {
+      if (!pan || ev.pointerId !== pan.pointerId) return;
+      const dx = ev.clientX - pan.startX;
+      if (!pan.moved && Math.abs(dx) <= PAN_THRESHOLD) return;
+      pan.moved = true;
+      canvas.classList.add("is-panning");
+      canvas.scrollLeft = Math.max(0, Math.min(maxScrollLeft(), pan.startScroll - dx));
+      onScroll();
+    });
+
+    function endPan(ev) {
+      if (!pan || ev.pointerId !== pan.pointerId) return;
+      if (canvas.hasPointerCapture(ev.pointerId)) canvas.releasePointerCapture(ev.pointerId);
+      canvas.classList.remove("is-panning");
+      pan = null;
+    }
+
+    canvas.addEventListener("pointerup", endPan);
+    canvas.addEventListener("pointercancel", endPan);
   }
 
   function fitAcqZoom() {
@@ -851,6 +931,7 @@
       expandedYear: ACQ.expandedYear,
       focusedId: ACQ.focusedId,
       reducedMotion: prefersReducedMotion(),
+      scrollLeft: document.querySelector("#acq-canvas")?.scrollLeft || 0,
     };
   }
 
@@ -871,7 +952,7 @@
       <div id="acq-head">
         <div class="acq-heading">
           <div class="acq-title">Acquisition History</div>
-          <div class="acq-sub">${window.CPN_ACQUISITIONS.acquisitions.length} companies · scroll to explore · click a logo for details · sources: Wikipedia & Cisco</div>
+          <div class="acq-sub">${window.CPN_ACQUISITIONS.acquisitions.length} companies · scroll to zoom · drag to pan · click a logo for details · sources: Wikipedia & Cisco</div>
           <div id="acq-current-period" aria-live="polite"></div>
         </div>
         <div class="acq-head-controls">
@@ -929,10 +1010,18 @@
     buildParticles($("#acq-particles"));
     buildFilterMenu();
 
+    const canvas = $("#acq-canvas");
+
     $("#acq-close")?.addEventListener("click", closeAcquisitionTimeline);
     $("#acq-focus-clear")?.addEventListener("click", () => clearAcquisitionFocus());
-    $("#acq-zoom-in")?.addEventListener("click", () => setAcqZoom(ACQ.zoom * 1.25));
-    $("#acq-zoom-out")?.addEventListener("click", () => setAcqZoom(ACQ.zoom / 1.25));
+    $("#acq-zoom-in")?.addEventListener("click", () => {
+      const rect = canvas?.getBoundingClientRect();
+      setAcqZoom(ACQ.zoom * 1.25, rect ? rect.left + rect.width / 2 : null);
+    });
+    $("#acq-zoom-out")?.addEventListener("click", () => {
+      const rect = canvas?.getBoundingClientRect();
+      setAcqZoom(ACQ.zoom / 1.25, rect ? rect.left + rect.width / 2 : null);
+    });
     $("#acq-zoom-fit")?.addEventListener("click", fitAcqZoom);
     $("#acq-prev")?.addEventListener("click", () => focusRelative(-1));
     $("#acq-next")?.addEventListener("click", () => focusRelative(1));
@@ -1025,13 +1114,8 @@
       }
     });
 
-    const canvas = $("#acq-canvas");
     canvas?.addEventListener("scroll", onScroll, { passive: true });
-    canvas?.addEventListener("wheel", ev => {
-      if (!(ev.ctrlKey || ev.metaKey)) return;
-      ev.preventDefault();
-      setAcqZoom(ACQ.zoom * (ev.deltaY > 0 ? 0.92 : 1.08));
-    }, { passive: false });
+    bindCanvasNavigation(canvas);
 
     $("#acq-minimap-track")?.addEventListener("click", ev => {
       const track = ev.currentTarget;
