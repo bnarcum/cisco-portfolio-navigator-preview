@@ -121,3 +121,16 @@ A reconstruction of the **Cisco AI Canvas** generative-UI workspace, composed fr
 - **Query params:** `?focus=<familyId>` selects the matching board; `?from=cpn` enables in-app back navigation.
 
 Test: `npm run test:cloud-control`.
+
+## Problems → Outcomes layer ("why it matters")
+
+Adds the business-value axis on top of the portfolio (what) and connections (how). Curated, directional talking points — **not guarantees or live metrics**.
+
+- **Data model:** `assets/cpn-problems.js` — `window.__cpnProblems` holds ~21 curated problems, each with `symptom` (customer language), `outcome`, `proof` (metric/before/after/source), `personas` (netops/cio/ciso), and keys that reuse the existing taxonomy: `families[]` (NODES ids), `bundles[]` (BUNDLES names), `useCases[]`, `dcloudPath` (dcloud-links path id), `pillar` (One Cisco), and `maturityNext` (expansion chain). One source of truth — no duplicated stacks.
+- **Resolvers:** `problemsForFamily/Product/Stack/Bundle/UseCase`, `outcomeCoverage(familyIds)` (addressed vs. adjacent-open), `problemNarrative(familyIds, persona)`, `personaLine`, `SYMPTOMS`.
+- **Phase 1 (reframe):** panel *"Problems this solves"* block (symptom → outcome → proof, high in the panel), pain-first **Solution package** headlines, and *"Because …"* value lines on **Suggestions**.
+- **Phase 2 (credibility):** **Outcomes** panel tab (delivered vs. adjacent gaps, "add closers"), a **persona toggle** (NetOps/CIO/CISO, persisted in `localStorage["cpn-persona"]`, reframes every line), and the narrative flows into the **AI assistant** (`buildPlanContext`) and **exports** (`planSummary().problems` → markdown + text "Problems We Solve").
+- **Phase 3 (wow):** Outcomes **graph lens** (`highlightProblemFamilies`), **symptom discovery** modal (`openSymptomPicker` — "What's hurting?"), **dCloud journey** link ("Prove it on dCloud"), **AI Canvas bridge** ("Investigate in AI Canvas" on ops-mapped outcomes), and **maturity chaining** ("Then: <next outcome>").
+- **Entry points:** every product/family panel, the Suggestions/Bundles/Outcomes tabs, and the "Start from a problem…" button in the Outcomes tab.
+
+Test: `npm run test:problems`.

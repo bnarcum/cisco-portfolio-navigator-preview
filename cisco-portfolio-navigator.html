@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="2.96.0";
+  window.__CPN_BUILD="2.97.0";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -603,6 +603,46 @@
     [data-theme="light"] .p-ops-obs,[data-theme="light"] .p-ops-domain{color:#284861}
     [data-theme="light"] .p-ops-btn{color:#036;background:rgba(0,140,200,.1)}
     [data-theme="light"] .p-ops-btn--primary{color:#001a24}
+    /* Problems → Outcomes panel block */
+    .p-prob{border-top:1px solid var(--line)}
+    .p-prob-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+    .p-prob-personas{display:flex;gap:4px}
+    .p-prob-persona{font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;
+      padding:3px 8px;border-radius:999px;border:1px solid var(--line);
+      background:transparent;color:var(--muted);transition:all .15s}
+    .p-prob-persona:hover{border-color:#2dce5c;color:var(--fg)}
+    .p-prob-persona.on{background:#2dce5c;border-color:#2dce5c;color:#04210f}
+    .p-prob-item{padding:10px 11px;border-radius:9px;margin-bottom:8px;
+      border:1px solid rgba(45,206,92,.28);
+      background:linear-gradient(145deg,rgba(45,206,92,.1) 0%,rgba(10,34,20,.14) 70%)}
+    .p-prob-symptom{font-size:12px;font-style:italic;color:var(--muted);line-height:1.4;margin-bottom:6px}
+    .p-prob-symptom::before{content:"\201C"}
+    .p-prob-symptom::after{content:"\201D"}
+    .p-prob-outcome{font-size:12.5px;font-weight:700;color:var(--fg);line-height:1.4;
+      display:flex;gap:6px;align-items:flex-start}
+    .p-prob-tick{color:#2dce5c;font-weight:900;flex-shrink:0}
+    .p-prob-proof{margin-top:6px;font-size:10.5px;color:var(--muted);line-height:1.45}
+    .p-prob-proof-k{font-weight:700;color:var(--fg)}
+    .p-prob-before{color:#e07a7a}
+    .p-prob-arrow{opacity:.7;padding:0 2px}
+    .p-prob-after{color:#2dce5c;font-weight:600}
+    .p-prob-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+    .p-prob-explore{font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;
+      padding:4px 10px;border-radius:6px;border:1px solid rgba(45,206,92,.5);
+      background:transparent;color:#2dce5c;transition:all .15s}
+    .p-prob-explore:hover{background:rgba(45,206,92,.16)}
+    .p-prob-explore:active{transform:scale(.98)}
+    .p-prob-dcloud{font-size:11px;font-weight:600;color:#9fdcff;text-decoration:none}
+    .p-prob-dcloud:hover{text-decoration:underline;color:#cdeeff}
+    .p-prob-next{display:block;width:100%;margin-top:7px;text-align:left;font-family:inherit;
+      font-size:10.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px;
+      border:1px dashed var(--line);background:transparent;color:var(--muted);transition:all .15s}
+    .p-prob-next:hover{border-color:#2dce5c;color:var(--fg)}
+    .p-prob-note{font-size:9.5px;color:var(--muted);opacity:.75;margin-top:2px}
+    [data-theme="light"] .p-prob-item{border-color:rgba(30,150,70,.35);
+      background:linear-gradient(145deg,rgba(45,206,92,.12),rgba(240,255,246,.85))}
+    [data-theme="light"] .p-prob-before{color:#c0392b}
+    [data-theme="light"] .p-prob-after{color:#1e8449}
     .p-dcloud-card{
       padding:14px 14px 12px;border-radius:10px;
       border:1px solid rgba(0,212,255,.5);
@@ -987,6 +1027,8 @@
     .rc-badge{display:inline-flex;align-items:center;padding:1px 7px;border-radius:10px;
       font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0}
     .rc-name{font-size:13px;font-weight:700;margin-bottom:3px}
+    .rc-because{font-size:11.5px;color:var(--fg);line-height:1.45;margin:2px 0 6px;font-weight:600}
+    .rc-because-k{color:#2dce5c;font-weight:800;text-transform:uppercase;font-size:9.5px;letter-spacing:.05em;margin-right:4px}
     .rc-reason{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:7px}
     .rc-connects{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px}
     .rc-ctag{padding:2px 7px;border-radius:4px;font-size:10px;background:var(--surface3);color:var(--muted)}
@@ -1019,6 +1061,7 @@
     .bun-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
     .bun-name{font-size:13px;font-weight:700}
     .bun-pct{font-size:12px;font-weight:700;color:var(--accent)}
+    .bun-pain{font-size:12px;font-weight:700;color:#2dce5c;line-height:1.4;margin-bottom:6px}
     .bun-desc{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5}
     .bun-bar-bg{height:4px;background:var(--border);border-radius:2px;margin-bottom:8px}
     .bun-bar{height:4px;border-radius:2px;background:var(--accent);transition:width .4s}
@@ -1042,6 +1085,61 @@
     .cov-badge.n{background:var(--surface3);color:var(--subtle)}
     .cat-gap{background:var(--surface2);border:1px solid var(--border);
       border-radius:8px;padding:10px 12px;margin-bottom:8px}
+
+    /* Outcomes tab */
+    .oc-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .oc-personas{display:flex;gap:4px}
+    .oc-persona{font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;padding:3px 8px;
+      border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s}
+    .oc-persona:hover{border-color:#2dce5c;color:var(--fg)}
+    .oc-persona.on{background:#2dce5c;border-color:#2dce5c;color:#04210f}
+    .oc-sec-t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 8px}
+    .oc-sec-t.gap{color:#e0a020}
+    .oc-item{border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px;background:var(--surface2)}
+    .oc-item.addressed{border-color:rgba(45,206,92,.3);background:linear-gradient(145deg,rgba(45,206,92,.08),transparent)}
+    .oc-row{display:flex;gap:7px;align-items:flex-start}
+    .oc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+    .oc-dot.y{background:#2dce5c}.oc-dot.n{background:var(--border)}
+    .oc-line{font-size:12.5px;font-weight:600;color:var(--fg);line-height:1.4}
+    .oc-line.muted{color:var(--muted);font-weight:500}
+    .oc-by{font-size:10.5px;color:var(--muted);margin:4px 0 0 15px;line-height:1.4}
+    .oc-actions{display:flex;gap:6px;margin:8px 0 0 15px}
+    .oc-btn{font-family:inherit;font-size:10.5px;font-weight:700;cursor:pointer;padding:3px 9px;border-radius:6px;
+      border:1px solid var(--border);background:transparent;color:var(--fg);transition:all .15s}
+    .oc-btn:hover{border-color:#2dce5c}
+    .oc-btn.prim{border-color:#2dce5c;color:#2dce5c}
+    .oc-btn.prim:hover{background:rgba(45,206,92,.14)}
+    .oc-btn.canvas{border-color:rgba(2,200,255,.5);color:#02c8ff}
+    .oc-btn.canvas:hover{background:rgba(2,200,255,.14)}
+    .oc-empty{font-size:12px;color:var(--muted);padding:8px 0}
+    .oc-note{font-size:9.5px;color:var(--muted);opacity:.7;margin-top:12px}
+    .oc-discover{width:100%;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;
+      padding:7px 10px;border-radius:7px;border:1px dashed rgba(45,206,92,.5);
+      background:transparent;color:#2dce5c;margin-bottom:12px;transition:all .15s}
+    .oc-discover:hover{background:rgba(45,206,92,.12)}
+
+    /* Symptom discovery modal */
+    .cpn-modal-ov{position:fixed;inset:0;z-index:9000;background:rgba(2,8,18,.72);
+      display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(3px)}
+    .cpn-modal{width:min(640px,94vw);max-height:86vh;overflow:auto;border-radius:14px;
+      background:var(--surface2,#0c1830);border:1px solid var(--line,#1e3452);
+      box-shadow:0 24px 70px rgba(0,0,0,.5)}
+    .cpn-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+      padding:16px 18px 12px;border-bottom:1px solid var(--line,#1e3452);position:sticky;top:0;
+      background:var(--surface2,#0c1830)}
+    .cpn-modal-t{font-size:16px;font-weight:800;color:var(--fg)}
+    .cpn-modal-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .cpn-modal-x{font-family:inherit;font-size:20px;line-height:1;cursor:pointer;border:none;
+      background:transparent;color:var(--muted);padding:2px 6px;border-radius:6px}
+    .cpn-modal-x:hover{background:var(--surface3,#132340);color:var(--fg)}
+    .sym-list{padding:12px 14px 16px;display:flex;flex-direction:column;gap:8px}
+    .sym-row{text-align:left;font-family:inherit;cursor:pointer;border-radius:10px;padding:11px 13px;
+      border:1px solid var(--line,#1e3452);background:var(--surface,#0a1526);transition:all .15s}
+    .sym-row:hover{border-color:#2dce5c;background:rgba(45,206,92,.08);transform:translateX(2px)}
+    .sym-text{font-size:13px;font-weight:600;font-style:italic;color:var(--fg);line-height:1.4}
+    .sym-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;margin-top:6px}
+    .sym-out{font-size:11px;font-weight:700;color:#2dce5c}
+    .sym-fam{font-size:10.5px;color:var(--muted)}
 
     /* Empty state */
     .empty{padding:20px 16px;text-align:center}
@@ -1407,11 +1505,13 @@
       <div id="analysis-results" style="display:none">
         <div class="ptabs">
           <button class="ptab active" data-tab="recs">Suggestions <span class="ptab-b" id="rec-cnt">0</span></button>
+          <button class="ptab" data-tab="outcomes" title="Business problems solved vs. open">Outcomes <span class="ptab-b" id="out-cnt">0</span></button>
           <button class="ptab" data-tab="replace">Upgrades <span class="ptab-r" id="rep-cnt">0</span></button>
           <button class="ptab" data-tab="bundles">Solution packages</button>
           <button class="ptab" data-tab="coverage" title="Gaps &amp; strengths">Coverage</button>
         </div>
         <div id="tab-recs" class="tc active"></div>
+        <div id="tab-outcomes" class="tc"></div>
         <div id="tab-replace" class="tc"></div>
         <div id="tab-bundles" class="tc"></div>
         <div id="tab-coverage" class="tc"></div>
@@ -3417,6 +3517,9 @@ const PRODUCTS = [
 // Build lookup maps
 const nodeById = Object.fromEntries(NODES.map(n => [n.id, n]));
 const prodById = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
+// Exposed for standalone asset modules (e.g. assets/cpn-problems.js) to resolve names.
+window.nodeById = nodeById;
+window.prodById = prodById;
 
 const EXTERNAL_URL_REWRITES = {
   "https://www.webex.com/connect.html": "https://www.webex.com/us/en/products/customer-experience/cpaas/webex-connect.html",
@@ -10025,7 +10128,92 @@ function runAnalysis() {
   renderReps(replacements);
   renderBundles(bundles);
   renderCov(covUCs, gapUCs, stackCats, missCats);
+  renderOutcomes([...effectiveNodes]);
 }
+
+/* Phase 2 — Outcome coverage: business problems addressed vs. adjacent gaps,
+   framed by persona. This mirrors the bundle-completeness idea but for outcomes. */
+function renderOutcomes(familyIds){
+  const el = document.getElementById("tab-outcomes");
+  if (!el) return;
+  const P = window.__cpnProblems;
+  if (!P){ el.innerHTML = `<div class="empty"><h3>Outcomes unavailable</h3></div>`; return; }
+  const cov = P.outcomeCoverage(familyIds);
+  const persona = typeof currentPersona === "function" ? currentPersona() : "";
+  const cnt = document.getElementById("out-cnt");
+  if (cnt) cnt.textContent = cov.addressed.length;
+
+  const personaChips = P.PERSONAS.map(pp =>
+    `<button type="button" class="oc-persona${pp.id === persona ? " on" : ""}" data-oc-persona="${pp.id}">${escapeHtml(pp.label)}</button>`
+  ).join("");
+
+  const ops = window.__cpnOps;
+  const opsFamilyFor = (prob) => {
+    if (!ops) return null;
+    return (prob.families || []).find(f => ops.hasOps(f)) || null;
+  };
+  const addressedHtml = cov.addressed.length ? cov.addressed.map(a => {
+    const line = persona ? P.personaLine(a.problem, persona) : a.problem.outcome;
+    const by = a.by.map(f => escapeHtml(P.nameOr(f))).join(", ");
+    const opsFam = opsFamilyFor(a.problem);
+    const canvas = opsFam ? `<button type="button" class="oc-btn canvas" data-oc-canvas="${escapeHtml(opsFam)}">Investigate in AI Canvas →</button>` : "";
+    return `<div class="oc-item addressed" data-prob-id="${escapeHtml(a.problem.id)}">
+      <div class="oc-row"><span class="oc-dot y"></span><div class="oc-line">${escapeHtml(line)}</div></div>
+      <div class="oc-by">Delivered by ${by}</div>
+      <div class="oc-actions">
+        <button type="button" class="oc-btn" data-oc-explore="${escapeHtml(a.problem.id)}">Explore →</button>
+        ${canvas}
+      </div>
+    </div>`;
+  }).join("") : `<div class="oc-empty">No curated outcomes matched yet — add products, then analyze.</div>`;
+
+  const openHtml = cov.open.slice(0, 6).map(o => {
+    const closers = o.gapFamilies.filter(f => nodeById[f]);
+    const closerNames = closers.map(f => escapeHtml(nodeById[f].name)).join(", ");
+    return `<div class="oc-item open" data-prob-id="${escapeHtml(o.problem.id)}">
+      <div class="oc-row"><span class="oc-dot n"></span><div class="oc-line muted">${escapeHtml(o.problem.outcome)}</div></div>
+      <div class="oc-by">Close with ${closerNames || o.gapFamilies.join(", ")}</div>
+      <div class="oc-actions">
+        <button type="button" class="oc-btn" data-oc-explore="${escapeHtml(o.problem.id)}">Explore →</button>
+        ${closers.length ? `<button type="button" class="oc-btn prim" data-oc-add="${escapeHtml(closers.join(","))}">+ Add closers</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = `
+    <div class="oc-head">
+      <div style="font-size:12px;color:var(--muted);font-weight:600;line-height:1.45">Business problems this account plan solves — and the biggest ones still open.</div>
+      <div class="oc-personas" role="group" aria-label="Frame for persona">${personaChips}</div>
+    </div>
+    <button type="button" class="oc-discover" data-oc-discover>◎ Start from a problem…</button>
+    <div class="oc-sec-t">Outcomes delivered (${cov.addressed.length})</div>
+    ${addressedHtml}
+    ${openHtml ? `<div class="oc-sec-t gap">Adjacent gaps</div>${openHtml}` : ""}
+    <div class="oc-note">${escapeHtml(P.DISCLAIMER)}</div>`;
+
+  el.querySelector("[data-oc-discover]")?.addEventListener("click", () => {
+    if (typeof openSymptomPicker === "function") openSymptomPicker();
+  });
+  el.querySelectorAll("[data-oc-persona]").forEach(b => b.addEventListener("click", () => {
+    const v = b.dataset.ocPersona;
+    if (typeof setPersona === "function") setPersona(v === persona ? "" : v);
+    renderOutcomes(familyIds);
+  }));
+  el.querySelectorAll("[data-oc-explore]").forEach(b => b.addEventListener("click", () => {
+    if (typeof exploreProblem === "function") exploreProblem(b.dataset.ocExplore);
+  }));
+  el.querySelectorAll("[data-oc-canvas]").forEach(b => b.addEventListener("click", () => {
+    if (typeof openCloudControlBriefing === "function") openCloudControlBriefing(b.dataset.ocCanvas);
+  }));
+  el.querySelectorAll("[data-oc-add]").forEach(b => b.addEventListener("click", () => {
+    const ids = b.dataset.ocAdd.split(",").filter(Boolean);
+    ids.forEach(id => addToStack(id, "node"));
+    showToast(`Added ${ids.length} product${ids.length !== 1 ? "s" : ""} to close this gap`);
+    runAnalysis();
+    document.querySelector('[data-tab="outcomes"]')?.click();
+  }));
+}
+window.renderOutcomes = renderOutcomes;
 
 function renderRecs(recs, missCats, stackCats) {
   const el=document.getElementById("tab-recs");
@@ -10036,16 +10224,21 @@ function renderRecs(recs, missCats, stackCats) {
   if(recs.length){
     html+=`<div class="recs-legend">Stars show <strong>connection strength</strong> — more stars means more links to products already listed.</div>`;
     html+=`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:600">${recs.length} suggestion${recs.length!==1?"s":""} that pair well with what they have</div>`;
+    const P=window.__cpnProblems;
     recs.forEach(r=>{
       const cat=CATS[r.node.category];
       const sc=Math.min(5,r.direct*2+r.adjacent);
       const conn=r.connTo.slice(0,3).map(c=>(nodeById[c.id]||{}).name||c.id);
+      const prob=P?P.topProblemForFamily(r.id):null;
+      const persona=typeof currentPersona==="function"?currentPersona():"";
+      const because=prob?`<div class="rc-because"><span class="rc-because-k">Because</span> ${escapeHtml(persona?P.personaLine(prob,persona):prob.outcome)}</div>`:"";
       html+=`<div class="rec-card${r.priority===1?" p1":""}">
         <div class="rc-top">
           <div><div class="rc-badge" style="background:${cat.color}22;color:${cat.color}">${cat.label}</div>
           <div class="rc-name">${r.node.name}</div></div>
           <div class="rc-score" title="Connection strength — links to products already listed"><span class="rc-score-lbl">Fit</span>${stars(sc)}</div>
         </div>
+        ${because}
         <div class="rc-reason">${r.direct>0?`<strong>${r.direct} direct connection${r.direct!==1?"s":""}</strong> to what they already have. `:""}${r.adjacent>0?`${r.adjacent} related connection${r.adjacent!==1?"s":""}.`:""} ${r.connTo.length?`Works with ${conn.join(", ")}${r.connTo.length>3?` +${r.connTo.length-3} more`:""}`:""}
         </div>
         <div class="rc-connects">${r.connTo.slice(0,4).map(c=>`<span class="rc-ctag">${(nodeById[c.id]||{}).name||c.id}: ${c.label}</span>`).join("")}</div>
@@ -10102,10 +10295,15 @@ function renderReps(reps) {
 }
 
 function renderBundles(bundles) {
-  const intro = bundles.length ? `<div style="font-size:12px;color:var(--muted);margin-bottom:12px;font-weight:600;line-height:1.45">How complete each Cisco solution package is based on what they already have.</div>` : "";
-  document.getElementById("tab-bundles").innerHTML=intro+bundles.map(b=>`
+  const intro = bundles.length ? `<div style="font-size:12px;color:var(--muted);margin-bottom:12px;font-weight:600;line-height:1.45">How complete each Cisco solution package is — and the business problem it solves.</div>` : "";
+  const P=window.__cpnProblems;
+  document.getElementById("tab-bundles").innerHTML=intro+bundles.map(b=>{
+    const prob=P?P.topProblemForBundle(b.name):null;
+    const pain=prob?`<div class="bun-pain">${escapeHtml(prob.outcome)}</div>`:"";
+    return `
     <div class="bun-card">
       <div class="bun-top"><div class="bun-name">${b.name}</div><div class="bun-pct">${b.pct}%</div></div>
+      ${pain}
       <div class="bun-desc">${b.desc}</div>
       <div class="bun-bar-bg"><div class="bun-bar" style="width:${b.pct}%"></div></div>
       <div style="font-size:10px;color:var(--muted);margin-bottom:6px">${b.owned.length} of ${b.products.length} products in this package</div>
@@ -10113,7 +10311,7 @@ function renderBundles(bundles) {
         return `<span class="bch ${own?"own":"mis"}">${n?.name||p}${own?" ✓":""}</span>`;}).join("")}</div>
       ${b.missing.length?`<button class="bun-add" onclick="addBundleMissing(${JSON.stringify(b.missing)})">+ Add ${b.missing.length} missing product${b.missing.length!==1?"s":""}</button>`:
       `<div style="font-size:11px;color:var(--green);text-align:center;padding:4px">✓ Complete solution package</div>`}
-    </div>`).join("");
+    </div>`;}).join("");
 }
 
 window.addBundleMissing = ids => { ids.forEach(id=>addToStack(id,"node")); showToast(`Added ${ids.length} product${ids.length!==1?"s":""} to their list`); };
@@ -12164,6 +12362,15 @@ function buildExportMenu(){
 function exportText(){
   const s = planSummary();
   let out = `CISCO ACCOUNT PLAN\n${"─".repeat(52)}\nAccount:   ${s.acct}\nGenerated: ${s.date}\n\n`;
+  if (s.problems && s.problems.addressed.length){
+    out += `PROBLEMS WE SOLVE\n${"─".repeat(40)}\n`;
+    s.problems.addressed.forEach(a => { out += `  ✓ ${a.outcome}\n    (${a.by.join(", ")})\n`; });
+    if (s.problems.open.length){
+      out += `  Open outcomes:\n`;
+      s.problems.open.forEach(o => { out += `  ✗ ${o.outcome} — close with ${o.closers.join(", ")}\n`; });
+    }
+    out += `\n`;
+  }
   out += `THEIR PRODUCTS (${s.items.length})\n${"─".repeat(40)}\n`;
   s.items.forEach(it => { out += `  • ${it.name}${it.status!=="current"?" ["+it.status.toUpperCase()+"]":""} (${it.category||"-"})\n`; });
   if (s.legacy.length){
@@ -12241,9 +12448,31 @@ function planSummary(){
     console.warn("planSummary: stack connections unavailable", e);
   }
 
+  let problems = { addressed: [], open: [], narrative: "", persona: "" };
+  try {
+    const P = window.__cpnProblems;
+    if (P){
+      const persona = typeof currentPersona === "function" ? currentPersona() : "";
+      const cov = P.outcomeCoverage([...effNodes]);
+      problems = {
+        persona,
+        narrative: P.problemNarrative([...effNodes], persona),
+        addressed: cov.addressed.map(a => ({
+          outcome: persona ? P.personaLine(a.problem, persona) : a.problem.outcome,
+          by: a.by.map(f => nameOf(f)),
+          proof: a.problem.proof || null
+        })),
+        open: cov.open.slice(0, 5).map(o => ({
+          outcome: o.problem.outcome,
+          closers: o.gapFamilies.map(f => nameOf(f))
+        }))
+      };
+    }
+  } catch (e) { /* problems layer optional */ }
+
   return {
     acct, date, profile, items, legacy, recs, stackUCs, allUC, bundles, dcloudDemos,
-    connectivityLabel: ONE_CISCO.connectivityLabel, pillars, stackConnections
+    connectivityLabel: ONE_CISCO.connectivityLabel, pillars, stackConnections, problems
   };
 }
 
@@ -12252,6 +12481,19 @@ function exportMarkdown(){
   let md = `# Cisco Account Plan — ${s.acct}\n\n*Generated ${s.date} · Cisco Portfolio Navigator v${APP_VERSION}*\n\n`;
   if (s.profile.vertical || s.profile.size || s.profile.mode){
     md += `**Customer profile:** ${[s.profile.vertical, s.profile.size, s.profile.mode].filter(Boolean).join(" · ")}\n\n`;
+  }
+  if (s.problems && (s.problems.addressed.length || s.problems.open.length)){
+    const pl = s.problems.persona ? ` _(framed for ${(window.__cpnProblems?.personaLabel(s.problems.persona))||s.problems.persona})_` : "";
+    md += `## Problems We Solve${pl}\n\n`;
+    s.problems.addressed.forEach(a => {
+      md += `- ✅ **${a.outcome}** — _${a.by.join(", ")}_\n`;
+      if (a.proof) md += `  - ${a.proof.metric}: ${a.proof.before} → ${a.proof.after}\n`;
+    });
+    if (s.problems.open.length){
+      md += `\n**Biggest unaddressed outcomes:**\n\n`;
+      s.problems.open.forEach(o => { md += `- ⬜ ${o.outcome} — _close with ${o.closers.join(", ")}_\n`; });
+    }
+    md += `\n> _Directional talking points from Cisco solution positioning — not guarantees._\n\n`;
   }
   md += `## Current Stack (${s.items.length})\n\n| Product | Type | Pillar | Category | Status | Tier | Notes |\n|---|---|---|---|---|---|---|\n`;
   s.items.forEach(it => {
@@ -14589,6 +14831,161 @@ function openCloudControlBriefing(focusFamilyId){
 window.openCloudControlBriefing = openCloudControlBriefing;
 window.buildCloudControlBrief = buildCloudControlBrief;
 
+/* Problems → Outcomes layer: "Problems this solves" panel block.
+   Placed high in the panel (right after the description) so the value story
+   leads, before the product/spec detail. */
+function currentPersona(){
+  try { return localStorage.getItem("cpn-persona") || ""; } catch(e){ return ""; }
+}
+function setPersona(id){
+  try { id ? localStorage.setItem("cpn-persona", id) : localStorage.removeItem("cpn-persona"); } catch(e){}
+}
+window.currentPersona = currentPersona;
+window.setPersona = setPersona;
+
+function insertProblemsSolved(id, kind){
+  const P = window.__cpnProblems;
+  const pb = $("#pbody");
+  if (!P || !pb || pb.querySelector(".p-prob")) return;
+  const familyId = kind === "product" ? prodById[id]?.family : id;
+  const problems = P.problemsForFamily(familyId);
+  if (!problems.length) return;
+
+  const persona = currentPersona();
+  const dcloudFor = (prob) => {
+    if (!prob.dcloudPath) return null;
+    try {
+      const path = (typeof DCLOUD_PATHS !== "undefined") ? DCLOUD_PATHS.find(p => p.id === prob.dcloudPath) : null;
+      if (!path) return null;
+      const entries = typeof dcloudPathEntries === "function" ? dcloudPathEntries(path) : [];
+      const url = entries.length && typeof dcloudPrimaryUrl === "function" ? dcloudPrimaryUrl(entries[0]) : null;
+      return url ? { title: path.title, url } : null;
+    } catch(e){ return null; }
+  };
+  const list = problems.slice(0, 3).map(prob => {
+    const line = persona ? P.personaLine(prob, persona) : prob.outcome;
+    const proof = prob.proof
+      ? `<div class="p-prob-proof"><span class="p-prob-proof-k">${escapeHtml(prob.proof.metric)}:</span> <span class="p-prob-before">${escapeHtml(prob.proof.before)}</span> <span class="p-prob-arrow">→</span> <span class="p-prob-after">${escapeHtml(prob.proof.after)}</span></div>`
+      : "";
+    const dc = dcloudFor(prob);
+    const dcLink = dc ? `<a class="p-prob-dcloud" href="${escapeHtml(dc.url)}" target="_blank" rel="noopener">Prove it on dCloud ↗</a>` : "";
+    const next = prob.maturityNext ? P.getProblem(prob.maturityNext) : null;
+    const chain = next ? `<button type="button" class="p-prob-next" data-prob-explore="${escapeHtml(next.id)}">Then: ${escapeHtml(next.outcome)} →</button>` : "";
+    return `<div class="p-prob-item" data-prob-id="${escapeHtml(prob.id)}">
+        <div class="p-prob-symptom">${escapeHtml(prob.symptom)}</div>
+        <div class="p-prob-outcome"><span class="p-prob-tick">✓</span>${escapeHtml(line)}</div>
+        ${proof}
+        <div class="p-prob-actions">
+          <button type="button" class="p-prob-explore" data-prob-explore="${escapeHtml(prob.id)}">See what solves this →</button>
+          ${dcLink}
+        </div>
+        ${chain}
+      </div>`;
+  }).join("");
+
+  const personaChips = P.PERSONAS.map(pp =>
+    `<button type="button" class="p-prob-persona${pp.id === persona ? " on" : ""}" data-persona="${pp.id}">${escapeHtml(pp.label)}</button>`
+  ).join("");
+
+  const sec = document.createElement("div");
+  sec.className = "p-sec p-prob";
+  sec.dataset.familyId = familyId;
+  sec.innerHTML = `
+    <div class="p-prob-head">
+      <div class="p-sec-t" style="margin:0">Problems this solves</div>
+      <div class="p-prob-personas" role="group" aria-label="Frame for persona">${personaChips}</div>
+    </div>
+    ${list}
+    <div class="p-prob-note" title="${escapeHtml(P.DISCLAIMER)}">Directional talking points · not guarantees</div>`;
+
+  sec.querySelectorAll("[data-persona]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const val = btn.dataset.persona;
+      setPersona(val === persona ? "" : val);
+      pb.querySelector(".p-prob")?.remove();
+      insertProblemsSolved(id, kind);
+    });
+  });
+  sec.querySelectorAll("[data-prob-explore]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (typeof exploreProblem === "function") exploreProblem(btn.dataset.probExplore);
+    });
+  });
+
+  const desc = pb.querySelector(".p-desc");
+  if (desc) desc.insertAdjacentElement("afterend", sec);
+  else pb.insertBefore(sec, pb.firstChild);
+}
+window.insertProblemsSolved = insertProblemsSolved;
+
+/* Explore a problem on the graph. Reuses the reference-architecture overlay when
+   the problem maps to one; otherwise highlights the addressing families. */
+function exploreProblem(problemId){
+  const P = window.__cpnProblems;
+  const prob = P && P.getProblem(problemId);
+  if (!prob) return;
+  try { if (typeof closePanel === "function") closePanel(); } catch(e){}
+  if (prob.refArch && typeof REF_ARCH !== "undefined" && REF_ARCH[prob.refArch] && typeof applyRefArch === "function"){
+    applyRefArch(prob.refArch);
+    showToast(`${prob.outcome}`);
+    return;
+  }
+  // Fallback: highlight the problem's families directly on the canvas.
+  if (typeof highlightProblemFamilies === "function"){
+    highlightProblemFamilies(prob);
+  } else if (typeof jumpTo === "function" && prob.families?.length){
+    const first = prob.families.find(f => nodeById[f]) || prob.families[0];
+    jumpTo(first);
+  }
+  showToast(`${prob.outcome}`);
+}
+window.exploreProblem = exploreProblem;
+
+/* Phase 3 — Symptom discovery: start from a plain-language pain, not the catalog.
+   Maps a symptom → problem → highlights the families that solve it. */
+function openSymptomPicker(){
+  const P = window.__cpnProblems;
+  if (!P) return;
+  document.getElementById("cpn-symptom-modal")?.remove();
+  const persona = typeof currentPersona === "function" ? currentPersona() : "";
+  const rows = P.SYMPTOMS.map(sy => {
+    const prob = P.getProblem(sy.problem);
+    if (!prob) return "";
+    const fams = (prob.families || []).slice(0, 3).map(f => escapeHtml(P.nameOr(f))).join(", ");
+    return `<button type="button" class="sym-row" data-sym="${escapeHtml(sy.problem)}">
+        <div class="sym-text">${escapeHtml(sy.text)}</div>
+        <div class="sym-meta"><span class="sym-out">${escapeHtml(persona ? P.personaLine(prob, persona) : prob.outcome)}</span><span class="sym-fam">${fams}</span></div>
+      </button>`;
+  }).join("");
+  const ov = document.createElement("div");
+  ov.id = "cpn-symptom-modal";
+  ov.className = "cpn-modal-ov";
+  ov.innerHTML = `
+    <div class="cpn-modal" role="dialog" aria-modal="true" aria-label="Start from a problem">
+      <div class="cpn-modal-head">
+        <div>
+          <div class="cpn-modal-t">What's hurting?</div>
+          <div class="cpn-modal-sub">Pick a symptom in plain language — we'll show what solves it.</div>
+        </div>
+        <button type="button" class="cpn-modal-x" aria-label="Close">×</button>
+      </div>
+      <div class="sym-list">${rows}</div>
+    </div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener("click", e => { if (e.target === ov) close(); });
+  ov.querySelector(".cpn-modal-x")?.addEventListener("click", close);
+  ov.querySelectorAll("[data-sym]").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.sym;
+    close();
+    exploreProblem(id);
+    const prob = P.getProblem(id);
+    const first = prob && (prob.families || []).find(f => nodeById[f]);
+    if (first && typeof jumpTo === "function") jumpTo(first);
+  }));
+}
+window.openSymptomPicker = openSymptomPicker;
+
 function insertCloudControlOps(id, kind){
   const ops = window.__cpnOps;
   const pb = $("#pbody");
@@ -14762,6 +15159,7 @@ function enhanceNodePanel(id){
     renderBreadcrumbs();
     insertPhotoPlaceholder(id, "node");
     insertTierBadge(id);
+    insertProblemsSolved(id, "node");
     insertDcloudLinks(id, "node");
     insertCloudControlOps(id, "node");
     insertPinAndCompareBtns(id, "node");
@@ -14773,6 +15171,7 @@ function enhanceProductPanel(id){
     renderBreadcrumbs();
     insertProductHero(id, "product");
     insertMatrixLink(id, "product");
+    insertProblemsSolved(id, "product");
     insertDcloudLinks(id, "product");
     insertCloudControlOps(id, "product");
     const p = prodById[id];
@@ -15163,6 +15562,43 @@ function clearRefArch(){
   resetHL(); highlightStack();
   if (!$("#ucs")?.value) hideLearningPathBanner();
 }
+
+/* Phase 3 — Outcomes graph lens: highlight the families that address a problem,
+   even when it doesn't map to a named reference architecture. Reuses the
+   refarch badge chrome for a consistent look. */
+function highlightProblemFamilies(prob){
+  if (!prob || typeof ndEl === "undefined" || !ndEl) return;
+  const setIds = new Set(prob.families || []);
+  activeRefArch = null;
+  ndEl.each(function(nd){
+    const inA = setIds.has(nd.id);
+    d3.select(this).select(".gr").attr("fill-opacity", inA ? 0.35 : 0);
+    d3.select(this).select(".mc").attr("fill-opacity", inA ? 1 : 0.08)
+      .attr("stroke", inA ? "#2dce5c" : "transparent").attr("stroke-width", inA ? 2 : 0);
+    d3.select(this).select(".icn").attr("opacity", inA ? 1 : 0.1);
+    d3.select(this).select(".nl").style("fill", inA ? graphLabels().active : graphLabels().default);
+  });
+  if (typeof lviz !== "undefined" && lviz){
+    lviz.each(function(l){
+      const both = setIds.has(sid(l)) && setIds.has(tid(l));
+      d3.select(this).attr("stroke", both ? "#2dce5c" : "#0d2847")
+        .attr("stroke-opacity", both ? 0.9 : 0.04).attr("stroke-width", both ? 2.4 : 1);
+    });
+  }
+  const badge = $("#refarch-badge"), name = $("#refarch-name");
+  if (badge && name){
+    let dc = null;
+    try { dc = (typeof DCLOUD_PATHS !== "undefined") ? DCLOUD_PATHS.find(p => p.id === prob.dcloudPath) : null; } catch(e){}
+    const labHint = dc ? ` · Try <strong>${escapeHtml(dc.title)}</strong> on dCloud` : "";
+    name.innerHTML = `Outcome: ${escapeHtml(prob.outcome)}${labHint}`;
+    badge.classList.add("show");
+  }
+  try {
+    const uc = (prob.useCases || [])[0];
+    if (uc && typeof renderLearningPathBanner === "function") renderLearningPathBanner(uc);
+  } catch(e){}
+}
+window.highlightProblemFamilies = highlightProblemFamilies;
 // Hook use-case dropdown clicks (when user picks a UC, also offer overlay)
 function wireRefArchToUC(){
   $("#ucs").addEventListener("change", () => {
@@ -16399,6 +16835,15 @@ function buildPlanContext(){
   if (wizardState.industry) {
     try { lines.push(`Summary: ${wizardNarrative()}`); } catch(e){}
   }
+  try {
+    const P = window.__cpnProblems;
+    if (P){
+      const fams = [...new Set([...stack].map(id => stackItems.get(id) === "product" ? prodById[id]?.family : id).filter(Boolean))];
+      const persona = typeof currentPersona === "function" ? currentPersona() : "";
+      const narr = P.problemNarrative(fams, persona);
+      if (narr) lines.push("", narr);
+    }
+  } catch(e){}
   return lines.join("\n");
 }
 
@@ -16867,9 +17312,10 @@ window.__cpnV2 = {
 };
 })();
 </script>
-<script src="assets/cpn-cloud-control-ops.js?v=2.96.0"></script>
-<script src="assets/cpn-lazy-load.js?v=2.96.0"></script>
-<script src="assets/cpn-kiosk.js?v=2.96.0"></script>
+<script src="assets/cpn-problems.js?v=2.97.0"></script>
+<script src="assets/cpn-cloud-control-ops.js?v=2.97.0"></script>
+<script src="assets/cpn-lazy-load.js?v=2.97.0"></script>
+<script src="assets/cpn-kiosk.js?v=2.97.0"></script>
 <script src="assets/cpn-logo-intro.js?v=2.91.6"></script>
 </body>
 </html>
