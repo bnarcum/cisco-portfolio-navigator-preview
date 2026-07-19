@@ -429,6 +429,7 @@ await page.locator('.acq-card[data-id="meraki"]').evaluate(el => el.click());
 await page.waitForFunction(() => window.CPN_AcquisitionTimeline.testState().focusedId === "meraki");
 await page.click("#acq-zoom-fit");
 await page.waitForFunction(() => window.CPN_AcquisitionTimeline.testState().level === "overview");
+await page.waitForFunction(() => document.querySelector("#acq-canvas").scrollLeft === 0);
 const fitFromFocus = await page.evaluate(() => {
   const state = window.CPN_AcquisitionTimeline.testState();
   const canvas = document.querySelector("#acq-canvas");
@@ -851,6 +852,13 @@ if (!reduced.state.reducedMotion) errors.push("reduced-motion state not detected
 if (reduced.behavior !== "auto") errors.push(`reduced-motion focus behavior: ${reduced.behavior}`);
 if (reduced.particleTransforms.length) errors.push("reduced-motion particles transformed");
 if (reduced.layerTransforms.length) errors.push("reduced-motion layers transformed");
+
+const polish = await page.evaluate(() => ({
+  date: window.CPN_AcquisitionTimeline.formatAnnouncedDate("2019-06-17"),
+  viewportFlow: Boolean(document.querySelector("#acq-viewport-flow")),
+}));
+if (polish.date !== "2019 - Jun") errors.push(`date format: ${polish.date}`);
+if (!polish.viewportFlow) errors.push("viewport flow layer missing");
 
 await browser.close();
 if (errors.length) {

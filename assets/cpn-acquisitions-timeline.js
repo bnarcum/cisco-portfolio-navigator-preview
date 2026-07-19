@@ -96,6 +96,21 @@
     return `$${Math.round(v / 1e3)}K`;
   }
 
+  const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function formatAnnouncedDate(iso) {
+    if (!iso) return "";
+    const match = String(iso).match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/);
+    if (!match) return iso;
+    const year = match[1];
+    const month = match[2];
+    if (!month) return year;
+    const index = Number(month) - 1;
+    if (index < 0 || index > 11) return year;
+    return `${year} - ${MONTHS_SHORT[index]}`;
+  }
+
   function safeSourceUrl(value) {
     try {
       const url = new URL(value);
@@ -269,9 +284,6 @@
       el.style.left = `${x1}px`;
       el.style.width = `${Math.max(40, x2 - x1)}px`;
       el.style.setProperty("--acq-era-color", b.color);
-      const flow = document.createElement("div");
-      flow.className = "acq-era-flow";
-      el.appendChild(flow);
       const lbl = document.createElement("div");
       lbl.className = "acq-era-lbl";
       lbl.style.left = `${x1 + 12}px`;
@@ -358,7 +370,7 @@
       el.style.setProperty("--tx", `${dateX(acq.announced)}px`);
       el.style.setProperty("--acq-era-color", eraColorFor(acq.era));
       el.textContent = acq.company.length > 22 ? `${acq.company.slice(0, 20)}…` : acq.company;
-      el.setAttribute("aria-label", `${acq.company}, ${acq.announced.slice(0, 4)}`);
+      el.setAttribute("aria-label", `${acq.company}, ${formatAnnouncedDate(acq.announced)}`);
       el.addEventListener("click", () => {
         ACQ.anchorYear = Number(acq.announced.slice(0, 4));
         if (ACQ.zoom < 0.78) ACQ.zoom = 1.05;
@@ -392,7 +404,7 @@
     card.tabIndex = 0;
     card.setAttribute("aria-label", [
       a.company,
-      `announced ${a.announced}`,
+      `announced ${formatAnnouncedDate(a.announced)}`,
       a.business,
       a.valueUsd ? formatValue(a.valueUsd) : "",
     ].filter(Boolean).join(", "));
@@ -403,7 +415,7 @@
     card.innerHTML = `
       <span class="acq-card-name">${escapeHtml(a.company)}</span>
       <span class="acq-card-meta">
-        <span class="acq-card-date">${escapeHtml(a.announced.slice(0, 7))}</span>
+        <span class="acq-card-date">${escapeHtml(formatAnnouncedDate(a.announced))}</span>
         ${a.valueUsd ? `<span class="acq-card-value">${formatValue(a.valueUsd)}</span>` : ""}
       </span>`;
     card.addEventListener("click", () => focusAcquisition(a.id));
@@ -795,7 +807,7 @@
     const headline = $("#acq-focus-headline");
     if (headline) headline.textContent = summaryHeadline(a);
     $("#acq-focus-meta").textContent = [
-      a.announced,
+      formatAnnouncedDate(a.announced),
       a.valueUsd ? formatValue(a.valueUsd) : null,
       a.business || null,
       a.country || null,
@@ -1153,7 +1165,7 @@
       option.setAttribute("aria-selected", "false");
       option.tabIndex = -1;
       option.dataset.id = acq.id;
-      option.textContent = `${acq.company} · ${acq.announced.slice(0, 4)}`;
+      option.textContent = `${acq.company} · ${formatAnnouncedDate(acq.announced)}`;
       option.addEventListener("click", () => {
         selectSearchResult(acq);
       });
@@ -1376,9 +1388,12 @@
         </div>
       </div>
       <div id="acq-canvas-area">
-        <div id="acq-canvas" tabindex="-1" role="region" aria-label="Acquisition timeline"><div id="acq-inner">
-          <div id="acq-spine-wrap" class="acq-layer" data-depth="0.04"><div id="acq-spine"></div></div>
-        </div></div>
+        <div id="acq-canvas" tabindex="-1" role="region" aria-label="Acquisition timeline">
+          <div id="acq-viewport-flow" aria-hidden="true"></div>
+          <div id="acq-inner">
+            <div id="acq-spine-wrap" class="acq-layer" data-depth="0.04"><div id="acq-spine"></div></div>
+          </div>
+        </div>
         <div id="acq-minimap">
           <div id="acq-minimap-track" role="slider" tabindex="0"
             aria-label="Timeline viewport year" aria-valuemin="${ACQ.yearMin}"
@@ -1615,6 +1630,7 @@
     layoutExploreCards,
     searchAcquisitions,
     focusRelative,
+    formatAnnouncedDate,
     testState,
   };
 })();
