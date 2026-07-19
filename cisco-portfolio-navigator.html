@@ -62,8 +62,8 @@
   <link rel="stylesheet" href="assets/cpn-light.css?v=2.87.5"/>
   <link rel="stylesheet" href="assets/cpn-iq-theme.css?v=2.87.5"/>
   <link rel="stylesheet" href="assets/cpn-logo-intro.css?v=2.91.6"/>
-  <link rel="stylesheet" href="assets/cpn-acquisitions-timeline.css?v=3.5.0"/>
-  <link rel="stylesheet" href="assets/cpn-refresh-timeline.css?v=3.5.0"/>
+  <link rel="stylesheet" href="assets/cpn-acquisitions-timeline.css?v=3.5.1"/>
+  <link rel="stylesheet" href="assets/cpn-refresh-timeline.css?v=3.5.1"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     @font-face{
@@ -9599,9 +9599,22 @@ function productMatchesFilters(p){
   }
   return true;
 }
+/* Timeline visibility — intentionally ignores the graph status facet (which
+   defaults to Current-only and hides EOS). Timeline always shows current,
+   EOS, and EOL products that pass category / use-case / industry / tier filters. */
 function productVisibleInTimeline(p){
-  if (!productMatchesFilters(p)) return false;
-  return ["current", "eos", "eol"].includes(p.status);
+  if (!p) return false;
+  if (!activeCats.has(p.category)) return false;
+  const fam = nodeById[p.family];
+  if (activeUC && !((fam?.useCases || []).includes(activeUC))) return false;
+  if (activeInd && !((fam?.industries || []).includes(activeInd))) return false;
+  if (!["current", "eos", "eol"].includes(p.status)) return false;
+  if (facetState.tier.size > 0) {
+    const tiers = window.__cpnV2?.TIERS;
+    const tier = tiers?.[p.family]?.tier || "";
+    if (![...facetState.tier].some(label => tier.toLowerCase().includes(label.toLowerCase()))) return false;
+  }
+  return true;
 }
 /* Refresh the Timeline view if it's open. renderTimeline lives inside the
    v2 IIFE while applyFilters() is in the outer scope, so we reach it through
@@ -16712,8 +16725,8 @@ window.__cpnV2 = {
 <script src="assets/cpn-lazy-load.js?v=3.3.0"></script>
 <script src="assets/cpn-kiosk.js?v=3.3.0"></script>
 <script src="assets/cpn-acquisitions-data.js?v=3.3.5"></script>
-<script src="assets/cpn-refresh-timeline.js?v=3.5.0"></script>
-<script src="assets/cpn-acquisitions-timeline.js?v=3.5.0"></script>
+<script src="assets/cpn-refresh-timeline.js?v=3.5.1"></script>
+<script src="assets/cpn-acquisitions-timeline.js?v=3.5.1"></script>
 <script src="assets/cpn-logo-intro.js?v=2.91.6"></script>
 </body>
 </html>

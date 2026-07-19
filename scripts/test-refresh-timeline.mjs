@@ -38,6 +38,13 @@ try {
 
   const tickerText = await page.locator("#tl-stats-ticker").innerText();
   if (!/Showing \d+ product/.test(tickerText)) errors.push(`unexpected stats ticker: ${tickerText}`);
+  const eolMatch = tickerText.match(/(\d+)\s+EOL/);
+  const eosMatch = tickerText.match(/(\d+)\s+EOS/);
+  if (!eolMatch || Number(eolMatch[1]) < 1) errors.push(`expected EOL products in ticker, got: ${tickerText}`);
+  if (!eosMatch || Number(eosMatch[1]) < 1) errors.push(`expected EOS products in ticker, got: ${tickerText}`);
+
+  const startYear = await page.locator("#tl-minimap-labels span").first().innerText();
+  if (Number(startYear) > 2015) errors.push(`timeline start year too recent: ${startYear}`);
 
   const blockCount = await page.locator(".tl-block").count();
   if (blockCount < 10) errors.push(`expected many product bars, got ${blockCount}`);
@@ -60,16 +67,22 @@ try {
     const afterScroll = await page.evaluate(() => document.querySelector("#tl-canvas").scrollLeft);
     if (afterScroll <= beforeScroll.left) errors.push("canvas did not scroll horizontally");
 
-    const vpMoved = await page.evaluate(async () => {
+    const scrollResult = await page.evaluate(async () => {
       const vp = document.querySelector("#tl-minimap-viewport");
-      const left1 = vp?.style.left;
       const canvas = document.querySelector("#tl-canvas");
-      canvas.scrollLeft += 120;
+      const left1 = vp?.style.left || "";
+      const prev = canvas.scrollLeft;
+      canvas.scrollLeft = Math.min(canvas.scrollWidth - canvas.clientWidth, prev + 120);
       canvas.dispatchEvent(new Event("scroll"));
       await new Promise(r => requestAnimationFrame(r));
-      return left1 !== vp?.style.left;
+      return {
+        scrolled: canvas.scrollLeft > prev,
+        vpChanged: left1 !== (vp?.style.left || ""),
+      };
     });
-    if (!vpMoved) errors.push("minimap viewport did not update on scroll");
+    if (scrollResult.scrolled && !scrollResult.vpChanged) {
+      errors.push("minimap viewport did not update on scroll");
+    }
   } else {
     await page.evaluate(() => window.CPN_RefreshTimeline.setZoom(2.5));
     await page.waitForTimeout(150);
