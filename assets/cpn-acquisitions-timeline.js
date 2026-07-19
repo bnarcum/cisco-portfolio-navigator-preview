@@ -34,6 +34,53 @@
       .replace(/"/g, "&quot;");
   }
 
+  const INITIAL_SKIP = new Set([
+    "inc", "llc", "ltd", "corp", "corporation", "company", "co", "the", "and", "of", "for",
+    "a", "an", "group", "systems", "system", "technologies", "technology", "networks",
+    "network", "software", "solutions", "international", "usa", "us", "plc", "gmbh", "sa",
+  ]);
+
+  function companyInitials(company) {
+    const cleaned = String(company || "")
+      .replace(/\(.*?\)/g, " ")
+      .replace(/[,./\\-]+/g, " ")
+      .trim();
+    const words = cleaned.split(/\s+/).filter(Boolean)
+      .map(w => w.replace(/[^a-zA-Z0-9]/g, ""))
+      .filter(w => w && !INITIAL_SKIP.has(w.toLowerCase()));
+    if (!words.length) {
+      const raw = cleaned.replace(/[^a-zA-Z0-9]/g, "");
+      return (raw.slice(0, 2) || "?").toUpperCase();
+    }
+    if (words.length === 1) {
+      const w = words[0];
+      if (w.length <= 2) return w.toUpperCase();
+      const caps = w.match(/[A-Z]/g);
+      if (caps && caps.length >= 2) return caps.slice(0, 2).join("").toUpperCase();
+      return w.slice(0, 2).toUpperCase();
+    }
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+
+  function eraColorFor(eraId) {
+    const band = (window.CPN_ACQUISITIONS?.eraBands || []).find(b => b.id === eraId);
+    return band?.color || "#02C8FF";
+  }
+
+  function cardIdentityHtml(acq) {
+    const kind = acq.visualIdentity?.kind || "name-tile";
+    if (kind === "verified-logo") {
+      return `<div class="acq-card-logo-wrap acq-card-logo-wrap--verified">
+          <img class="acq-card-logo" alt="" loading="lazy" data-acq-id="${escapeHtml(acq.id)}"/>
+        </div>`;
+    }
+    const initials = companyInitials(acq.company);
+    const eraColor = eraColorFor(acq.era);
+    return `<div class="acq-card-logo-wrap acq-card-logo-wrap--monogram" style="--acq-era-color:${eraColor}">
+          <span class="acq-card-monogram" aria-hidden="true">${escapeHtml(initials)}</span>
+        </div>`;
+  }
+
   function formatValue(v) {
     if (!v || v <= 0) return "";
     if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
@@ -302,14 +349,13 @@
 
     card.innerHTML = `
       <div class="acq-card-shell">
-        <div class="acq-card-logo-wrap">
-          <img class="acq-card-logo" alt="" loading="lazy" data-acq-id="${escapeHtml(a.id)}"/>
-        </div>
+        ${cardIdentityHtml(a)}
         <div class="acq-card-name">${escapeHtml(a.company)}</div>
         <div class="acq-card-year">${escapeHtml(a.announced.slice(0, 7))}</div>
         ${a.valueUsd ? `<div class="acq-card-value">${formatValue(a.valueUsd)}</div>` : ""}
       </div>`;
-    setLogoImg(card.querySelector(".acq-card-logo"), a);
+    const logoImg = card.querySelector(".acq-card-logo");
+    if (logoImg) setLogoImg(logoImg, a);
     card.addEventListener("click", () => focusAcquisition(a.id));
     card.addEventListener("keydown", event => {
       if (event.key !== "Enter" && event.key !== " ") return;

@@ -739,6 +739,26 @@ if (accessibility.cardTabIndex != null && accessibility.cardTabIndex !== 0) {
 }
 if (accessibility.cardRole && !accessibility.cardLabel) errors.push("card label missing");
 
+const cardIdentity = await page.evaluate(() => {
+  const meraki = document.querySelector('.acq-card[data-id="meraki"]');
+  const nameTile = meraki?.dataset.identity === "name-tile";
+  const monogram = meraki?.querySelector(".acq-card-monogram")?.textContent?.trim() || "";
+  const hasTinyLogoImg = Boolean(meraki?.querySelector(".acq-card-logo"));
+  const verified = window.CPN_ACQUISITIONS.acquisitions.find(a => a.id === "opendns");
+  return {
+    nameTile,
+    monogram,
+    hasTinyLogoImg,
+    verifiedKind: verified?.visualIdentity?.kind || "",
+  };
+});
+if (!cardIdentity.nameTile) errors.push("meraki card should be name-tile identity");
+if (!/^[A-Z0-9]{2,3}$/.test(cardIdentity.monogram)) {
+  errors.push(`name-tile monogram unreadable: ${cardIdentity.monogram || "(empty)"}`);
+}
+if (cardIdentity.hasTinyLogoImg) errors.push("name-tile card should not render micro logo img");
+if (cardIdentity.verifiedKind !== "verified-logo") errors.push("opendns should remain verified-logo");
+
 const invalidVerifiedSources = await page.evaluate(() => {
   const allowed = new Set(["official", "wikimedia", "wikipedia", "manual"]);
   return window.CPN_ACQUISITIONS.acquisitions

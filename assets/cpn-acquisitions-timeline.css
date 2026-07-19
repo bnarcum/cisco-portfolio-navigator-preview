@@ -429,14 +429,23 @@ body.acq-open #tools {
 
 .acq-card-logo-wrap {
   width: 100%;
-  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 3px;
+}
+
+.acq-card-logo-wrap--verified {
+  height: 24px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.acq-card-logo-wrap--monogram {
+  height: 28px;
+  background: color-mix(in srgb, var(--acq-era-color, #02c8ff) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--acq-era-color, #02c8ff) 38%, transparent);
 }
 
 .acq-card-logo {
@@ -444,6 +453,15 @@ body.acq-open #tools {
   height: 100%;
   object-fit: contain;
   padding: 4px;
+}
+
+.acq-card-monogram {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--acq-era-color, #02c8ff);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .acq-card-name {
@@ -480,9 +498,28 @@ body.acq-open #tools {
   font-size: 10px;
 }
 
-#acq-canvas[data-name-tier="3"] .acq-card-logo-wrap,
-#acq-canvas[data-name-tier="full"] .acq-card-logo-wrap {
+#acq-canvas[data-name-tier="3"] .acq-card-logo-wrap--verified {
   height: 32px;
+}
+
+#acq-canvas[data-name-tier="3"] .acq-card-logo-wrap--monogram {
+  height: 34px;
+}
+
+#acq-canvas[data-name-tier="3"] .acq-card-monogram {
+  font-size: 12px;
+}
+
+#acq-canvas[data-name-tier="full"] .acq-card-logo-wrap--verified {
+  height: 32px;
+}
+
+#acq-canvas[data-name-tier="full"] .acq-card-logo-wrap--monogram {
+  height: 38px;
+}
+
+#acq-canvas[data-name-tier="full"] .acq-card-monogram {
+  font-size: 13px;
 }
 
 #acq-canvas[data-name-tier="full"] .acq-year-expansion-grid {
