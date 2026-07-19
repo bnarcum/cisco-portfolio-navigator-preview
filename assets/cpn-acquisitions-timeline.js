@@ -19,11 +19,20 @@
     level: "overview",
     anchorYear: null,
     expandedYear: null,
+    shelfYear: null,
     searchQuery: "",
     searchActiveIndex: -1,
+    searchHighlightIds: null,
     focusReturnId: null,
     opener: null,
+    tourTimer: null,
+    tourIndex: -1,
   };
+
+  const LANDMARK_IDS = [
+    "stratacom", "cerent", "webex", "scientific-atlanta", "tandberg", "meraki",
+    "sourcefire", "opendns", "duo-security", "appdynamics", "thousandeyes", "splunk",
+  ];
 
   const $ = (s, r = document) => r.querySelector(s);
 
@@ -34,51 +43,51 @@
       .replace(/"/g, "&quot;");
   }
 
-  const INITIAL_SKIP = new Set([
-    "inc", "llc", "ltd", "corp", "corporation", "company", "co", "the", "and", "of", "for",
-    "a", "an", "group", "systems", "system", "technologies", "technology", "networks",
-    "network", "software", "solutions", "international", "usa", "us", "plc", "gmbh", "sa",
-  ]);
-
-  function companyInitials(company) {
-    const cleaned = String(company || "")
-      .replace(/\(.*?\)/g, " ")
-      .replace(/[,./\\-]+/g, " ")
-      .trim();
-    const words = cleaned.split(/\s+/).filter(Boolean)
-      .map(w => w.replace(/[^a-zA-Z0-9]/g, ""))
-      .filter(w => w && !INITIAL_SKIP.has(w.toLowerCase()));
-    if (!words.length) {
-      const raw = cleaned.replace(/[^a-zA-Z0-9]/g, "");
-      return (raw.slice(0, 2) || "?").toUpperCase();
-    }
-    if (words.length === 1) {
-      const w = words[0];
-      if (w.length <= 2) return w.toUpperCase();
-      const caps = w.match(/[A-Z]/g);
-      if (caps && caps.length >= 2) return caps.slice(0, 2).join("").toUpperCase();
-      return w.slice(0, 2).toUpperCase();
-    }
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-
   function eraColorFor(eraId) {
     const band = (window.CPN_ACQUISITIONS?.eraBands || []).find(b => b.id === eraId);
     return band?.color || "#02C8FF";
   }
 
-  function cardIdentityHtml(acq) {
-    const kind = acq.visualIdentity?.kind || "name-tile";
-    if (kind === "verified-logo") {
-      return `<div class="acq-card-logo-wrap acq-card-logo-wrap--verified">
-          <img class="acq-card-logo" alt="" loading="lazy" data-acq-id="${escapeHtml(acq.id)}"/>
-        </div>`;
-    }
-    const initials = companyInitials(acq.company);
-    const eraColor = eraColorFor(acq.era);
-    return `<div class="acq-card-logo-wrap acq-card-logo-wrap--monogram" style="--acq-era-color:${eraColor}">
-          <span class="acq-card-monogram" aria-hidden="true">${escapeHtml(initials)}</span>
-        </div>`;
+  function eraLabelFor(eraId) {
+    const band = (window.CPN_ACQUISITIONS?.eraBands || []).find(b => b.id === eraId);
+    return band?.label || eraId;
+  }
+
+  function summaryHeadline(acq) {
+    const text = (acq.summary || acq.business || "").trim();
+    if (!text) return acq.business || "Cisco acquisition.";
+    const sentence = text.split(/(?<=[.!?])\s+/)[0];
+    return sentence.length > 180 ? `${sentence.slice(0, 177)}…` : sentence;
+  }
+
+  function cumulativeSpendThroughYear(year) {
+    return (window.CPN_ACQUISITIONS?.acquisitions || [])
+      .filter(a => +a.announced.slice(0, 4) <= year)
+      .reduce((sum, a) => sum + (a.valueUsd || 0), 0);
+  }
+
+  function getCenterYear() {
+    const canvas = $("#acq-canvas");
+    if (!canvas) return ACQ.yearMin;
+    const center = canvas.scrollLeft + canvas.clientWidth / 2;
+    const rawYear = ACQ.yearMin + (center - 120) / (ACQ.pxPerYear * ACQ.zoom);
+    return Math.max(ACQ.yearMin, Math.min(ACQ.yearMax, Math.round(rawYear)));
+  }
+
+  function yearDealWeight(items) {
+    const max = Math.max(0, ...items.map(a => a.valueUsd || 0));
+    if (max >= 5e9) return 3;
+    if (max >= 1e9) return 2;
+    if (max >= 1e8) return 1;
+    return 0;
+  }
+
+  function miniDotScale(valueUsd) {
+    if (!valueUsd || valueUsd <= 0) return 1;
+    if (valueUsd >= 5e9) return 2.4;
+    if (valueUsd >= 1e9) return 1.8;
+    if (valueUsd >= 1e8) return 1.35;
+    return 1;
   }
 
   function formatValue(v) {
@@ -167,7 +176,7 @@
   function restoreCardFocus(id, attempts = 90) {
     const tryFocus = remaining => {
       if (!$("#acq-wrap")?.classList.contains("show") || ACQ.focusedId !== id) return;
-      const card = $("#acq-inner")?.querySelector(`.acq-card[data-id="${CSS.escape(id)}"]`);
+      const card = $(`#acq-shelf .acq-shelf-row[data-id="${CSS.escape(id)}"]`);
       if (focusVisible(card) || remaining <= 0) return;
       requestAnimationFrame(() => tryFocus(remaining - 1));
     };
@@ -177,6 +186,31 @@
   function getSemanticLevel(zoom = ACQ.zoom) {
     if (ACQ.focusedId) return "focus";
     return zoom < 0.78 ? "overview" : "explore";
+  }
+
+  function syncShelfYear() {
+    if (getSemanticLevel() === "overview") {
+      ACQ.shelfYear = null;
+      return;
+    }
+    const center = getCenterYear();
+    if (ACQ.expandedYear != null) {
+      ACQ.shelfYear = ACQ.expandedYear;
+      return;
+    }
+    if (ACQ.anchorYear != null) {
+      ACQ.shelfYear = ACQ.anchorYear;
+      return;
+    }
+    ACQ.shelfYear = center;
+  }
+
+  function hideYearShelf() {
+    const shelf = $("#acq-shelf");
+    if (shelf) {
+      shelf.hidden = true;
+      shelf.innerHTML = "";
+    }
   }
 
   function exploreCardWidth(zoom = ACQ.zoom) {
@@ -277,29 +311,27 @@
     }
   }
 
-  function renderOverview(inner, list, mid) {
+  function renderYearMarkers(inner, list, mid, { explore = false } = {}) {
     const canvas = $("#acq-canvas");
     const placements = layoutOverviewByYear(list, { mid });
+    const viewportWidth = canvas?.clientWidth || 1440;
+    const scrollLeft = canvas?.scrollLeft || 0;
+    const minX = scrollLeft - viewportWidth * 0.5;
+    const maxX = scrollLeft + viewportWidth * 1.5;
+
     placements.forEach(placement => {
+      if (placement.x < minX || placement.x > maxX) return;
       const marker = document.createElement("button");
       marker.type = "button";
-      marker.className = "acq-year-marker";
+      marker.className = "acq-year-marker" +
+        (explore && ACQ.shelfYear === placement.year ? " active" : "") +
+        (yearDealWeight(placement.items) >= 2 ? " acq-year-marker--heavy" : "");
       marker.dataset.year = String(placement.year);
       marker.setAttribute("role", "button");
       marker.tabIndex = 0;
       marker.style.setProperty("--tx", `${placement.x}px`);
       marker.style.setProperty("--ty", `${placement.y}px`);
       marker.setAttribute("aria-label", `Explore ${placement.year}: ${placement.representedCount} acquisitions`);
-
-      const logo = placement.items.find(acq =>
-        acq.featured && acq.visualIdentity?.kind === "verified-logo");
-      if (logo) {
-        const img = document.createElement("img");
-        img.alt = "";
-        img.loading = "lazy";
-        setLogoImg(img, logo);
-        marker.appendChild(img);
-      }
 
       const year = document.createElement("span");
       year.className = "acq-year-marker-year";
@@ -312,186 +344,144 @@
 
       marker.addEventListener("click", () => {
         ACQ.anchorYear = placement.year;
-        ACQ.expandedYear = null;
-        ACQ.zoom = 1.05;
-        updateZoomUi();
-        renderAcquisitionTimeline();
+        ACQ.expandedYear = placement.year;
+        ACQ.shelfYear = placement.year;
+        if (ACQ.zoom < 0.78) {
+          ACQ.zoom = 1.05;
+          updateZoomUi();
+          renderAcquisitionTimeline();
+        }
         if (canvas) {
           canvas.scrollLeft = Math.max(0, yearX(placement.year, 6) - canvas.clientWidth / 2);
-          renderCards(inner);
-          updateParallax();
         }
-      });
-      inner.appendChild(marker);
-    });
-  }
-
-  function createAcquisitionCard(placement, index) {
-    const { acq: a, x, y } = placement;
-    const card = document.createElement("div");
-    card.className = "acq-card" + (a.featured ? " featured" : "") + (ACQ.focusedId && ACQ.focusedId !== a.id ? " dim" : "");
-    if (ACQ.focusedId === a.id) card.classList.add("focused");
-    card.style.setProperty("--tx", `${x}px`);
-    card.style.setProperty("--ty", `${y}px`);
-    card.style.setProperty("--acq-card-w", `${exploreCardWidth()}px`);
-    card.dataset.id = a.id;
-    card.dataset.identity = a.visualIdentity?.kind || "";
-    card.dataset.identitySource = a.visualIdentity?.source || "";
-    card.dataset.depth = String(0.15 + (index % 5) * 0.08);
-    card.setAttribute("role", "button");
-    card.tabIndex = 0;
-    card.setAttribute("aria-label", [
-      a.company,
-      `announced ${a.announced}`,
-      a.business,
-      a.valueUsd ? formatValue(a.valueUsd) : "",
-    ].filter(Boolean).join(", "));
-
-    card.innerHTML = `
-      <div class="acq-card-shell">
-        ${cardIdentityHtml(a)}
-        <div class="acq-card-name">${escapeHtml(a.company)}</div>
-        <div class="acq-card-year">${escapeHtml(a.announced.slice(0, 7))}</div>
-        ${a.valueUsd ? `<div class="acq-card-value">${formatValue(a.valueUsd)}</div>` : ""}
-      </div>`;
-    const logoImg = card.querySelector(".acq-card-logo");
-    if (logoImg) setLogoImg(logoImg, a);
-    card.addEventListener("click", () => focusAcquisition(a.id));
-    card.addEventListener("keydown", event => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      focusAcquisition(a.id);
-    });
-    return card;
-  }
-
-  function renderExplore(inner, list, mid) {
-    const canvas = $("#acq-canvas");
-    if (ACQ.expandedYear != null) {
-      renderExpandedYear(inner, list, canvas);
-      return;
-    }
-    const cardW = exploreCardWidth();
-    const laneH = Math.round(128 * Math.min(1.45, cardW / ACQ.cardW));
-    const placements = layoutExploreCards(list, { mid, cardW, laneH });
-    if (ACQ.focusedId) {
-      const selected = placements.find(placement =>
-        placement.overflow && placement.acq.id === ACQ.focusedId);
-      const replacement = selected && placements.slice().reverse().find(placement =>
-        !placement.overflow &&
-        placement.acq.announced.slice(0, 4) === selected.year &&
-        placement.acq.id !== ACQ.focusedId);
-      if (selected && replacement) {
-        selected.overflow = false;
-        selected.y = replacement.y;
-        replacement.overflow = true;
-        replacement.year = selected.year;
-      }
-    }
-    if (ACQ.anchorYear != null) {
-      const year = String(ACQ.anchorYear);
-      const promoted = placements.find(placement =>
-        placement.overflow && placement.year === year && placement.acq.featured);
-      const replaced = placements.slice().reverse().find(placement =>
-        !placement.overflow &&
-        placement.acq.announced.startsWith(year) &&
-        !placement.acq.featured &&
-        placement.acq.id !== ACQ.focusedId);
-      if (promoted && replaced) {
-        promoted.overflow = false;
-        promoted.y = replaced.y;
-        replaced.overflow = true;
-        replaced.year = year;
-      }
-    }
-    const viewportWidth = canvas?.clientWidth || 1440;
-    const scrollLeft = canvas?.scrollLeft || 0;
-    const minX = scrollLeft - viewportWidth;
-    const maxX = scrollLeft + viewportWidth * 2;
-    const overflows = new Map();
-
-    placements.forEach((placement, index) => {
-      if (placement.overflow) {
-        const bucket = overflows.get(placement.year) || [];
-        bucket.push(placement);
-        overflows.set(placement.year, bucket);
-        return;
-      }
-      if (placement.x + cardW < minX || placement.x > maxX) return;
-      inner.appendChild(createAcquisitionCard(placement, index));
-    });
-
-    overflows.forEach((items, year) => {
-      const x = yearX(Number(year), 6);
-      if (x < minX || x > maxX) return;
-      const marker = document.createElement("button");
-      marker.type = "button";
-      marker.className = "acq-overflow-marker";
-      marker.setAttribute("role", "button");
-      marker.tabIndex = 0;
-      marker.style.setProperty("--tx", `${x}px`);
-      marker.textContent = `+${items.length}`;
-      marker.setAttribute("aria-label", `Show ${items.length} more acquisitions from ${year}`);
-      marker.addEventListener("click", () => {
-        ACQ.anchorYear = Number(year);
-        ACQ.expandedYear = Number(year);
         renderCards(inner);
+        renderYearShelf(list);
         updateParallax();
       });
       inner.appendChild(marker);
     });
   }
 
-  function renderExpandedYear(inner, list, canvas) {
-    const year = String(ACQ.expandedYear);
-    const items = list.filter(acq => acq.announced.startsWith(year));
-    const tray = document.createElement("section");
-    tray.className = "acq-year-expansion";
-    tray.style.left = `${(canvas?.scrollLeft || 0) + 16}px`;
-    tray.style.width = `${Math.max(280, (canvas?.clientWidth || 1440) - 32)}px`;
-    tray.setAttribute("aria-label", `${year} acquisitions`);
+  function renderLandmarks(inner, list) {
+    if (getSemanticLevel() !== "overview" || ACQ.zoom < 0.45) return;
+    const byId = new Map(list.map(a => [a.id, a]));
+    LANDMARK_IDS.forEach(id => {
+      const acq = byId.get(id);
+      if (!acq) return;
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "acq-landmark" + (acq.featured ? " featured" : "");
+      el.style.setProperty("--tx", `${dateX(acq.announced)}px`);
+      el.style.setProperty("--acq-era-color", eraColorFor(acq.era));
+      el.textContent = acq.company.length > 22 ? `${acq.company.slice(0, 20)}…` : acq.company;
+      el.setAttribute("aria-label", `${acq.company}, ${acq.announced.slice(0, 4)}`);
+      el.addEventListener("click", () => {
+        ACQ.anchorYear = Number(acq.announced.slice(0, 4));
+        ACQ.expandedYear = ACQ.anchorYear;
+        ACQ.shelfYear = ACQ.anchorYear;
+        if (ACQ.zoom < 0.78) ACQ.zoom = 1.05;
+        updateZoomUi();
+        renderAcquisitionTimeline();
+        focusAcquisition(acq.id);
+      });
+      inner.appendChild(el);
+    });
+  }
+
+  function renderOverview(inner, list, mid) {
+    hideYearShelf();
+    renderYearMarkers(inner, list, mid, { explore: false });
+    if (ACQ.zoom >= 0.45) renderLandmarks(inner, list);
+  }
+
+  function createShelfRow(acq) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "acq-shelf-row acq-card" +
+      (acq.featured ? " featured" : "") +
+      (ACQ.focusedId && ACQ.focusedId !== acq.id ? " dim" : "") +
+      (ACQ.focusedId === acq.id ? " focused" : "");
+    row.dataset.id = acq.id;
+    row.dataset.identity = acq.visualIdentity?.kind || "";
+    row.style.setProperty("--acq-era-color", eraColorFor(acq.era));
+    row.setAttribute("role", "button");
+    row.tabIndex = 0;
+    row.setAttribute("aria-label", [
+      acq.company,
+      `announced ${acq.announced}`,
+      acq.business,
+      acq.valueUsd ? formatValue(acq.valueUsd) : "",
+    ].filter(Boolean).join(", "));
+
+    const spotlight = ACQ.searchHighlightIds;
+    if (spotlight && !spotlight.has(acq.id)) row.classList.add("spotlight-dim");
+
+    row.innerHTML = `
+      <span class="acq-shelf-stripe" aria-hidden="true"></span>
+      <span class="acq-shelf-main">
+        <span class="acq-shelf-name">${escapeHtml(acq.company)}</span>
+        <span class="acq-shelf-meta">${escapeHtml([acq.business, eraLabelFor(acq.era)].filter(Boolean).join(" · "))}</span>
+      </span>
+      <span class="acq-shelf-side">
+        ${acq.valueUsd ? `<span class="acq-shelf-value">${formatValue(acq.valueUsd)}</span>` : ""}
+        <span class="acq-shelf-date">${escapeHtml(acq.announced.slice(0, 7))}</span>
+      </span>`;
+
+    row.addEventListener("click", () => focusAcquisition(acq.id));
+    row.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      focusAcquisition(acq.id);
+    });
+    return row;
+  }
+
+  function renderYearShelf(list) {
+    const shelf = $("#acq-shelf");
+    if (!shelf || getSemanticLevel() === "overview") {
+      hideYearShelf();
+      return;
+    }
+    syncShelfYear();
+    const year = String(ACQ.shelfYear || getCenterYear());
+    const items = list
+      .filter(acq => acq.announced.startsWith(year))
+      .slice()
+      .sort((a, b) =>
+        (b.valueUsd || 0) - (a.valueUsd || 0) ||
+        a.company.localeCompare(b.company));
+
+    shelf.hidden = false;
+    shelf.innerHTML = "";
 
     const head = document.createElement("div");
-    head.className = "acq-year-expansion-head";
-    const title = document.createElement("strong");
-    title.textContent = `${year} · ${items.length} acquisitions`;
-    head.appendChild(title);
-    const close = document.createElement("button");
-    close.type = "button";
-    close.className = "acq-year-expansion-close";
-    close.textContent = "Return to timeline";
-    close.addEventListener("click", () => {
-      ACQ.expandedYear = null;
-      renderCards(inner);
-      updateParallax();
-    });
-    head.appendChild(close);
-    tray.appendChild(head);
+    head.className = "acq-shelf-head";
+    head.innerHTML = `<strong>${year} · ${items.length} acquisition${items.length !== 1 ? "s" : ""}</strong>
+      <span class="acq-shelf-hint">Typography-first browse — select a company for the story</span>`;
+    shelf.appendChild(head);
 
-    const grid = document.createElement("div");
-    grid.className = "acq-year-expansion-grid";
-    items.forEach((acq, index) => {
-      grid.appendChild(createAcquisitionCard({
-        acq,
-        x: 0,
-        y: 0,
-        overflow: false,
-      }, index));
-    });
-    tray.appendChild(grid);
-    inner.appendChild(tray);
+    const listEl = document.createElement("div");
+    listEl.className = "acq-shelf-list";
+    listEl.setAttribute("role", "list");
+    items.forEach(acq => listEl.appendChild(createShelfRow(acq)));
+    shelf.appendChild(listEl);
+  }
+
+  function renderExplore(inner, list, mid) {
+    syncShelfYear();
+    renderYearMarkers(inner, list, mid, { explore: true });
+    renderLandmarks(inner, list);
+    renderYearShelf(list);
   }
 
   function renderCards(inner) {
     const active = document.activeElement;
-    const focusTarget = active?.classList?.contains("acq-card")
+    const focusTarget = active?.classList?.contains("acq-card") || active?.classList?.contains("acq-shelf-row")
       ? { type: "card", value: active.dataset.id }
       : active?.classList?.contains("acq-year-marker")
         ? { type: "year", value: active.dataset.year }
-        : active?.classList?.contains("acq-overflow-marker")
-          ? { type: "overflow", value: active.getAttribute("aria-label") }
-          : null;
-    inner.querySelectorAll(".acq-card, .acq-year-marker, .acq-overflow-marker, .acq-year-expansion").forEach(e => e.remove());
+        : null;
+    inner.querySelectorAll(".acq-year-marker, .acq-landmark").forEach(e => e.remove());
     const list = filteredList();
     const canvas = $("#acq-canvas");
     const mid = canvas ? canvas.clientHeight / 2 : 210;
@@ -499,20 +489,14 @@
     inner.dataset.represented = String(list.length);
     if (ACQ.level === "overview") renderOverview(inner, list, mid);
     else renderExplore(inner, list, mid);
+    applySearchSpotlight();
     if (focusTarget) {
       let target = null;
       if (focusTarget.type === "card") {
-        target = inner.querySelector(`.acq-card[data-id="${CSS.escape(focusTarget.value)}"]`);
+        target = $(`#acq-shelf .acq-shelf-row[data-id="${CSS.escape(focusTarget.value)}"]`) ||
+          inner.querySelector(`.acq-shelf-row[data-id="${CSS.escape(focusTarget.value)}"]`);
       } else if (focusTarget.type === "year") {
-        target = inner.querySelector(`.acq-year-marker[data-year="${CSS.escape(focusTarget.value)}"]`) ||
-          [...inner.querySelectorAll(".acq-card")].find(card => {
-            const acq = window.CPN_ACQUISITIONS.acquisitions.find(item => item.id === card.dataset.id);
-            return acq?.announced.startsWith(focusTarget.value);
-          }) ||
-          inner.querySelector(`.acq-overflow-marker[aria-label*="${CSS.escape(focusTarget.value)}"]`);
-      } else {
-        target = [...inner.querySelectorAll(".acq-overflow-marker")]
-          .find(marker => marker.getAttribute("aria-label") === focusTarget.value);
+        target = inner.querySelector(`.acq-year-marker[data-year="${CSS.escape(focusTarget.value)}"]`);
       }
       target?.focus({ preventScroll: true });
     }
@@ -535,6 +519,8 @@
       const dot = document.createElement("div");
       dot.className = "acq-mini-dot" + (a.featured ? " featured" : "");
       dot.style.left = `${((y - ACQ.yearMin) / span) * 100}%`;
+      const scale = miniDotScale(a.valueUsd);
+      dot.style.setProperty("--acq-dot-scale", String(scale));
       dots.appendChild(dot);
     });
 
@@ -554,19 +540,63 @@
     );
   }
 
+  function updateFocusIdentity(a) {
+    const logo = $("#acq-focus-logo");
+    const wordmark = $("#acq-focus-wordmark");
+    if (!logo || !wordmark) return;
+    const verified = a.visualIdentity?.kind === "verified-logo";
+    logo.hidden = !verified;
+    wordmark.hidden = verified;
+    if (verified) {
+      setLogoImg(logo, a);
+      wordmark.textContent = "";
+    } else {
+      logo.removeAttribute("src");
+      wordmark.textContent = a.company;
+      wordmark.style.setProperty("--acq-era-color", eraColorFor(a.era));
+    }
+  }
+
+  function renderFocusLives(a) {
+    const lives = $("#acq-focus-lives");
+    if (!lives) return;
+    lives.innerHTML = "";
+    if (!a.families?.length) {
+      lives.hidden = true;
+      return;
+    }
+    lives.hidden = false;
+    const label = document.createElement("span");
+    label.className = "acq-focus-lives-label";
+    label.textContent = "Lives on as";
+    lives.appendChild(label);
+    a.families.slice(0, 4).forEach(famId => {
+      const fam = window.nodeById?.[famId];
+      const chip = document.createElement("span");
+      chip.className = "acq-focus-live-chip";
+      chip.textContent = fam?.name || famId;
+      lives.appendChild(chip);
+    });
+  }
+
   function focusAcquisition(id) {
-    const activeCard = document.activeElement?.closest?.(".acq-card");
+    const activeCard = document.activeElement?.closest?.(".acq-shelf-row, .acq-card");
     ACQ.focusReturnId = activeCard?.dataset.id || id;
     ACQ.focusedId = id;
     const a = window.CPN_ACQUISITIONS?.acquisitions?.find(x => x.id === id);
     const panel = $("#acq-focus");
     if (!a || !panel) return;
+    ACQ.anchorYear = Number(a.announced.slice(0, 4));
+    ACQ.expandedYear = ACQ.anchorYear;
+    ACQ.shelfYear = ACQ.anchorYear;
     panel.hidden = false;
     panel.inert = false;
     panel.setAttribute("aria-hidden", "false");
     panel.classList.add("show");
-    setLogoImg($("#acq-focus-logo"), a);
+    updateFocusIdentity(a);
     $("#acq-focus-title").textContent = a.company;
+    const headline = $("#acq-focus-headline");
+    if (headline) headline.textContent = summaryHeadline(a);
     $("#acq-focus-meta").textContent = [
       a.announced,
       a.valueUsd ? formatValue(a.valueUsd) : null,
@@ -574,6 +604,7 @@
       a.country || null,
     ].filter(Boolean).join(" · ");
     $("#acq-focus-summary").textContent = a.summary || a.business || "Cisco acquisition.";
+    renderFocusLives(a);
     const source = $("#acq-focus-source");
     if (source) {
       const sourceUrl = safeSourceUrl(a.visualIdentity?.sourceUrl);
@@ -638,13 +669,21 @@
     updateCurrentPeriod();
   }
 
+  function updateSpendTicker() {
+    const el = $("#acq-spend-ticker");
+    if (!el) return;
+    const year = getCenterYear();
+    const spend = cumulativeSpendThroughYear(year);
+    el.textContent = spend > 0
+      ? `${formatValue(spend)} disclosed through ${year}`
+      : `Exploring ${year}`;
+  }
+
   function updateCurrentPeriod() {
     const canvas = $("#acq-canvas");
     const label = $("#acq-current-period");
     if (!canvas || !label) return;
-    const center = canvas.scrollLeft + canvas.clientWidth / 2;
-    const rawYear = ACQ.yearMin + (center - 120) / (ACQ.pxPerYear * ACQ.zoom);
-    const year = Math.max(ACQ.yearMin, Math.min(ACQ.yearMax, Math.floor(rawYear)));
+    const year = getCenterYear();
     if (getSemanticLevel() === "overview") {
       const era = (window.CPN_ACQUISITIONS?.eraBands || [])
         .find(band => year >= band.from && year <= band.to);
@@ -652,6 +691,56 @@
     } else {
       label.textContent = String(year);
     }
+    updateSpendTicker();
+  }
+
+  function applySearchSpotlight() {
+    const wrap = $("#acq-wrap");
+    if (!wrap) return;
+    const q = ACQ.searchQuery.trim();
+    if (!q) {
+      ACQ.searchHighlightIds = null;
+      wrap.classList.remove("acq-spotlight");
+      return;
+    }
+    const ids = new Set(searchAcquisitions(q).map(a => a.id));
+    ACQ.searchHighlightIds = ids;
+    wrap.classList.add("acq-spotlight");
+    $("#acq-shelf")?.querySelectorAll(".acq-shelf-row").forEach(row => {
+      row.classList.toggle("spotlight-dim", !ids.has(row.dataset.id));
+    });
+    $("#acq-inner")?.querySelectorAll(".acq-landmark").forEach(node => {
+      const acq = window.CPN_ACQUISITIONS.acquisitions.find(a =>
+        a.company === node.textContent.replace(/…$/, "") ||
+        node.getAttribute("aria-label")?.startsWith(a.company));
+      node.classList.toggle("spotlight-dim", acq ? !ids.has(acq.id) : true);
+    });
+  }
+
+  function stopTour() {
+    if (ACQ.tourTimer) clearInterval(ACQ.tourTimer);
+    ACQ.tourTimer = null;
+    ACQ.tourIndex = -1;
+    $("#acq-tour")?.classList.remove("active");
+  }
+
+  function startTour() {
+    stopTour();
+    const stops = LANDMARK_IDS
+      .map(id => window.CPN_ACQUISITIONS?.acquisitions?.find(a => a.id === id))
+      .filter(Boolean);
+    if (!stops.length) return;
+    $("#acq-tour")?.classList.add("active");
+    ACQ.tourIndex = 0;
+    const advance = () => {
+      const acq = stops[ACQ.tourIndex];
+      if (ACQ.zoom < 0.85) ACQ.zoom = 1.05;
+      updateZoomUi();
+      focusAcquisition(acq.id);
+      ACQ.tourIndex = (ACQ.tourIndex + 1) % stops.length;
+    };
+    advance();
+    ACQ.tourTimer = setInterval(advance, prefersReducedMotion() ? 8000 : 4500);
   }
 
   function onScroll() {
@@ -659,7 +748,20 @@
     cancelAnimationFrame(ACQ.raf);
     ACQ.raf = requestAnimationFrame(() => {
       const inner = $("#acq-inner");
-      if (inner && getSemanticLevel() !== "overview") renderCards(inner);
+      const canvas = $("#acq-canvas");
+      const level = getSemanticLevel();
+      if (inner && canvas && level !== "focus") {
+        const list = filteredList();
+        const mid = canvas.clientHeight / 2;
+        inner.querySelectorAll(".acq-year-marker, .acq-landmark").forEach(e => e.remove());
+        renderYearMarkers(inner, list, mid, { explore: level === "explore" });
+        if (ACQ.zoom >= 0.45) renderLandmarks(inner, list);
+      }
+      if (level !== "overview" && ACQ.expandedYear == null) {
+        const prev = ACQ.shelfYear;
+        syncShelfYear();
+        if (prev !== ACQ.shelfYear) renderYearShelf(filteredList());
+      }
       updateParallax();
     });
   }
@@ -717,7 +819,7 @@
     function isPanTarget(el) {
       return el?.closest("#acq-canvas") &&
         !el.closest(
-          ".acq-card, .acq-year-marker, .acq-overflow-marker, .acq-year-expansion, button, a, input"
+          ".acq-shelf-row, .acq-year-marker, .acq-landmark, .acq-year-expansion, button, a, input"
         );
     }
 
@@ -770,9 +872,11 @@
   function fitAcqZoom() {
     const canvas = $("#acq-canvas");
     if (!canvas) return;
+    stopTour();
     clearAcquisitionFocus({ restoreFocus: false });
     ACQ.anchorYear = null;
     ACQ.expandedYear = null;
+    ACQ.shelfYear = null;
     ACQ.zoom = ACQ.minZoom;
     ACQ.level = "overview";
     updateZoomUi();
@@ -780,6 +884,7 @@
     canvas.scrollTo({ left: 0, behavior: "auto" });
     canvas.scrollLeft = 0;
     renderCards($("#acq-inner"));
+    hideYearShelf();
     updateParallax();
     updateCanvasNameTier();
   }
@@ -797,7 +902,7 @@
     renderAcquisitionTimeline();
     if (!restoreFocus) return;
     const card = returnId
-      ? $(`#acq-inner .acq-card[data-id="${CSS.escape(returnId)}"]`)
+      ? $(`#acq-shelf .acq-shelf-row[data-id="${CSS.escape(returnId)}"]`)
       : null;
     if (!focusVisible(card)) focusVisible($("#acq-canvas"));
   }
@@ -824,11 +929,13 @@
     if (!canvas || !acq) return;
     ACQ.zoom = Math.max(1.05, ACQ.zoom);
     ACQ.anchorYear = Number(acq.announced.slice(0, 4));
-    ACQ.expandedYear = null;
+    ACQ.expandedYear = ACQ.anchorYear;
+    ACQ.shelfYear = ACQ.anchorYear;
     updateZoomUi();
     renderAcquisitionTimeline();
     canvas.scrollLeft = Math.max(0, dateX(acq.announced) - canvas.clientWidth / 2);
     renderCards($("#acq-inner"));
+    applySearchSpotlight();
     updateParallax();
   }
 
@@ -839,6 +946,7 @@
     const results = searchAcquisitions(input.value);
     ACQ.searchQuery = input.value;
     ACQ.searchActiveIndex = -1;
+    applySearchSpotlight();
     popup.innerHTML = "";
     results.slice(0, 8).forEach((acq, index) => {
       const option = document.createElement("button");
@@ -876,6 +984,8 @@
     }
     ACQ.searchQuery = "";
     ACQ.searchActiveIndex = -1;
+    ACQ.searchHighlightIds = null;
+    $("#acq-wrap")?.classList.remove("acq-spotlight");
   }
 
   function setActiveSearchOption(index) {
@@ -970,15 +1080,10 @@
     const intersectsCanvas = rect => canvasRect &&
       rect.left < canvasRect.right && rect.right > canvasRect.left &&
       rect.top < canvasRect.bottom && rect.bottom > canvasRect.top;
-    const nodes = [...document.querySelectorAll(".acq-year-marker, .acq-card, .acq-overflow-marker")];
+    const nodes = [...document.querySelectorAll(".acq-year-marker, .acq-landmark")];
     const rects = nodes.map(node => node.getBoundingClientRect()).filter(intersectsCanvas);
-    const mountedIds = [...document.querySelectorAll(".acq-card")].map(el => el.dataset.id);
-    const visibleIds = [...document.querySelectorAll(".acq-card")]
-      .filter(el => {
-        const rect = el.getBoundingClientRect();
-        return intersectsCanvas(rect);
-      })
-      .map(el => el.dataset.id);
+    const mountedIds = [...document.querySelectorAll("#acq-shelf .acq-shelf-row")].map(el => el.dataset.id);
+    const visibleIds = mountedIds.slice();
     let overlapCount = 0;
     for (let i = 0; i < rects.length; i += 1) {
       for (let j = i + 1; j < rects.length; j += 1) {
@@ -992,10 +1097,11 @@
       level: getSemanticLevel(),
       totalCount: window.CPN_ACQUISITIONS.acquisitions.length,
       representedCount: Number(document.querySelector("#acq-inner")?.dataset.represented || 0),
-      renderedCards: document.querySelectorAll(".acq-card").length,
+      renderedCards: document.querySelectorAll("#acq-shelf .acq-shelf-row").length,
       mountedIds,
       visibleIds,
       overflowMarkers: document.querySelectorAll(".acq-overflow-marker").length,
+      shelfYear: ACQ.shelfYear,
       overlapCount,
       zoom: ACQ.zoom,
       maxZoom: ACQ.maxZoom,
@@ -1024,8 +1130,9 @@
       <div id="acq-head">
         <div class="acq-heading">
           <div class="acq-title">Acquisition History</div>
-          <div class="acq-sub">${window.CPN_ACQUISITIONS.acquisitions.length} companies · scroll to zoom · drag to pan · click a logo for details · sources: Wikipedia & Cisco</div>
+          <div class="acq-sub">${window.CPN_ACQUISITIONS.acquisitions.length} companies · scroll to zoom · drag to pan · click a year to browse · sources: Wikipedia & Cisco</div>
           <div id="acq-current-period" aria-live="polite"></div>
+          <div id="acq-spend-ticker" aria-live="polite"></div>
         </div>
         <div class="acq-head-controls">
           <div class="acq-search-wrap">
@@ -1035,6 +1142,7 @@
               aria-expanded="false" autocomplete="off"/>
             <div id="acq-search-results" role="listbox" hidden></div>
           </div>
+          <button type="button" class="rc-btn acq-nav-btn" id="acq-tour" aria-label="Play landmark tour">Tour</button>
           <button type="button" class="rc-btn acq-nav-btn" id="acq-prev" aria-label="Previous acquisition">←</button>
           <button type="button" class="rc-btn acq-nav-btn" id="acq-next" aria-label="Next acquisition">→</button>
           <div class="acq-zoom" role="group" aria-label="Zoom">
@@ -1053,10 +1161,15 @@
       </div>
       <div id="acq-focus" aria-live="polite" aria-hidden="true" hidden inert>
         <div id="acq-focus-inner">
-          <img id="acq-focus-logo" alt="" width="72" height="72"/>
+          <div id="acq-focus-visual">
+            <img id="acq-focus-logo" alt="" width="72" height="72"/>
+            <div id="acq-focus-wordmark" hidden></div>
+          </div>
           <div>
             <h3 id="acq-focus-title"></h3>
+            <div id="acq-focus-headline"></div>
             <div id="acq-focus-meta"></div>
+            <div id="acq-focus-lives" hidden></div>
             <div id="acq-focus-summary"></div>
             <a id="acq-focus-source" target="_blank" rel="noopener noreferrer" hidden></a>
           </div>
@@ -1066,16 +1179,19 @@
           </div>
         </div>
       </div>
-      <div id="acq-canvas" tabindex="-1" role="region" aria-label="Acquisition timeline"><div id="acq-inner">
-        <div id="acq-spine-wrap" class="acq-layer" data-depth="0.04"><div id="acq-spine"></div></div>
-      </div></div>
-      <div id="acq-minimap">
-        <div id="acq-minimap-track" role="slider" tabindex="0"
-          aria-label="Timeline viewport year" aria-valuemin="${ACQ.yearMin}"
-          aria-valuemax="${ACQ.yearMax}" aria-valuenow="${ACQ.yearMin}">
-          <div id="acq-minimap-dots"></div><div id="acq-minimap-viewport"></div>
+      <div id="acq-canvas-area">
+        <div id="acq-canvas" tabindex="-1" role="region" aria-label="Acquisition timeline"><div id="acq-inner">
+          <div id="acq-spine-wrap" class="acq-layer" data-depth="0.04"><div id="acq-spine"></div></div>
+        </div></div>
+        <div id="acq-minimap">
+          <div id="acq-minimap-track" role="slider" tabindex="0"
+            aria-label="Timeline viewport year" aria-valuemin="${ACQ.yearMin}"
+            aria-valuemax="${ACQ.yearMax}" aria-valuenow="${ACQ.yearMin}">
+            <div id="acq-minimap-dots"></div><div id="acq-minimap-viewport"></div>
+          </div>
+          <div id="acq-minimap-labels"><span>${ACQ.yearMin}</span><span>${ACQ.yearMax}</span></div>
         </div>
-        <div id="acq-minimap-labels"><span>${ACQ.yearMin}</span><span>${ACQ.yearMax}</span></div>
+        <aside id="acq-shelf" hidden aria-label="Year acquisitions"></aside>
       </div>`;
     document.body.appendChild(wrap);
 
@@ -1095,6 +1211,10 @@
       setAcqZoom(ACQ.zoom / 1.25, rect ? rect.left + rect.width / 2 : null);
     });
     $("#acq-zoom-fit")?.addEventListener("click", fitAcqZoom);
+    $("#acq-tour")?.addEventListener("click", () => {
+      if ($("#acq-tour")?.classList.contains("active")) stopTour();
+      else startTour();
+    });
     $("#acq-prev")?.addEventListener("click", () => focusRelative(-1));
     $("#acq-next")?.addEventListener("click", () => focusRelative(1));
     $("#acq-search")?.addEventListener("input", renderSearchResults);
@@ -1254,6 +1374,7 @@
 
   function closeAcquisitionTimeline() {
     const opener = ACQ.opener;
+    stopTour();
     $("#acq-wrap")?.classList.remove("show");
     document.body.classList.remove("acq-open");
     $("#tools-acquisitions")?.classList.remove("active");
