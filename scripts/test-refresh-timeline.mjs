@@ -116,20 +116,28 @@ try {
   const build = await page.evaluate(() => window.__CPN_BUILD);
   if (!build || !String(build).startsWith("3.5")) errors.push(`expected build 3.5.x, got ${build}`);
 
-  await page.locator("#tl-sort-btn").click();
-  await page.locator('.tl-sort-opt[data-sort="mainFamily"]').click();
+  const beforeFilter = await page.locator(".tl-row").count();
+
+  await page.locator("#tl-cat-btn").click();
+  await page.locator('.tl-cat-opt[data-cat="security"]').click();
   await page.waitForTimeout(100);
-  const mainFamilySort = await page.evaluate(() => {
-    const headers = [...document.querySelectorAll(".tl-row-cat")].map(el => el.dataset.cat);
-    const rows = [...document.querySelectorAll(".tl-row:not(.tl-row-cat) .tl-row-lbl .nm")]
-      .map(el => el.textContent.trim());
-    return { headers, firstRow: rows[0], headerCount: headers.length };
+
+  const securityFilter = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll(".tl-row .tl-row-lbl .nm")].map(el => el.textContent.trim());
+    const categories = rows.map(name => {
+      const node = Object.values(window.nodeById || {}).find(n => n.name === name);
+      return node?.category;
+    });
+    return { rowCount: rows.length, categories, btn: document.querySelector("#tl-cat-btn")?.textContent?.trim() };
   });
-  if (mainFamilySort.headerCount < 3) {
-    errors.push(`expected main-family section headers, got ${mainFamilySort.headerCount}`);
+  if (securityFilter.rowCount >= beforeFilter) {
+    errors.push(`security filter should reduce rows (${securityFilter.rowCount} vs ${beforeFilter})`);
   }
-  if (mainFamilySort.headers[0] !== "networking") {
-    errors.push(`expected Networking first, got ${mainFamilySort.headers[0]}`);
+  if (securityFilter.categories.some(c => c && c !== "security")) {
+    errors.push("filtered rows should all be Security portfolio families");
+  }
+  if (!securityFilter.btn?.includes("Security")) {
+    errors.push(`cat button should show Security, got ${securityFilter.btn}`);
   }
 
   await page.evaluate(() => window.CPN_RefreshTimeline.close());

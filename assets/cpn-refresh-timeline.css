@@ -298,21 +298,25 @@ body.tl-open #help-fab {
   align-items: center;
 }
 
-.tl-sort-wrap {
+.tl-cat-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-.tl-sort-btn {
-  min-width: 96px;
+.tl-cat-btn {
+  min-width: 118px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.tl-sort-drop {
+.tl-cat-drop {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 140px;
+  min-width: 180px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -324,11 +328,11 @@ body.tl-open #help-fab {
   gap: 2px;
 }
 
-.tl-sort-drop.show {
+.tl-cat-drop.show {
   display: flex;
 }
 
-.tl-sort-opt {
+.tl-cat-opt {
   appearance: none;
   border: none;
   background: transparent;
@@ -339,10 +343,20 @@ body.tl-open #help-fab {
   padding: 7px 10px;
   border-radius: 6px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.tl-sort-opt:hover,
-.tl-sort-opt.active {
+.tl-cat-opt .ld {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tl-cat-opt:hover,
+.tl-cat-opt.active {
   background: rgba(2, 200, 255, 0.12);
   color: var(--accent);
 }
@@ -362,26 +376,6 @@ body.tl-open #help-fab {
   border-top: none;
   margin-top: 0;
   padding-top: 2px;
-}
-
-.tl-row-cat {
-  background: rgba(255, 255, 255, 0.025);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.tl-row-cat .tl-row-lbl {
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding-top: 8px;
-  padding-bottom: 4px;
-}
-
-.tl-row-cat .tl-cat-track {
-  min-height: 2px;
-  background: transparent;
-  box-shadow: none;
 }
 
 .tl-fam-btn {
