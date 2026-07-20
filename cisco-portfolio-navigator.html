@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="3.5.18";
+  window.__CPN_BUILD="3.5.19";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -626,6 +626,44 @@
     body.pillar-focus .pillar-guides .zone-hot .zone-border{stroke-width:2.75}
     body.pillar-focus .pillar-guides .zone-title{font-size:18px;fill:#7eeaff}
     body.pillar-focus .pillar-guides .zone-focus-backdrop{filter:url(#pillar-zone-glow)}
+    .pillar-context-fo{overflow:visible;pointer-events:none}
+    .pillar-context-fo.interactive{pointer-events:all}
+    .pillar-promise-strip{
+      display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-radius:8px;
+      background:color-mix(in srgb, var(--pc) 8%, rgba(0,0,0,.28));
+      border:1px solid color-mix(in srgb, var(--pc) 24%, transparent);
+      font-family:"CiscoSansTT",system-ui,sans-serif;box-sizing:border-box}
+    .pillar-promise-strip .pps-badge{
+      flex-shrink:0;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+      color:var(--pc);padding:3px 7px;border-radius:4px;background:color-mix(in srgb, var(--pc) 14%, transparent)}
+    .pillar-promise-strip .pps-text{font-size:12px;font-weight:600;color:#dbeafe;line-height:1.45}
+    .pillar-promise-strip .pps-scope{display:block;margin-top:4px;font-size:11px;font-weight:400;color:#8b95a5}
+    .pillar-insight-card{
+      border-radius:10px;background:rgba(6,14,28,.92);border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 12px 40px rgba(0,0,0,.35);font-family:"CiscoSansTT",system-ui,sans-serif;
+      color:#f4f7fb;box-sizing:border-box;display:flex;flex-direction:column;max-height:320px}
+    .pic-head{display:flex;align-items:center;justify-content:space-between;gap:8px;
+      padding:10px 12px 8px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
+    .pic-head span{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
+    .pic-head button{border:none;background:transparent;color:#8b95a5;cursor:pointer;font-size:14px;padding:2px 6px;line-height:1}
+    .pic-head button:hover{color:#fff;background:rgba(255,255,255,.06);border-radius:4px}
+    .pic-list{padding:6px 10px 10px;overflow-y:auto;flex:1;min-height:0}
+    .pic-item{display:flex;gap:10px;padding:8px 6px;border-radius:6px}
+    .pic-item+.pic-item{border-top:1px solid rgba(255,255,255,.04)}
+    .pic-num{flex-shrink:0;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+      font-size:10px;font-weight:700;color:var(--pc);background:color-mix(in srgb, var(--pc) 16%, transparent)}
+    .pic-item h4{font-size:11px;font-weight:700;color:#e2e8f0;line-height:1.3;margin:0 0 3px}
+    .pic-item p{font-size:10px;line-height:1.45;color:#8b95a5;margin:0}
+    .pillar-insight-tab{
+      writing-mode:vertical-rl;transform:rotate(180deg);border:none;cursor:pointer;
+      font-family:"CiscoSansTT",system-ui,sans-serif;font-size:10px;font-weight:700;
+      letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.78);
+      padding:14px 8px;border-radius:8px 0 0 8px;background:rgba(8,16,32,.92);
+      border:1px solid rgba(255,255,255,.1);border-right:none;width:100%;height:100%}
+    html[data-theme="light"] .pillar-insight-card{background:rgba(255,255,255,.96);border-color:rgba(7,24,45,.12)}
+    html[data-theme="light"] .pillar-promise-strip .pps-text{color:#07182d}
+    html[data-theme="light"] .pic-item h4{color:#07182d}
+    html[data-theme="light"] .pic-item p{color:#525e6c}
     .overview-deck .ov-card rect{transition:stroke-opacity .15s ease, filter .15s ease;filter:url(#ov-card-glow)}
     @keyframes nodeRingPulse{
       0%,100%{stroke-opacity:.7}
@@ -1769,6 +1807,36 @@ const ONE_CISCO = {
     "ai-defense", "silicon-one", "nexus-one", "hypershield", "catalyst-center",
     "nexus", "room-systems", "webex-app", "webex-cc", "cloud-control", "cisco-iq"
   ])
+};
+
+/** Partner Sales deck — scope + value props when a pillar is focused (Families). */
+const PILLAR_SUMMARIES = {
+  "ai-dc": {
+    scope: "Public and private clouds, edge, on-premises",
+    highlights: [
+      { title: "Comprehensive infrastructure", body: "Integrated networking, compute, and storage for every workload" },
+      { title: "Unified operations", body: "One management and observability layer across traditional and AI environments" },
+      { title: "Security everywhere", body: "Protect hyper-distributed workloads from ground to cloud" }
+    ]
+  },
+  workplaces: {
+    scope: "Campuses, branches, factories, homes, and beyond",
+    highlights: [
+      { title: "Intelligent infrastructure", body: "Secure networking with real-time insights and closed-loop automation" },
+      { title: "User protection", body: "Frictionless zero-trust access from any location" },
+      { title: "Smart buildings", body: "More secure, sustainable workplaces with actionable insights" },
+      { title: "Collaboration devices", body: "Immersive experiences for every workspace" },
+      { title: "Hybrid work software", body: "Employee and customer experiences that scale" }
+    ]
+  },
+  resilience: {
+    scope: null,
+    highlights: [
+      { title: "Security", body: "Threat prevention, detection, and response at any maturity level" },
+      { title: "Assurance", body: "End-to-end connectivity to assure application and service delivery" },
+      { title: "Observability", body: "Visibility across owned and unowned environments to prevent downtime" }
+    ]
+  }
 };
 
 // Overview deck geometry (matches One Cisco slide 12 layout)
@@ -3852,8 +3920,11 @@ function bboxesOverlap(a, b, gap){
   return !(a.maxX + gap < b.minX || b.maxX + gap < a.minX || a.maxY + gap < b.minY || b.maxY + gap < a.minY);
 }
 function zoneContentInset(zone){
-  if (singlePillarFocused() && focusedPillarId() === zone.id)
-    return { left: 0.06, top: 0.11, right: 0.06, bottom: 0.07 };
+  if (singlePillarFocused() && focusedPillarId() === zone.id){
+    const ins = { left: 0.06, top: 0.22, right: 0.06, bottom: 0.07 };
+    if (!pillarInsightMinimized) ins.right = 0.30;
+    return ins;
+  }
   return zone.contentInset || { left: 0.08, top: 0.14, right: 0.08, bottom: 0.08 };
 }
 function pillarLabelShown(d, selectedNode, conn, zoomFade){
@@ -4333,6 +4404,8 @@ let activeUC    = "", activeInd = "";
 let activePillars = new Set();
 let pillarHoverId = null;
 let pillarZoneLayout = {};
+/** V1 peek card — default expanded; user may minimize to edge tab. */
+let pillarInsightMinimized = false;
 let facetState = { status: new Set(["current"]), tier: new Set() };
 let selected    = null;
 let connectionHighlightDepth = 1;
@@ -4515,6 +4588,8 @@ function togglePillarFilter(pillarId){
   else if (activePillars.has(pillarId)) activePillars.delete(pillarId);
   else activePillars.add(pillarId);
   if (activePillars.size >= PILLAR_IDS.length) clearPillarFilter();
+  if (singlePillarFocused()) pillarInsightMinimized = false;
+  else pillarInsightMinimized = false;
   setAmbientPillarTint(singlePillarFocused() ? focusedPillarId() : null);
   applyFilters();
   updateCanvasFocusState();
@@ -6494,6 +6569,76 @@ function ensurePillarZoneDefs(){
   }
 }
 
+function pillarContextEsc(s){
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+}
+function refreshPillarContextLayout(){
+  if (!usePillarLayout() || !singlePillarFocused()) return;
+  const vis = new Set(NODES.filter(n => familyNodeVisible(n)).map(n => n.id));
+  pinPillarNodes(viewNodes, vis);
+  refreshPillarNodePositions();
+  updatePillarGuides();
+}
+window.__cpnPillarContextAction = function(action, ev){
+  ev?.stopPropagation?.();
+  if (action === "minimize") pillarInsightMinimized = true;
+  else if (action === "restore") pillarInsightMinimized = false;
+  refreshPillarContextLayout();
+  if (viewMode === "families") scheduleGraphFit("families");
+};
+function appendPillarContextChrome(zg, z, x, y, lz, opacity){
+  const pid = z.id;
+  const pillar = PILLAR_BY_ID[pid];
+  const summary = PILLAR_SUMMARIES[pid];
+  if (!pillar || !summary) return;
+  const esc = pillarContextEsc;
+  const color = z.color;
+  const stripW = Math.max(160, lz.w - 28);
+  const stripY = y + 50;
+  const stripH = summary.scope ? 58 : 46;
+  zg.append("foreignObject")
+    .attr("class", "pillar-context-fo interactive")
+    .attr("x", x + 14).attr("y", stripY)
+    .attr("width", stripW).attr("height", stripH)
+    .style("opacity", opacity)
+    .append("xhtml:div")
+    .html(`<div class="pillar-promise-strip" style="--pc:${esc(color)}">
+      <span class="pps-badge">Outcome</span>
+      <div class="pps-text">${esc(pillar.promise)}${summary.scope ? `<span class="pps-scope">${esc(summary.scope)}</span>` : ""}</div>
+    </div>`);
+  if (pillarInsightMinimized){
+    zg.append("foreignObject")
+      .attr("class", "pillar-context-fo interactive")
+      .attr("x", x + lz.w - 30).attr("y", y + lz.h * 0.38)
+      .attr("width", 30).attr("height", 108)
+      .style("opacity", opacity)
+      .append("xhtml:div")
+      .html(`<button type="button" class="pillar-insight-tab" style="--pc:${esc(color)}"
+        onclick="window.__cpnPillarContextAction('restore', event)">Context</button>`);
+    return;
+  }
+  const cardW = 268;
+  const cardH = Math.min(320, 56 + summary.highlights.length * 54);
+  const items = summary.highlights.map((h, i) => `
+    <article class="pic-item">
+      <span class="pic-num" style="--pc:${esc(color)}">${i + 1}</span>
+      <div><h4>${esc(h.title)}</h4><p>${esc(h.body)}</p></div>
+    </article>`).join("");
+  zg.append("foreignObject")
+    .attr("class", "pillar-context-fo interactive")
+    .attr("x", x + lz.w - cardW - 12).attr("y", y + 56)
+    .attr("width", cardW).attr("height", cardH)
+    .style("opacity", opacity)
+    .append("xhtml:div")
+    .html(`<div class="pillar-insight-card" style="--pc:${esc(color)};max-height:${cardH}px">
+      <div class="pic-head">
+        <span>Value props</span>
+        <button type="button" title="Minimize" onclick="window.__cpnPillarContextAction('minimize', event)">−</button>
+      </div>
+      <div class="pic-list">${items}</div>
+    </div>`);
+}
+
 function appendPillarZoneHeader(zg, z, x, y, w, opacity){
   const iconSize = 34;
   const gap = 12;
@@ -6634,6 +6779,7 @@ function updatePillarGuides(){
       .attr("stroke-opacity", 1)
       .style("pointer-events", "none");
     appendPillarZoneHeader(zg, z, x, y, lz.w, headerOp);
+    if (singlePillarFocused() && hot && !dim) appendPillarContextChrome(zg, z, x, y, lz, headerOp);
     const statsPad = 16;
     zg.append("text").attr("class", "zone-stats")
       .attr("x", x + lz.w - statsPad).attr("y", y + lz.h - statsPad)
@@ -9084,7 +9230,7 @@ function applyViewLevel(mode, opts){
     syncAllProductsLayersUI();
   } else {
     // Families mode = the full graph; optionally focus a category by activating it.
-    if (opts.focusPillar) focusPillarOnly(opts.focusPillar);
+    if (opts.focusPillar){ focusPillarOnly(opts.focusPillar); pillarInsightMinimized = false; }
     else clearPillarFilter();
     viewNodes = NODES.slice(); viewLinks = LINKS.slice();
     // Annotate each family with the count of its specific products so the
