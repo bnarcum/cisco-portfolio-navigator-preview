@@ -55,6 +55,11 @@ body.tl-open #help-fab {
   display: none !important;
 }
 
+body:has(#tl-wrap.show) #pillar-legend,
+body.tl-open #pillar-legend {
+  display: none !important;
+}
+
 #tl-head {
   position: relative;
   z-index: 4;

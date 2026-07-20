@@ -42,6 +42,11 @@ body.acq-open #help-fab {
   display: none !important;
 }
 
+body:has(#acq-wrap.show) #pillar-legend,
+body.acq-open #pillar-legend {
+  display: none !important;
+}
+
 #acq-ambient {
   position: absolute;
   inset: 0;

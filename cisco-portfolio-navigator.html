@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <script>
-  window.__CPN_BUILD="3.5.14";
+  window.__CPN_BUILD="3.5.15";
   (function(){
     var V=window.__CPN_BUILD, key="cpn-app-version", reloadKey="cpn-version-reload";
     try{
@@ -372,6 +372,8 @@
     #spatial-style-bar button:disabled{opacity:.45;cursor:not-allowed}
     body.spatial-open #hint{display:none !important}
     body.spatial-open #pillar-legend{display:none !important}
+    body:has(#tl-wrap.show) #pillar-legend,body.tl-open #pillar-legend,
+    body:has(#acq-wrap.show) #pillar-legend,body.acq-open #pillar-legend{display:none !important}
     body.spatial-open .bg-grid{opacity:0}
 
     /* TOOLTIP */
@@ -5835,7 +5837,7 @@ function graphChromeInsets(){
   const right = panelOffsetW() + outcomeCardOffsetW();
   let left = 0, top = 0;
   const leg = document.getElementById("pillar-legend");
-  if (viewMode === "families" && usePillarLayout() && leg?.classList.contains("show")){
+  if (viewMode === "families" && usePillarLayout() && leg?.classList.contains("show") && !pillarLegendBlocked()){
     const lw = leg.offsetWidth || 280;
     const lh = leg.offsetHeight || 168;
     left = Math.min(340, lw + 28);
@@ -6667,10 +6669,15 @@ function updatePillarGuides(){
   });
 }
 
+function pillarLegendBlocked(){
+  return document.body.classList.contains("tl-open") || document.body.classList.contains("acq-open")
+    || document.body.classList.contains("spatial-open");
+}
+
 function updatePillarLegend(show){
   const el = document.getElementById("pillar-legend");
   if (!el) return;
-  if (!show){ el.classList.remove("show"); el.setAttribute("aria-hidden", "true"); return; }
+  if (!show || pillarLegendBlocked()){ el.classList.remove("show"); el.setAttribute("aria-hidden", "true"); return; }
   const total = NODES.length;
   const allActive = allPillarsSelected() ? " active" : "";
   const rows = [...PILLAR_LAYOUT.zones].map(z => {
