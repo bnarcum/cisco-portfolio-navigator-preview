@@ -68,6 +68,21 @@
   border-color: var(--border-strong);
   color: var(--text);
 }
+:root:not([data-theme="light"]) .pp {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--border);
+  color: var(--muted);
+}
+:root:not([data-theme="light"]) .pp:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+:root:not([data-theme="light"]) .pp.active {
+  background: rgba(91, 140, 255, 0.12);
+  border-color: rgba(91, 140, 255, 0.38);
+  color: var(--text);
+}
 
 /* Buttons — shared outline tier; planner solid */
 :root:not([data-theme="light"]) #design-studio-btn,

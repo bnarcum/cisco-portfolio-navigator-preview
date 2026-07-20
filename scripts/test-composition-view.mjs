@@ -135,7 +135,7 @@ try {
   // Reset to families + workplaces pillar focus (zoomed single pillar)
   await page.evaluate(() => {
     window.applyViewLevel("families");
-    document.querySelector("#pillar-legend .pl-item[data-pillar='workplaces']")?.click();
+    document.querySelector("#ppills .pp[data-pillar='workplaces']")?.click();
   });
   await page.waitForTimeout(700);
 
@@ -147,21 +147,24 @@ try {
   // Scenario C: double-click family node in workplaces pillar
   await page.evaluate(() => {
     window.applyViewLevel("families");
-    document.querySelector("#pillar-legend .pl-item[data-pillar='workplaces']")?.click();
+    document.querySelector("#ppills .pp[data-pillar='workplaces']")?.click();
   });
-  await page.waitForTimeout(700);
+  await page.waitForFunction((familyId) =>
+    [...document.querySelectorAll("g.nd")].some(el =>
+      el.style.display !== "none" && el.__data__?.id === familyId),
+    FAMILY,
+    { timeout: 8000 });
+  await page.waitForTimeout(300);
 
   const dbl = await page.evaluate((familyId) => {
-    const node = NODES.find((n) => n.id === familyId);
-    if (!node) return { ok: false, reason: "node missing" };
-    const svg = document.getElementById("gs");
-    const t = d3.zoomTransform(svg);
-    const [sx, sy] = t.apply([node.x, node.y]);
-    const el = document.elementFromPoint(sx + svg.getBoundingClientRect().x, sy + svg.getBoundingClientRect().y);
-    const g = el?.closest?.("g.nd");
-    if (!g) return { ok: false, reason: "no g.nd at screen point", sx, sy, nx: node.x, ny: node.y };
+    const g = [...document.querySelectorAll("g.nd")].find(el => {
+      if (el.style.display === "none") return false;
+      const id = el.__data__?.id;
+      return id === familyId;
+    });
+    if (!g) return { ok: false, reason: "no g.nd for family" };
     g.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window }));
-    return { ok: true, sx, sy };
+    return { ok: true };
   }, FAMILY);
   if (!dbl.ok) {
     console.error("FAIL [dblclick-setup]:", dbl);

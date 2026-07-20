@@ -215,17 +215,20 @@
   border-color: #7c3aed;
 }
 
-/* ── Pillar legend ───────────────────────────────────────────── */
-[data-theme="light"] #pillar-legend {
-  background: var(--glass-bg);
+/* ── Pillar filter chips (action bar) ─────────────────────────── */
+[data-theme="light"] .pp {
+  background: rgba(7, 24, 45, 0.03);
   border-color: rgba(7, 24, 45, 0.14);
-  box-shadow: 0 10px 32px rgba(7, 24, 45, 0.1);
+  color: #64748b;
 }
-[data-theme="light"] #pillar-legend .pl-title {
-  color: var(--accent);
+[data-theme="light"] .pp:hover {
+  background: rgba(7, 24, 45, 0.06);
+  color: #07182d;
 }
-[data-theme="light"] #pillar-legend .pl-hint {
-  border-top-color: var(--border);
+[data-theme="light"] .pp.active {
+  background: rgba(0, 110, 143, 0.1);
+  border-color: rgba(0, 110, 143, 0.35);
+  color: #07182d;
 }
 
 /* ── Guided tour ─────────────────────────────────────────────── */

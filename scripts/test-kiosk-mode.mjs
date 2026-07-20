@@ -51,7 +51,7 @@ try {
   await appPage.waitForSelector('#vm-seg [data-vm="families"].active', { timeout: 15000 });
 
   const boot = await appPage.evaluate(() => {
-    const activePillar = document.querySelector(".pl-item.active[data-pillar]")?.dataset.pillar || null;
+    const activePillar = document.querySelector("#ppills .pp.active[data-pillar]")?.dataset.pillar || null;
     return {
       familiesActive: !!document.querySelector('#vm-seg [data-vm="families"].active'),
       activePillar
