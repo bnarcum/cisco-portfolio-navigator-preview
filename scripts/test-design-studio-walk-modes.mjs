@@ -42,6 +42,9 @@ must(/ds-walk-hud-row2[\s\S]*data-action="packets"[\s\S]*data-action="packet-spe
 
 must(/id="ds-walk-corridor"[\s\S]*>Present</.test(studio), "Toolbar should use Present label");
 must(/Open guided solution walkthrough/.test(studio), "Toolbar title should describe guided walkthrough");
+must(/function shouldRenderWalk/.test(walk), "walk render gate is missing");
+must(/visibilitychange/.test(walk), "walk must pause WebGL when the tab is hidden");
+must(/window\.__DS_WALK\?\.close/.test(studio), "closing Design Studio must stop Walk mode");
 
 if (errors.length) {
   console.error("FAIL test-design-studio-walk-modes");

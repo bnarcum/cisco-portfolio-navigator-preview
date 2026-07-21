@@ -2548,8 +2548,54 @@
     pts.rotation.y += dt * 0.015;
   }
 
+  function shouldRenderWalk() {
+    if (!state.mode || !state.renderer || !state.scene || !state.camera) return false;
+    if (document.hidden) return false;
+    const ds = document.getElementById("design-studio");
+    if (ds && !ds.classList.contains("open")) return false;
+    return true;
+  }
+
+  function pauseRenderLoop() {
+    if (state.animId) {
+      cancelAnimationFrame(state.animId);
+      state.animId = 0;
+    }
+    state.lastFrame = 0;
+    try {
+      if (document.pointerLockElement && state.overlay?.contains(document.pointerLockElement)) {
+        document.exitPointerLock();
+      }
+    } catch (_) { /* ignore */ }
+  }
+
+  function resumeRenderLoop() {
+    if (!state.mode || state.animId) return;
+    state.animId = requestAnimationFrame(loop);
+  }
+
+  function syncRenderLoop() {
+    if (shouldRenderWalk()) resumeRenderLoop();
+    else pauseRenderLoop();
+  }
+
+  function bindRenderLifecycle() {
+    unbindRenderLifecycle();
+    state._onVis = () => syncRenderLoop();
+    document.addEventListener("visibilitychange", state._onVis);
+  }
+
+  function unbindRenderLifecycle() {
+    if (!state._onVis) return;
+    document.removeEventListener("visibilitychange", state._onVis);
+    state._onVis = null;
+  }
+
   function loop(now) {
+    state.animId = 0;
     if (!state.renderer || !state.scene || !state.camera) return;
+    if (!shouldRenderWalk()) return;
+
     const t = (now || performance.now()) / 1000;
     const dt = Math.min(0.05, state.lastFrame ? t - state.lastFrame : 0.016);
     state.lastFrame = t;
@@ -3254,7 +3300,8 @@
       state.overlay?.classList.add("ds-walk-loading");
       await initCorridor(studio, canvas, graph);
       initFieldSystems(graph);
-      loop();
+      bindRenderLifecycle();
+      resumeRenderLoop();
       state.overlay?.classList.remove("ds-walk-loading");
       state.overlay?.classList.remove("ds-walk-fade-out");
       state.overlay?.classList.add("ds-walk-fade-in");
@@ -3283,8 +3330,7 @@
     const canvas = state.overlay?.querySelector("#ds-walk-canvas");
     if (!canvas) return;
     window.__DS_FIELD_PANEL?.close?.();
-    cancelAnimationFrame(state.animId);
-    state.animId = 0;
+    pauseRenderLoop();
     disposeScene();
     state.studio = studio;
     state.mode = "walk";
@@ -3296,7 +3342,7 @@
       syncOutcomesHud();
       syncPacketsHud();
       setStatus(`Switched to ${graph.kind} layout`);
-      loop();
+      syncRenderLoop();
     } catch (err) {
       console.error("[DS Walk rebuild]", err);
       showWalkError(`Rebuild failed: ${err.message}`);
@@ -3304,8 +3350,8 @@
   }
 
   function close(silent) {
-    cancelAnimationFrame(state.animId);
-    state.animId = 0;
+    unbindRenderLifecycle();
+    pauseRenderLoop();
     state._inputCleanup?.();
     if (state._resize) window.removeEventListener("resize", state._resize);
     disposeScene();

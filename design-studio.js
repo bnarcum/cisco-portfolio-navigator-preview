@@ -1286,6 +1286,7 @@
 
     close() {
       saveDesign(this.design);
+      window.__DS_WALK?.close?.();
       window.__DS_PREMIUM?.plannerSyncHint?.(this);
       this.el?.classList.remove("open");
       this.el?.classList.remove("ds-present-mode");
